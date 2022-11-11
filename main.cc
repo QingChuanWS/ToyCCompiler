@@ -29,22 +29,108 @@ void Error(const char *fmt, ...) {
   va_start(ap, fmt);
   vfprintf(stderr, fmt, ap);
   fprintf(stderr, "\n");
+  exit(0);
+}
+
+// Reports an error location and exit.
+void ErrorAt(char *prg, char *loc, const char *fmt, ...) {
+  va_list ap;
+  va_start(ap, fmt);
+
+  int pos = loc - prg;
+  fprintf(stderr, "%s\n", prg);
+  fprintf(stderr, "%*s", pos, ""); // print pos spaces.
+  fprintf(stderr, "^ ");
+  vfprintf(stderr, fmt, ap);
+  fprintf(stderr, "\n");
   exit(1);
+}
+
+void LOG(const char *fmt, ...) {
+  va_list ap;
+  va_start(ap, fmt);
+  vfprintf(stderr, fmt, ap);
+  fprintf(stderr, "\n");
 }
 
 class Token {
 public:
   Token() : kind_(TK_EOF), next_(nullptr), val_(0), str_(nullptr) {}
 
-  Token(Tokenkind kind, Token *cur, char *str) {
-    kind_ = kind;
-    str_ = str;
-    cur->next_ = this;
+  Token(Tokenkind kind, char *str)
+      : kind_(kind), str_(str), val_(0), next_(nullptr) {}
+
+  static Token *Tokenize(Token &head, char *prg) {
+    prg_ = prg;
+    Token *cur = &head;
+    char *p = prg_;
+    while (*p != '\0') {
+      if (std::isdigit(*p)) {
+        cur->next_ = new Token(TK_NUM, p);
+        cur = cur->next_;
+        cur->val_ = strtol(p, &p, 10);
+        continue;
+      }
+
+      if (*p == '+' || *p == '-') {
+        cur->next_ = new Token(TK_RESERVED, p);
+        cur = cur->next_;
+        p++;
+        continue;
+      }
+
+      if (std::isspace(*p)) {
+        p++;
+        continue;
+      }
+
+      ErrorAt(prg, p, "expect a number.");
+    }
+
+    cur->next_ = new Token(TK_EOF, p);
+    return head.next_;
   }
 
-  friend class TokenList;
+  static void TokenizeFree(Token &head) {
+    Token *cur = head.next_;
+    while (cur != nullptr) {
+      head.next_ = cur->next_;
+      delete cur;
+      cur = head.next_;
+    }
+  }
+
+  static bool Consume(Token **tok, char op) {
+    if ((*tok)->kind_ != TK_RESERVED || (*tok)->str_[0] != op) {
+      return false;
+    }
+    NextToken(tok);
+    return true;
+  }
+
+  static void Expect(Token **tok, char op) {
+    if ((*tok)->kind_ != TK_RESERVED || (*tok)->str_[0] != op) {
+      ErrorAt(Token::prg_, (*tok)->str_, "expect '%c'", op);
+    }
+    NextToken(tok);
+  }
+
+  static long ExpectNumber(Token **tok) {
+    if ((*tok)->kind_ != TK_NUM) {
+      ErrorAt(prg_, (*tok)->str_, "expect a number");
+    }
+    long val = (*tok)->val_;
+    NextToken(tok);
+    return val;
+  }
+
+  static bool IsEof(Token *tok) { return tok->kind_ == TK_EOF; }
 
 private:
+  static void NextToken(Token **tok) { *tok = (*tok)->next_; }
+
+  static char* prg_;
+
   Tokenkind kind_;
   long val_;
   char *str_;
@@ -52,79 +138,7 @@ private:
   Token *next_;
 };
 
-class TokenList {
-public:
-  TokenList(char *prg) : head_(), cur_(&head_) {
-    while (*prg != '\0') {
-      if (std::isdigit(*prg)) {
-        cur_ = new Token(TK_NUM, cur_, prg);
-        cur_->val_ = strtol(prg, &prg, 10);
-        continue;
-      }
-
-      if (*prg == '+' || *prg == '-') {
-        cur_ = new Token(TK_RESERVED, cur_, prg);
-        prg++;
-        continue;
-      }
-
-      if (std::isspace(*prg)) {
-        prg++;
-        continue;
-      }
-
-      Error("invalid token");
-    }
-
-    new Token(TK_EOF, cur_, prg);
-    cur_ = head_.next_;
-  }
-
-  ~TokenList() {
-    Token *cur_ = head_.next_;
-    while (cur_ != nullptr) {
-      head_.next_ = cur_->next_;
-      delete cur_;
-      cur_ = head_.next_;
-    }
-  }
-
-  TokenList(const TokenList &) = delete;
-
-  bool Consume(char op) {
-    if (cur_->kind_ != TK_RESERVED || cur_->str_[0] != op) {
-      return false;
-    }
-    NextToken();
-    return true;
-  }
-
-  void Expect(char op) {
-    if (cur_->kind_ != TK_RESERVED || cur_->str_[0] != op) {
-      Error("expect '%c'", op);
-    }
-    NextToken();
-  }
-
-  long ExpectNumber() {
-    if (cur_->kind_ != TK_NUM) {
-      Error("expect a number");
-    }
-    long val = cur_->val_;
-    NextToken();
-    return val;
-  }
-
-  bool AtEof() { return cur_->kind_ == TK_EOF; }
-
-  Token *GetCurrent() { return cur_; }
-
-private:
-  void NextToken() { cur_ = cur_->next_; }
-
-  Token head_;
-  Token *cur_;
-};
+char* Token::prg_ = nullptr;
 
 int main(int argc, char **argv) {
   if (argc != 2) {
@@ -132,22 +146,25 @@ int main(int argc, char **argv) {
     return 1;
   }
 
-  TokenList tok_list(argv[1]);
+  Token head;
+  Token *cur = Token::Tokenize(head, argv[1]);
 
   std::cout << ".intel_syntax noprefix" << std::endl;
   std::cout << ".global main" << std::endl;
   std::cout << "main:" << std::endl;
-  std::cout << "  mov rax," << tok_list.ExpectNumber() << std::endl;
+  std::cout << "  mov rax," << Token::ExpectNumber(&cur) << std::endl;
 
-  while (!tok_list.AtEof()) {
-    if (tok_list.Consume('+')) {
-      std::cout << "  add rax," << tok_list.ExpectNumber() << std::endl;
+  while (!Token::IsEof(cur)) {
+    if (Token::Consume(&cur, '+')) {
+      std::cout << "  add rax," << Token::ExpectNumber(&cur) << std::endl;
     }
 
-    tok_list.Expect('-');
-    std::cout << "  sub rax," << tok_list.ExpectNumber() << std::endl;
+    Token::Expect(&cur, '-');
+    std::cout << "  sub rax," << head.ExpectNumber(&cur) << std::endl;
   }
   std::cout << "  ret" << std::endl;
+
+  Token::TokenizeFree(head);
 
   return 0;
 }
