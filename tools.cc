@@ -37,3 +37,7 @@ void LOG(const char* fmt, ...) {
   vfprintf(stderr, fmt, ap);
   fprintf(stderr, "\n");
 }
+
+bool StartSwith(const char* q, const char* p, int len) {
+  return strncmp(q, p, len) == 0;
+}

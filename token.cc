@@ -11,6 +11,8 @@
 
 #include "token.h"
 
+#include "tools.h"
+
 char* Token::prg_ = nullptr;
 
 Token* Token::TokenCreate(Token& head, char* prg) {
@@ -18,12 +20,16 @@ Token* Token::TokenCreate(Token& head, char* prg) {
   Token* cur = &head;
   char*  p   = prg_;
   while (*p != '\0') {
-    if (std::isdigit(*p)) {
-      cur->next_   = new Token(TK_NUM, p, 0);
-      cur          = cur->next_;
-      char* q      = p;
-      cur->val_    = strtol(p, &p, 10);
-      cur->strlen_ = static_cast<int>(q - p);
+    if (std::isspace(*p)) {
+      p++;
+      continue;
+    }
+
+    if (StartSwith(p, "==", 2) || StartSwith(p, "!=", 2) ||
+        StartSwith(p, "<=", 2) || StartSwith(p, ">=", 2)) {
+      cur->next_ = new Token(TK_RESERVED, p, 2);
+      cur        = cur->next_;
+      p += 2;
       continue;
     }
 
@@ -34,8 +40,12 @@ Token* Token::TokenCreate(Token& head, char* prg) {
       continue;
     }
 
-    if (std::isspace(*p)) {
-      p++;
+    if (std::isdigit(*p)) {
+      cur->next_   = new Token(TK_NUM, p, 0);
+      cur          = cur->next_;
+      char* q      = p;
+      cur->val_    = strtol(p, &p, 10);
+      cur->strlen_ = static_cast<int>(q - p);
       continue;
     }
 
@@ -56,8 +66,9 @@ void Token::TokenFree(Token& head) {
 }
 
 bool Token::Consume(Token** tok, const char* op) {
-  if ((*tok)->kind_ != TK_RESERVED || strlen(op) != (*tok)->strlen_ ||
-      strncmp((*tok)->str_, op, (*tok)->strlen_) != 0) {
+  Token* cur_tok = *tok;
+  if (cur_tok->kind_ != TK_RESERVED || std::strlen(op) != cur_tok->strlen_ ||
+      !StartSwith(cur_tok->str_, op, cur_tok->strlen_)) {
     return false;
   }
   NextToken(tok);
@@ -65,18 +76,20 @@ bool Token::Consume(Token** tok, const char* op) {
 }
 
 void Token::Expect(Token** tok, const char* op) {
-  if ((*tok)->kind_ != TK_RESERVED || strlen(op) != (*tok)->strlen_ ||
-      strncmp((*tok)->str_, op, (*tok)->strlen_) != 0) {
+  Token* cur_tok = *tok;
+  if (cur_tok->kind_ != TK_RESERVED || std::strlen(op) != cur_tok->strlen_ ||
+      !StartSwith(cur_tok->str_, op, cur_tok->strlen_)) {
     ErrorAt(Token::prg_, (*tok)->str_, "expect \"%s\"", op);
   }
   NextToken(tok);
 }
 
 long Token::ExpectNumber(Token** tok) {
-  if ((*tok)->kind_ != TK_NUM) {
-    ErrorAt(prg_, (*tok)->str_, "expect a number");
+  Token* cur_tok = *tok;
+  if (cur_tok->kind_ != TK_NUM) {
+    ErrorAt(prg_, cur_tok->str_, "expect a number");
   }
-  long val = (*tok)->val_;
+  long val = cur_tok->val_;
   NextToken(tok);
   return val;
 }

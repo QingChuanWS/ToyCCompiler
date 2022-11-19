@@ -15,6 +15,42 @@
 #include "tools.h"
 
 Node* Node::Expr(Token** tok) {
+  return Equality(tok);
+}
+
+Node* Node::Equality(Token** tok) {
+  Node* node = Relational(tok);
+
+  for (;;) {
+    if (Token::Consume(tok, "==")) {
+      node = new Node(ND_EQ, node, Relational(tok));
+    } else if (Token::Consume(tok, "!=")) {
+      node = new Node(ND_NE, node, Relational(tok));
+    } else {
+      return node;
+    }
+  }
+}
+
+Node* Node::Relational(Token** tok) {
+  Node* node = Add(tok);
+
+  for (;;) {
+    if (Token::Consume(tok, "<")) {
+      node = new Node(ND_LT, node, Add(tok));
+    } else if (Token::Consume(tok, "<=")) {
+      node = new Node(ND_LE, node, Add(tok));
+    } else if (Token::Consume(tok, ">")) {
+      node = new Node(ND_LT, Add(tok), node);
+    } else if (Token::Consume(tok, ">=")) {
+      node = new Node(ND_LE, Add(tok), node);
+    } else {
+      return node;
+    }
+  }
+}
+
+Node* Node::Add(Token** tok) {
   Node* node = Mul(tok);
 
   for (;;) {
@@ -99,6 +135,26 @@ void Node::CodeGen(Node* node) {
   case ND_DIV:
     ASM_GEN("  cqo");
     ASM_GEN("  idiv rdi");
+    break;
+  case ND_EQ:
+    ASM_GEN("  cmp rax, rdi");
+    ASM_GEN("  sete al");
+    ASM_GEN("  movzb rax, al");
+    break;
+  case ND_NE:
+    ASM_GEN("  cmp rax, rdi");
+    ASM_GEN("  setne al");
+    ASM_GEN("  movzb rax, al");
+    break;
+  case ND_LT:
+    ASM_GEN("  cmp rax, rdi");
+    ASM_GEN("  setl al");
+    ASM_GEN("  movzb rax, al");
+    break;
+  case ND_LE:
+    ASM_GEN("  cmp rax, rdi");
+    ASM_GEN("  setle al");
+    ASM_GEN("  movzb rax, al");
     break;
   default: Error("error node type !"); break;
   }

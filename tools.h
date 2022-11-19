@@ -14,6 +14,7 @@
 
 #include <cstdarg>
 #include <cstdio>
+#include <cstring>
 #include <iostream>
 
 #define ASM_GEN(...) ASMGenerator(__VA_ARGS__)
@@ -38,5 +39,7 @@ void Error(const char* fmt, ...);
 void ErrorAt(char* prg, char* loc, const char* fmt, ...);
 // Log message
 void Log(const char* fmt, ...);
+// compare two string based strncmp
+bool StartSwith(const char * q, const char* p, int len);
 
 #endif   // !TOOLS_GRUAD

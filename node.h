@@ -16,10 +16,14 @@
 #include "tools.h"
 
 enum NodeKind {
-  ND_ADD,
-  ND_SUB,
-  ND_MUL,
-  ND_DIV,
+  ND_ADD,   // +
+  ND_SUB,   // -
+  ND_MUL,   // *
+  ND_DIV,   // /
+  ND_EQ,    // ==
+  ND_NE,    // !=
+  ND_LT,    // <
+  ND_LE,    // <=
   ND_NUM,
 };
 
@@ -43,9 +47,15 @@ class Node {
 
   // post-order for AST delete
   static void NodeFree(Node* node);
-  
-  // expr = mul ("+"mul | "-" mul)
+
+  // expr = equality
   static Node* Expr(Token** tok);
+  // equality = relational ("==" relational | "!=" relational)
+  static Node* Equality(Token** tok);
+  // relational = add ("<" add | "<=" add | ">" add | ">=" add)
+  static Node* Relational(Token** tok);
+  // add = mul ("+"mul | "-" mul)
+  static Node* Add(Token** tok);
   // mul = unary ("*" unary | "/" unary)
   static Node* Mul(Token** tok);
   // unary = ("+" | "-") ? unary | primary
