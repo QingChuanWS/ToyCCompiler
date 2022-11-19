@@ -63,10 +63,9 @@ class Node {
   // primary = "(" expr ")" | num
   static Node* Primary(Token** tok);
 
-  // post-order for code-gen
-  static void CodeGen(Node* node);
-
  private:
+  friend class CodeGenerator;
+
   NodeKind kind_;
   Node*    lhs_;
   Node*    rhs_;

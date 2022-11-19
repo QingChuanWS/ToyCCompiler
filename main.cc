@@ -8,13 +8,14 @@
  *
  * Copyright (c) 2022 by QingChuanWS, All Rights Reserved.
  */
-#include <cassert>
-#include <cctype>
-#include <string>
-
+#include "codegen.h"
 #include "node.h"
 #include "token.h"
 #include "tools.h"
+
+#include <cassert>
+#include <cctype>
+#include <string>
 
 int main(int argc, char** argv) {
   if (argc != 2) {
@@ -26,14 +27,8 @@ int main(int argc, char** argv) {
   Token* cur  = Token::TokenCreate(head, argv[1]);
   Node*  node = Node::Expr(&cur);
 
-  ASM_GEN(".intel_syntax noprefix");
-  ASM_GEN(".global main");
-  ASM_GEN("main:");
-
-  Node::CodeGen(node);
-
-  ASM_GEN("  pop rax\n");
-  ASM_GEN("  ret\n");
+  CodeGenerator gene;
+  gene.CodeGen(node);
 
   Node::NodeFree(node);
   Token::TokenFree(head);

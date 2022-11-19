@@ -17,21 +17,8 @@
 #include <cstring>
 #include <iostream>
 
-#define ASM_GEN(...) ASMGenerator(__VA_ARGS__)
 #define DEBUG(expr) assert(expr)
 #define DLOG(expr) Log(expr)
-
-// recursive over state.
-template<typename T>
-void ASMGenerator(const T arg) {
-  std::cout << arg << std::endl;
-}
-
-template<typename T, typename... Types>
-void ASMGenerator(const T first_arg, const Types... args) {
-  std::cout << first_arg;
-  ASMGenerator(args...);
-}
 
 // Print error message.
 void Error(const char* fmt, ...);

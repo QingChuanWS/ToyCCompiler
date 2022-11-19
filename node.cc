@@ -115,49 +115,4 @@ void Node::NodeFree(Node* node) {
   return;
 }
 
-// post-order for code-gen
-void Node::CodeGen(Node* node) {
-  if (node->kind_ == ND_NUM) {
-    ASM_GEN("  push ", node->val_);
-    return;
-  }
 
-  CodeGen(node->lhs_);
-  CodeGen(node->rhs_);
-
-  ASM_GEN("  pop rdi");
-  ASM_GEN("  pop rax");
-
-  switch (node->kind_) {
-  case ND_ADD: ASM_GEN("  add rax, rdi"); break;
-  case ND_SUB: ASM_GEN("  sub rax, rdi"); break;
-  case ND_MUL: ASM_GEN("  imul rax, rdi"); break;
-  case ND_DIV:
-    ASM_GEN("  cqo");
-    ASM_GEN("  idiv rdi");
-    break;
-  case ND_EQ:
-    ASM_GEN("  cmp rax, rdi");
-    ASM_GEN("  sete al");
-    ASM_GEN("  movzb rax, al");
-    break;
-  case ND_NE:
-    ASM_GEN("  cmp rax, rdi");
-    ASM_GEN("  setne al");
-    ASM_GEN("  movzb rax, al");
-    break;
-  case ND_LT:
-    ASM_GEN("  cmp rax, rdi");
-    ASM_GEN("  setl al");
-    ASM_GEN("  movzb rax, al");
-    break;
-  case ND_LE:
-    ASM_GEN("  cmp rax, rdi");
-    ASM_GEN("  setle al");
-    ASM_GEN("  movzb rax, al");
-    break;
-  default: Error("error node type !"); break;
-  }
-
-  ASM_GEN("  push rax");
-}
