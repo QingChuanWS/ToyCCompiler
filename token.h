@@ -14,6 +14,7 @@
 #include "tools.h"
 
 #include <cctype>
+#include <cstring>
 
 enum Tokenkind {
   TK_RESERVED,
@@ -27,17 +28,19 @@ class Token {
       : kind_(TK_EOF)
       , next_(nullptr)
       , val_(0)
-      , str_(nullptr) {}
+      , str_() {}
 
-  Token(Tokenkind kind, char* str)
+  Token(Tokenkind kind, char* str, int len)
       : kind_(kind)
       , str_(str)
+      , strlen_(len)
       , val_(0)
-      , next_(nullptr) {}
+      , next_() {}
 
-  Token(Tokenkind kind, Token* tok, char* str)
+  Token(Tokenkind kind, Token* tok, char* str, int len)
       : kind_(kind)
       , str_(str)
+      , strlen_(len)
       , val_(0)
       , next_(nullptr) {
     tok->next_ = this;
@@ -50,10 +53,10 @@ class Token {
 
   // Check the current token->str is char op or not.
   // If the token's str is equal with op, return ture.
-  static bool Consume(Token** tok, char op);
+  static bool Consume(Token** tok, const char* op);
   // Check whether the current token's str is equal to op,
   // otherwise exit.
-  static void Expect(Token** tok, char op);
+  static void Expect(Token** tok, const char* op);
   // Check whether the current token's kind is number,
   // if yse, return value, otherwise exit.
   static long ExpectNumber(Token** tok);
@@ -68,9 +71,10 @@ class Token {
   static char* prg_;
 
   Tokenkind kind_;
+  Token*    next_;
   long      val_;
   char*     str_;
-  Token*    next_;
+  int       strlen_;
 };
 
 #endif   //  TOKEN_GRUAD

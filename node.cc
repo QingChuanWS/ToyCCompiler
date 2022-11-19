@@ -18,9 +18,9 @@ Node* Node::Expr(Token** tok) {
   Node* node = Mul(tok);
 
   for (;;) {
-    if (Token::Consume(tok, '+')) {
+    if (Token::Consume(tok, "+")) {
       node = new Node(ND_ADD, node, Mul(tok));
-    } else if (Token::Consume(tok, '-')) {
+    } else if (Token::Consume(tok, "-")) {
       node = new Node(ND_SUB, node, Mul(tok));
     } else {
       return node;
@@ -33,9 +33,9 @@ Node* Node::Mul(Token** tok) {
   Node* node = Unary(tok);
 
   for (;;) {
-    if (Token::Consume(tok, '*')) {
+    if (Token::Consume(tok, "*")) {
       node = new Node(ND_MUL, node, Primary(tok));
-    } else if (Token::Consume(tok, '/')) {
+    } else if (Token::Consume(tok, "/")) {
       node = new Node(ND_DIV, node, Primary(tok));
     } else {
       return node;
@@ -43,20 +43,20 @@ Node* Node::Mul(Token** tok) {
   }
 }
 
-Node* Node::Unary(Token **tok){
-  if(Token::Consume(tok, '+')){
+Node* Node::Unary(Token** tok) {
+  if (Token::Consume(tok, "+")) {
     return Unary(tok);
   }
-  if(Token::Consume(tok, '-')){
+  if (Token::Consume(tok, "-")) {
     return new Node(ND_SUB, new Node(0), Unary(tok));
   }
   return Primary(tok);
 }
 
 Node* Node::Primary(Token** tok) {
-  if (Token::Consume(tok, '(')) {
+  if (Token::Consume(tok, "(")) {
     Node* node = Expr(tok);
-    Token::Expect(tok, ')');
+    Token::Expect(tok, ")");
     return node;
   }
   return new Node(Token::ExpectNumber(tok));

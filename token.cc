@@ -19,14 +19,16 @@ Token* Token::TokenCreate(Token& head, char* prg) {
   char*  p   = prg_;
   while (*p != '\0') {
     if (std::isdigit(*p)) {
-      cur->next_ = new Token(TK_NUM, p);
-      cur        = cur->next_;
-      cur->val_  = strtol(p, &p, 10);
+      cur->next_   = new Token(TK_NUM, p, 0);
+      cur          = cur->next_;
+      char* q      = p;
+      cur->val_    = strtol(p, &p, 10);
+      cur->strlen_ = static_cast<int>(q - p);
       continue;
     }
 
     if (std::ispunct(*p)) {
-      cur->next_ = new Token(TK_RESERVED, p);
+      cur->next_ = new Token(TK_RESERVED, p, 1);
       cur        = cur->next_;
       p++;
       continue;
@@ -40,7 +42,7 @@ Token* Token::TokenCreate(Token& head, char* prg) {
     ErrorAt(prg, p, "expect a number.");
   }
 
-  cur->next_ = new Token(TK_EOF, p);
+  cur->next_ = new Token(TK_EOF, p, 0);
   return head.next_;
 }
 
@@ -53,17 +55,19 @@ void Token::TokenFree(Token& head) {
   }
 }
 
-bool Token::Consume(Token** tok, char op) {
-  if ((*tok)->kind_ != TK_RESERVED || (*tok)->str_[0] != op) {
+bool Token::Consume(Token** tok, const char* op) {
+  if ((*tok)->kind_ != TK_RESERVED || strlen(op) != (*tok)->strlen_ ||
+      strncmp((*tok)->str_, op, (*tok)->strlen_) != 0) {
     return false;
   }
   NextToken(tok);
   return true;
 }
 
-void Token::Expect(Token** tok, char op) {
-  if ((*tok)->kind_ != TK_RESERVED || (*tok)->str_[0] != op) {
-    ErrorAt(Token::prg_, (*tok)->str_, "expect '%c'", op);
+void Token::Expect(Token** tok, const char* op) {
+  if ((*tok)->kind_ != TK_RESERVED || strlen(op) != (*tok)->strlen_ ||
+      strncmp((*tok)->str_, op, (*tok)->strlen_) != 0) {
+    ErrorAt(Token::prg_, (*tok)->str_, "expect \"%s\"", op);
   }
   NextToken(tok);
 }
