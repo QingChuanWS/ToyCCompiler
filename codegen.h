@@ -12,13 +12,14 @@
 #ifndef CODEGEN_GRUAD
 #define CODEGEN_GRUAD
 
+#include "function.h"
 #include "node.h"
 
 #include <iostream>
 
 class CodeGenerator {
  public:
-  void CodeGen(Node* node);
+  void CodeGen(Function* prog);
 
  private:
   static void GetVarAddr(Node* node);

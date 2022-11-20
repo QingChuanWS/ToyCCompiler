@@ -12,8 +12,10 @@
 #ifndef NODE_GRUAD
 #define NODE_GRUAD
 
-#include "token.h"
 #include "tools.h"
+#include "var.h"
+
+#include <string>
 
 enum NodeKind {
   ND_ADD,         // +
@@ -36,35 +38,36 @@ class Node {
  public:
   Node(NodeKind kind = ND_END, Node* lhs = nullptr, Node* rhs = nullptr)
       : kind_(kind)
-      , next(nullptr)
+      , next_(nullptr)
       , lhs_(lhs)
       , rhs_(rhs)
       , val_(0)
-      , name_(' ') {}
+      , var_() {}
 
   Node(long val)
       : kind_(ND_NUM)
-      , next(nullptr)
+      , next_(nullptr)
       , lhs_(nullptr)
       , rhs_(nullptr)
       , val_(val)
-      , name_(' ') {}
+      , var_() {}
 
-  Node(char name)
+  Node(Var* var)
       : kind_(ND_VAR)
-      , next(nullptr)
+      , next_(nullptr)
       , lhs_(nullptr)
       , rhs_(nullptr)
       , val_(0)
-      , name_(name) {}
+      , var_(var) {}
 
+  static void NodeListFree(Node* node);
+
+ private:
   // post-order for AST delete
   static void NodeFree(Node* node);
   // parsing token list and generate AST.
-  // program = stmt*
+  // program = node::stmt*
   static Node* Program(Token** tok);
-
- private:
   // stmt = "return" expr ";" | expr ";"
   static Node* Stmt(Token** tok);
   // expr = assign
@@ -85,13 +88,14 @@ class Node {
   static Node* Primary(Token** tok);
 
   friend class CodeGenerator;
+  friend class Function;
 
-  NodeKind kind_;
-  Node*    next;
-  Node*    lhs_;
-  Node*    rhs_;
-  char     name_;
-  long     val_;
+  NodeKind kind_;   // Node kind
+  Node*    next_;   // next node (next AST)
+  Node*    lhs_;    // left-head side
+  Node*    rhs_;    // right-head side
+  Var*     var_;    // use it if kind == ND_VAR
+  long     val_;    // use it if Kind == ND_NUM
 };
 
 #endif   // !NODE_GRUAD

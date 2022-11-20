@@ -12,17 +12,21 @@
 #include "node.h"
 
 #include "token.h"
-#include "tools.h"
+#include "var.h"
+
+#include <cstring>
+
+extern Var* locals;
 
 Node* Node::Program(Token** tok) {
   Node  head = Node();
   Node* cur  = &head;
 
   while (!Token::IsEof(*tok)) {
-    cur->next = Stmt(tok);
-    cur       = cur->next;
+    cur->next_ = Node::Stmt(tok);
+    cur        = cur->next_;
   }
-  return head.next;
+  return head.next_;
 }
 
 Node* Node::Stmt(Token** tok) {
@@ -126,12 +130,27 @@ Node* Node::Primary(Token** tok) {
     Token::Expect(tok, ")");
     return node;
   }
-  
+
   Token* id_tok = Token::ConsumeIdent(tok);
-  if (id_tok != nullptr)
-    return new Node(*(id_tok->str_));
-  
+  if (id_tok != nullptr) {
+    Var* var = locals->Find(id_tok);
+    if (var == nullptr) {
+      var    = new Var(strndup(id_tok->str_, id_tok->strlen_), locals);
+      locals = var;
+    }
+    return new Node(var);
+  }
+
   return new Node((long)Token::ExpectNumber(tok));
+}
+
+void Node::NodeListFree(Node* node){
+  Node* cur= node;
+  while(cur != nullptr){
+    node = node->next_;
+    NodeFree(cur);
+    cur = node;
+  }
 }
 
 // post-order for node delete

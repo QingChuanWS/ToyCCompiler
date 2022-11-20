@@ -73,7 +73,9 @@ class Token {
   // Get next token.
   static void NextToken(Token** tok) { *tok = (*tok)->next_; }
 
+  friend class Function;
   friend class Node;
+  friend class Var;
 
   static char* prg_;
 

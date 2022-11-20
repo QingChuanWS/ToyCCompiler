@@ -8,7 +8,9 @@
  *
  * Copyright (c) 2022 by QingChuanWS, All Rights Reserved.
  */
+
 #include "codegen.h"
+#include "function.h"
 #include "node.h"
 #include "token.h"
 #include "tools.h"
@@ -23,15 +25,17 @@ int main(int argc, char** argv) {
     return 1;
   }
 
-  Token head = Token();
-  Token* cur  = Token::TokenCreate(head, argv[1]);
-  Node*  node = Node::Program(&cur);
+  Token     head = Token();
+  Token*    cur  = Token::TokenCreate(head, argv[1]);
+  Function prog = Function::Program(&cur);
+
+  prog.OffsetCal();
 
   CodeGenerator gene;
-  gene.CodeGen(node);
+  gene.CodeGen(&prog);
 
   Token::TokenFree(head);
-  Node::NodeFree(node);
+  prog.FunctionFree();
 
   return 0;
 }

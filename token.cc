@@ -10,7 +10,6 @@
  */
 
 #include "token.h"
-
 #include "tools.h"
 
 #include <cctype>
@@ -26,6 +25,7 @@ Token* Token::TokenCreate(const Token& head, char* prg) {
       p++;
       continue;
     }
+
     // keyword "return"
     if (StartSwith(p, "return", 6) && !IsAlnum(p[6])) {
       cur->next_ = new Token(TK_RESERVED, p, 6);
@@ -35,10 +35,13 @@ Token* Token::TokenCreate(const Token& head, char* prg) {
     }
 
     // indentifier
-    if (std::isalpha(*p)) {
-      cur->next_ = new Token(TK_IDENT, p, 1);
-      cur        = cur->next_;
-      p++;
+    if(IsAlpha(*p)){
+      char * q = p++;
+      while(IsAlnum(*p)){
+        p++;
+      }
+      cur->next_ = new Token(TK_IDENT, cur, q, p - q);
+      cur = cur->next_;
       continue;
     }
 

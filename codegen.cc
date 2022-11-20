@@ -29,13 +29,12 @@ void AsmPrint(const T first_arg, const Types... args) {
 
 void CodeGenerator::GetVarAddr(Node* node) {
   if (node->kind_ == ND_VAR) {
-    int offset = (node->name_ - 'a' + 1) * 8;
-    ASM_GEN("  lea rax, [rbp-", offset, "]");
+    ASM_GEN("  lea rax, [rbp-", node->var_->offset_, "]");
     ASM_GEN("  push rax");
     return;
   }
 
-  Error("%c not an lvalue", node->name_);
+  Error("not an lvalue");
 }
 
 void CodeGenerator::Load() {
@@ -51,7 +50,7 @@ void CodeGenerator::Store() {
   ASM_GEN("  push rdi");
 }
 
-void CodeGenerator::CodeGen(Node* node) {
+void CodeGenerator::CodeGen(Function* prog) {
   ASM_GEN(".intel_syntax noprefix");
   ASM_GEN(".global main");
   ASM_GEN("main:");
@@ -59,9 +58,9 @@ void CodeGenerator::CodeGen(Node* node) {
   // prologue; equally instruction "enter 0xD0,0".
   ASM_GEN("  push rbp");
   ASM_GEN("  mov rbp, rsp");
-  ASM_GEN("  sub rsp, 0xD0");
+  ASM_GEN("  sub rsp, ", prog->stack_size_);
 
-  for (; node != nullptr; node = node->next) {
+  for (Node* node = prog->node_; node != nullptr; node = node->next_) {
     AST_CodeGen(node);
   }
 
@@ -81,7 +80,7 @@ void CodeGenerator::AST_CodeGen(Node* node) {
     AST_CodeGen(node->lhs_);
     AsmPrint("  add rsp, 0x8");
     return;
-  case ND_VAR: 
+  case ND_VAR:
     GetVarAddr(node);
     Load();
     return;
