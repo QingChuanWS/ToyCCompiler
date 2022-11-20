@@ -23,15 +23,15 @@ int main(int argc, char** argv) {
     return 1;
   }
 
-  Token  head;
+  Token head = Token();
   Token* cur  = Token::TokenCreate(head, argv[1]);
   Node*  node = Node::Program(&cur);
 
   CodeGenerator gene;
   gene.CodeGen(node);
 
-  Node::NodeFree(node);
   Token::TokenFree(head);
+  Node::NodeFree(node);
 
   return 0;
 }

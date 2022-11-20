@@ -19,6 +19,7 @@
 enum Tokenkind {
   TK_RESERVED,
   TK_NUM,
+  TK_IDENT,
   TK_EOF,
 };
 
@@ -28,14 +29,15 @@ class Token {
       : kind_(TK_EOF)
       , next_(nullptr)
       , val_(0)
-      , str_() {}
+      , str_()
+      , strlen_(0) {}
 
   Token(Tokenkind kind, char* str, int len)
       : kind_(kind)
       , str_(str)
       , strlen_(len)
       , val_(0)
-      , next_() {}
+      , next_(nullptr) {}
 
   Token(Tokenkind kind, Token* tok, char* str, int len)
       : kind_(kind)
@@ -47,13 +49,16 @@ class Token {
   }
 
   // Creating token list from the source program.
-  static Token* TokenCreate(Token& head, char* prg);
+  static Token* TokenCreate(const Token& head, char* prg);
   // free token list.
   static void TokenFree(Token& head);
 
   // Check the current token->str is char op or not.
   // If the token's str is equal with op, return ture.
   static bool Consume(Token** tok, const char* op);
+  // Check whether the current string is specified
+  // identifier type
+  static Token* ConsumeIdent(Token** tok);
   // Check whether the current token's str is equal to op,
   // otherwise exit.
   static void Expect(Token** tok, const char* op);
@@ -67,6 +72,8 @@ class Token {
  private:
   // Get next token.
   static void NextToken(Token** tok) { *tok = (*tok)->next_; }
+
+  friend class Node;
 
   static char* prg_;
 

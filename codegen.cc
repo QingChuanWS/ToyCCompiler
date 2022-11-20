@@ -9,20 +9,46 @@
  * Copyright (c) 2022 by QingChuanWS, All Rights Reserved.
  */
 #include "codegen.h"
-#include "node.h"
 
-#define ASM_GEN(...) ASMGenerator(__VA_ARGS__)
+#include "node.h"
+#include "tools.h"
+
+#define ASM_GEN(...) AsmPrint(__VA_ARGS__)
 
 // recursive over state.
 template<typename T>
-void ASMGenerator(const T arg) {
+void AsmPrint(const T arg) {
   std::cout << arg << std::endl;
 }
 
 template<typename T, typename... Types>
-void ASMGenerator(const T first_arg, const Types... args) {
+void AsmPrint(const T first_arg, const Types... args) {
   std::cout << first_arg;
-  ASMGenerator(args...);
+  AsmPrint(args...);
+}
+
+void CodeGenerator::GetVarAddr(Node* node) {
+  if (node->kind_ == ND_VAR) {
+    int offset = (node->name_ - 'a' + 1) * 8;
+    ASM_GEN("  lea rax, [rbp-", offset, "]");
+    ASM_GEN("  push rax");
+    return;
+  }
+
+  Error("%c not an lvalue", node->name_);
+}
+
+void CodeGenerator::Load() {
+  ASM_GEN("  pop rax");
+  ASM_GEN("  mov rax, [rax]");
+  ASM_GEN("  push rax");
+}
+
+void CodeGenerator::Store() {
+  ASM_GEN("  pop rdi");
+  ASM_GEN("  pop rax");
+  ASM_GEN("  mov [rax], rdi");
+  ASM_GEN("  push rdi");
 }
 
 void CodeGenerator::CodeGen(Node* node) {
@@ -30,9 +56,19 @@ void CodeGenerator::CodeGen(Node* node) {
   ASM_GEN(".global main");
   ASM_GEN("main:");
 
+  // prologue; equally instruction "enter 0xD0,0".
+  ASM_GEN("  push rbp");
+  ASM_GEN("  mov rbp, rsp");
+  ASM_GEN("  sub rsp, 0xD0");
+
   for (; node != nullptr; node = node->next) {
     AST_CodeGen(node);
   }
+
+  // Epilogue; equally instruction leave.
+  ASM_GEN("  .L.return:");
+  ASM_GEN("  mov rsp, rbp");
+  ASM_GEN("  pop rbp");
 
   ASM_GEN("  ret\n");
 }
@@ -40,20 +76,26 @@ void CodeGenerator::CodeGen(Node* node) {
 // post-order for code-gen
 void CodeGenerator::AST_CodeGen(Node* node) {
   switch (node->kind_) {
-  case ND_NUM:
-    ASM_GEN("  push ", node->val_);
-    return;
+  case ND_NUM: ASM_GEN("  push ", node->val_); return;
   case ND_EXPR_STMT:
     AST_CodeGen(node->lhs_);
-    ASMGenerator("  add rsp, 8");
+    AsmPrint("  add rsp, 0x8");
+    return;
+  case ND_VAR: 
+    GetVarAddr(node);
+    Load();
+    return;
+  case ND_ASSIGN:
+    GetVarAddr(node->lhs_);
+    AST_CodeGen(node->rhs_);
+    Store();
     return;
   case ND_RETURN:
     AST_CodeGen(node->lhs_);
     ASM_GEN("  pop rax");
-    ASM_GEN("  ret");
+    ASM_GEN("  jmp .L.return");
     return;
-  default:
-    break;
+  default: break;
   }
 
   AST_CodeGen(node->lhs_);

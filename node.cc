@@ -37,7 +37,16 @@ Node* Node::Stmt(Token** tok) {
 }
 
 Node* Node::Expr(Token** tok) {
-  return Equality(tok);
+  return Assign(tok);
+}
+
+Node* Node::Assign(Token** tok) {
+  Node* node = Equality(tok);
+
+  if (Token::Consume(tok, "=")) {
+    node = new Node(ND_ASSIGN, node, Assign(tok));
+  }
+  return node;
 }
 
 Node* Node::Equality(Token** tok) {
@@ -106,7 +115,7 @@ Node* Node::Unary(Token** tok) {
     return Unary(tok);
   }
   if (Token::Consume(tok, "-")) {
-    return new Node(ND_SUB, new Node(0), Unary(tok));
+    return new Node(ND_SUB, new Node((long)0), Unary(tok));
   }
   return Primary(tok);
 }
@@ -117,7 +126,12 @@ Node* Node::Primary(Token** tok) {
     Token::Expect(tok, ")");
     return node;
   }
-  return new Node(Token::ExpectNumber(tok));
+  
+  Token* id_tok = Token::ConsumeIdent(tok);
+  if (id_tok != nullptr)
+    return new Node(*(id_tok->str_));
+  
+  return new Node((long)Token::ExpectNumber(tok));
 }
 
 // post-order for node delete

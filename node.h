@@ -25,31 +25,38 @@ enum NodeKind {
   ND_LT,          // <
   ND_LE,          // <=
   ND_NUM,         // number
+  ND_ASSIGN,      // =
   ND_RETURN,      // return
   ND_EXPR_STMT,   // expression statement
+  ND_VAR,         // variable
   ND_END,
 };
 
 class Node {
  public:
-  Node(NodeKind kind = ND_END)
-      : kind_(kind)
-      , next(nullptr)
-      , lhs_(nullptr)
-      , rhs_(nullptr)
-      , val_(0) {}
-  Node(NodeKind kind, Node* lhs, Node* rhs = nullptr)
+  Node(NodeKind kind = ND_END, Node* lhs = nullptr, Node* rhs = nullptr)
       : kind_(kind)
       , next(nullptr)
       , lhs_(lhs)
       , rhs_(rhs)
-      , val_(0) {}
-  Node(int val)
+      , val_(0)
+      , name_(' ') {}
+
+  Node(long val)
       : kind_(ND_NUM)
       , next(nullptr)
       , lhs_(nullptr)
       , rhs_(nullptr)
-      , val_(val) {}
+      , val_(val)
+      , name_(' ') {}
+
+  Node(char name)
+      : kind_(ND_VAR)
+      , next(nullptr)
+      , lhs_(nullptr)
+      , rhs_(nullptr)
+      , val_(0)
+      , name_(name) {}
 
   // post-order for AST delete
   static void NodeFree(Node* node);
@@ -60,8 +67,10 @@ class Node {
  private:
   // stmt = "return" expr ";" | expr ";"
   static Node* Stmt(Token** tok);
-  // expr = equality
+  // expr = assign
   static Node* Expr(Token** tok);
+  // assign = equality ("=" assign)?
+  static Node* Assign(Token** tok);
   // equality = relational ("==" relational | "!=" relational)
   static Node* Equality(Token** tok);
   // relational = add ("<" add | "<=" add | ">" add | ">=" add)
@@ -72,7 +81,7 @@ class Node {
   static Node* Mul(Token** tok);
   // unary = ("+" | "-") ? unary | primary
   static Node* Unary(Token** tok);
-  // primary = "(" expr ")" | num
+  // primary = "(" expr ")" | ident | num
   static Node* Primary(Token** tok);
 
   friend class CodeGenerator;
@@ -81,6 +90,7 @@ class Node {
   Node*    next;
   Node*    lhs_;
   Node*    rhs_;
+  char     name_;
   long     val_;
 };
 

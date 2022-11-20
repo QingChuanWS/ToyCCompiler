@@ -2,6 +2,7 @@ assert() {
   expected="$1"
   input="$2"
 
+  # valgrind --tool=memcheck --leak-check=full ./toyc "$input" > tmp.s
   ./toyc "$input" > tmp.s
   gcc -static -o tmp tmp.s
   ./tmp
@@ -13,6 +14,7 @@ assert() {
     echo "$input => $expected expected, but got $actual"
     exit 1
   fi
+  # read -p "Check complier memory" char
 }
 
 assert 0 'return 0;'
@@ -48,5 +50,8 @@ assert 0 'return 1>=2;'
 assert 1 'return 1; 2; 3;'
 assert 2 '1; return 2; 3;'
 assert 3 '1; 2; return 3;'
+
+assert 3 'a=3; return a;'
+assert 8 'a=3; z=5; return a+z;'
 
 echo OK

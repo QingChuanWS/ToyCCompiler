@@ -13,22 +13,32 @@
 
 #include "tools.h"
 
+#include <cctype>
+
 char* Token::prg_ = nullptr;
 
-Token* Token::TokenCreate(Token& head, char* prg) {
+Token* Token::TokenCreate(const Token& head, char* prg) {
   prg_       = prg;
-  Token* cur = &head;
+  Token* cur = const_cast<Token*>(&head);
   char*  p   = prg_;
   while (*p != '\0') {
     if (std::isspace(*p)) {
       p++;
       continue;
     }
-
+    // keyword "return"
     if (StartSwith(p, "return", 6) && !IsAlnum(p[6])) {
       cur->next_ = new Token(TK_RESERVED, p, 6);
       cur        = cur->next_;
       p += 6;
+      continue;
+    }
+
+    // indentifier
+    if (std::isalpha(*p)) {
+      cur->next_ = new Token(TK_IDENT, p, 1);
+      cur        = cur->next_;
+      p++;
       continue;
     }
 
@@ -80,6 +90,15 @@ bool Token::Consume(Token** tok, const char* op) {
   }
   NextToken(tok);
   return true;
+}
+
+Token* Token::ConsumeIdent(Token** tok) {
+  Token* cur_tok = *tok;
+  if (cur_tok->kind_ != TK_IDENT) {
+    return nullptr;
+  }
+  NextToken(tok);
+  return cur_tok;
 }
 
 void Token::Expect(Token** tok, const char* op) {
