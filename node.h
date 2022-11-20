@@ -24,30 +24,40 @@ enum NodeKind {
   ND_NE,    // !=
   ND_LT,    // <
   ND_LE,    // <=
-  ND_NUM,
+  ND_NUM,   // number
+  ND_END,
 };
 
 class Node {
  public:
-  Node(NodeKind kind)
+  Node(NodeKind kind = ND_END)
       : kind_(kind)
+      , next(nullptr)
       , lhs_(nullptr)
       , rhs_(nullptr)
       , val_(0) {}
   Node(NodeKind kind, Node* lhs, Node* rhs)
       : kind_(kind)
+      , next(nullptr)
       , lhs_(lhs)
       , rhs_(rhs)
       , val_(0) {}
   Node(int val)
       : kind_(ND_NUM)
+      , next(nullptr)
       , lhs_(nullptr)
       , rhs_(nullptr)
       , val_(val) {}
 
   // post-order for AST delete
   static void NodeFree(Node* node);
+  // parsing token list and generate AST.
+  // program = stmt*
+  static Node* Program(Token** tok);
 
+ private:
+  // stmt = expr ";"
+  static Node* Stmt(Token** tok);
   // expr = equality
   static Node* Expr(Token** tok);
   // equality = relational ("==" relational | "!=" relational)
@@ -63,10 +73,10 @@ class Node {
   // primary = "(" expr ")" | num
   static Node* Primary(Token** tok);
 
- private:
   friend class CodeGenerator;
 
   NodeKind kind_;
+  Node*    next;
   Node*    lhs_;
   Node*    rhs_;
   long     val_;

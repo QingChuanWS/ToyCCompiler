@@ -14,6 +14,23 @@
 #include "token.h"
 #include "tools.h"
 
+Node* Node::Program(Token **tok){
+  Node head = Node();
+  Node* cur = &head;
+
+  while(!Token::IsEof(*tok)){
+    cur->next = Stmt(tok);
+    cur = cur->next;
+  }
+  return head.next;
+}
+
+Node* Node::Stmt(Token** tok){
+  Node* node = Expr(tok);
+  Token::Expect(tok, ";");
+  return node;
+}
+
 Node* Node::Expr(Token** tok) {
   return Equality(tok);
 }

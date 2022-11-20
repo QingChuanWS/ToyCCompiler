@@ -25,7 +25,7 @@ int main(int argc, char** argv) {
 
   Token  head;
   Token* cur  = Token::TokenCreate(head, argv[1]);
-  Node*  node = Node::Expr(&cur);
+  Node*  node = Node::Program(&cur);
 
   CodeGenerator gene;
   gene.CodeGen(node);

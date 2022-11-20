@@ -29,9 +29,12 @@ void CodeGenerator::CodeGen(Node* node) {
   ASM_GEN(".global main");
   ASM_GEN("main:");
 
-  AST_CodeGen(node);
+  for (; node != nullptr; node = node->next) {
+    AST_CodeGen(node);
 
-  ASM_GEN("  pop rax\n");
+    ASM_GEN("  pop rax\n");
+  }
+  
   ASM_GEN("  ret\n");
 }
 
