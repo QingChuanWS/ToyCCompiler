@@ -16,16 +16,17 @@
 #include "tools.h"
 
 enum NodeKind {
-  ND_ADD,      // +
-  ND_SUB,      // -
-  ND_MUL,      // *
-  ND_DIV,      // /
-  ND_EQ,       // ==
-  ND_NE,       // !=
-  ND_LT,       // <
-  ND_LE,       // <=
-  ND_NUM,      // number
-  ND_RETURN,   // return
+  ND_ADD,         // +
+  ND_SUB,         // -
+  ND_MUL,         // *
+  ND_DIV,         // /
+  ND_EQ,          // ==
+  ND_NE,          // !=
+  ND_LT,          // <
+  ND_LE,          // <=
+  ND_NUM,         // number
+  ND_RETURN,      // return
+  ND_EXPR_STMT,   // expression statement
   ND_END,
 };
 

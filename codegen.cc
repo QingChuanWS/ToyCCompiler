@@ -32,8 +32,6 @@ void CodeGenerator::CodeGen(Node* node) {
 
   for (; node != nullptr; node = node->next) {
     AST_CodeGen(node);
-
-    ASM_GEN("  pop rax\n");
   }
 
   ASM_GEN("  ret\n");
@@ -44,6 +42,10 @@ void CodeGenerator::AST_CodeGen(Node* node) {
   switch (node->kind_) {
   case ND_NUM:
     ASM_GEN("  push ", node->val_);
+    return;
+  case ND_EXPR_STMT:
+    AST_CodeGen(node->lhs_);
+    ASMGenerator("  add rsp, 8");
     return;
   case ND_RETURN:
     AST_CodeGen(node->lhs_);

@@ -31,7 +31,7 @@ Node* Node::Stmt(Token** tok) {
     Token::Expect(tok, ";");
     return node;
   }
-  Node* node = Expr(tok);
+  Node* node = new Node(ND_EXPR_STMT, Expr(tok));
   Token::Expect(tok, ";");
   return node;
 }
