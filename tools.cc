@@ -41,3 +41,11 @@ void LOG(const char* fmt, ...) {
 bool StartSwith(const char* q, const char* p, int len) {
   return strncmp(q, p, len) == 0;
 }
+
+bool IsAlpha(char c) {
+  return ('a' <= c && c <= 'z') || ('A' <= c && c <= 'Z') || c == '_';
+}
+
+bool IsAlnum(char c) {
+  return IsAlpha(c) || ('0' <= c && c <= '9');
+}

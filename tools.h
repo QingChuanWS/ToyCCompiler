@@ -28,5 +28,9 @@ void ErrorAt(char* prg, char* loc, const char* fmt, ...);
 void Log(const char* fmt, ...);
 // compare two string based strncmp
 bool StartSwith(const char * q, const char* p, int len);
+// check whether current character is alpha
+bool IsAlpha(char c);
+// check whether current character is alpha or number
+bool IsAlnum(char c); 
 
 #endif   // !TOOLS_GRUAD

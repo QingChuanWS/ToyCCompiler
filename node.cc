@@ -14,18 +14,23 @@
 #include "token.h"
 #include "tools.h"
 
-Node* Node::Program(Token **tok){
-  Node head = Node();
-  Node* cur = &head;
+Node* Node::Program(Token** tok) {
+  Node  head = Node();
+  Node* cur  = &head;
 
-  while(!Token::IsEof(*tok)){
+  while (!Token::IsEof(*tok)) {
     cur->next = Stmt(tok);
-    cur = cur->next;
+    cur       = cur->next;
   }
   return head.next;
 }
 
-Node* Node::Stmt(Token** tok){
+Node* Node::Stmt(Token** tok) {
+  if (Token::Consume(tok, "return")) {
+    Node* node = new Node(ND_RETURN, Expr(tok));
+    Token::Expect(tok, ";");
+    return node;
+  }
   Node* node = Expr(tok);
   Token::Expect(tok, ";");
   return node;
@@ -131,5 +136,3 @@ void Node::NodeFree(Node* node) {
   delete node;
   return;
 }
-
-

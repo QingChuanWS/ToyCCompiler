@@ -16,15 +16,16 @@
 #include "tools.h"
 
 enum NodeKind {
-  ND_ADD,   // +
-  ND_SUB,   // -
-  ND_MUL,   // *
-  ND_DIV,   // /
-  ND_EQ,    // ==
-  ND_NE,    // !=
-  ND_LT,    // <
-  ND_LE,    // <=
-  ND_NUM,   // number
+  ND_ADD,      // +
+  ND_SUB,      // -
+  ND_MUL,      // *
+  ND_DIV,      // /
+  ND_EQ,       // ==
+  ND_NE,       // !=
+  ND_LT,       // <
+  ND_LE,       // <=
+  ND_NUM,      // number
+  ND_RETURN,   // return
   ND_END,
 };
 
@@ -36,7 +37,7 @@ class Node {
       , lhs_(nullptr)
       , rhs_(nullptr)
       , val_(0) {}
-  Node(NodeKind kind, Node* lhs, Node* rhs)
+  Node(NodeKind kind, Node* lhs, Node* rhs = nullptr)
       : kind_(kind)
       , next(nullptr)
       , lhs_(lhs)
@@ -56,7 +57,7 @@ class Node {
   static Node* Program(Token** tok);
 
  private:
-  // stmt = expr ";"
+  // stmt = "return" expr ";" | expr ";"
   static Node* Stmt(Token** tok);
   // expr = equality
   static Node* Expr(Token** tok);

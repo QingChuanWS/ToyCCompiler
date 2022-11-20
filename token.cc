@@ -25,6 +25,13 @@ Token* Token::TokenCreate(Token& head, char* prg) {
       continue;
     }
 
+    if (StartSwith(p, "return", 6) && !IsAlnum(p[6])) {
+      cur->next_ = new Token(TK_RESERVED, p, 6);
+      cur        = cur->next_;
+      p += 6;
+      continue;
+    }
+
     if (StartSwith(p, "==", 2) || StartSwith(p, "!=", 2) ||
         StartSwith(p, "<=", 2) || StartSwith(p, ">=", 2)) {
       cur->next_ = new Token(TK_RESERVED, p, 2);

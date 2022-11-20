@@ -9,6 +9,7 @@
  * Copyright (c) 2022 by QingChuanWS, All Rights Reserved.
  */
 #include "codegen.h"
+#include "node.h"
 
 #define ASM_GEN(...) ASMGenerator(__VA_ARGS__)
 
@@ -34,15 +35,23 @@ void CodeGenerator::CodeGen(Node* node) {
 
     ASM_GEN("  pop rax\n");
   }
-  
+
   ASM_GEN("  ret\n");
 }
 
 // post-order for code-gen
 void CodeGenerator::AST_CodeGen(Node* node) {
-  if (node->kind_ == ND_NUM) {
+  switch (node->kind_) {
+  case ND_NUM:
     ASM_GEN("  push ", node->val_);
     return;
+  case ND_RETURN:
+    AST_CodeGen(node->lhs_);
+    ASM_GEN("  pop rax");
+    ASM_GEN("  ret");
+    return;
+  default:
+    break;
   }
 
   AST_CodeGen(node->lhs_);
