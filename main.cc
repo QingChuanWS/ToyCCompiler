@@ -27,7 +27,7 @@ int main(int argc, char** argv) {
 
   Token     head = Token();
   Token*    cur  = Token::TokenCreate(head, argv[1]);
-  Function prog = Function::Program(&cur);
+  Function prog = Function::Parse(&cur);
 
   prog.OffsetCal();
 

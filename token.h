@@ -72,6 +72,8 @@ class Token {
  private:
   // Get next token.
   static void NextToken(Token** tok) { *tok = (*tok)->next_; }
+  // matching reserved keyword based start.
+  static const char* StartWithReserved(char* p);
 
   friend class Function;
   friend class Node;

@@ -10,6 +10,7 @@
  */
 
 #include "token.h"
+
 #include "tools.h"
 
 #include <cctype>
@@ -26,37 +27,31 @@ Token* Token::TokenCreate(const Token& head, char* prg) {
       continue;
     }
 
-    // keyword "return"
-    if (StartSwith(p, "return", 6) && !IsAlnum(p[6])) {
-      cur->next_ = new Token(TK_RESERVED, p, 6);
+    // keyword and ops match.
+    const char* kw = StartWithReserved(p);
+    if (kw != nullptr) {
+      int kw_size = std::strlen(kw);
+      cur->next_  = new Token(TK_RESERVED, p, kw_size);
+      cur         = cur->next_;
+      p += kw_size;
+      continue;
+    }
+
+    if (std::strchr("+-*/()<>;=", *p)) {
+      cur->next_ = new Token(TK_RESERVED, p, 1);
       cur        = cur->next_;
-      p += 6;
+      p++;
       continue;
     }
 
     // indentifier
-    if(IsAlpha(*p)){
-      char * q = p++;
-      while(IsAlnum(*p)){
+    if (IsAlpha(*p)) {
+      char* q = p++;
+      while (IsAlnum(*p)) {
         p++;
       }
       cur->next_ = new Token(TK_IDENT, cur, q, p - q);
-      cur = cur->next_;
-      continue;
-    }
-
-    if (StartSwith(p, "==", 2) || StartSwith(p, "!=", 2) ||
-        StartSwith(p, "<=", 2) || StartSwith(p, ">=", 2)) {
-      cur->next_ = new Token(TK_RESERVED, p, 2);
       cur        = cur->next_;
-      p += 2;
-      continue;
-    }
-
-    if (std::ispunct(*p)) {
-      cur->next_ = new Token(TK_RESERVED, p, 1);
-      cur        = cur->next_;
-      p++;
       continue;
     }
 
@@ -83,6 +78,26 @@ void Token::TokenFree(Token& head) {
     delete cur;
     cur = head.next_;
   }
+}
+
+const char* Token::StartWithReserved(char* p) {
+  static const char* kw[] = {"return", "if", "else"};
+  for (int i = 0; i < sizeof(kw) / sizeof(*kw); i++) {
+    int kw_size = std::strlen(kw[i]);
+    if (StartSwith(p, kw[i], kw_size) && !IsAlnum(p[kw_size])) {
+      return kw[i];
+    }
+  }
+
+  static const char* ops[] = {">=", "==", "!=", "<="};
+  for (int i = 0; i < sizeof(ops) / sizeof(*ops); i++) {
+    int op_size = std::strlen(ops[i]);
+    if (StartSwith(p, ops[i], op_size)) {
+      return ops[i];
+    }
+  }
+
+  return nullptr;
 }
 
 bool Token::Consume(Token** tok, const char* op) {

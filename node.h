@@ -29,6 +29,7 @@ enum NodeKind {
   ND_NUM,         // number
   ND_ASSIGN,      // =
   ND_RETURN,      // return
+  ND_IF,          // if
   ND_EXPR_STMT,   // expression statement
   ND_VAR,         // variable
   ND_END,
@@ -41,6 +42,9 @@ class Node {
       , next_(nullptr)
       , lhs_(lhs)
       , rhs_(rhs)
+      , cond_(nullptr)
+      , then_(nullptr)
+      , els_(nullptr)
       , val_(0)
       , var_() {}
 
@@ -68,7 +72,9 @@ class Node {
   // parsing token list and generate AST.
   // program = node::stmt*
   static Node* Program(Token** tok);
-  // stmt = "return" expr ";" | expr ";"
+  // stmt = "return" expr ";" | 
+  // "if" "(" expr ")" stmt ("else" stmt)?
+  // | expr ";"
   static Node* Stmt(Token** tok);
   // expr = assign
   static Node* Expr(Token** tok);
@@ -94,6 +100,12 @@ class Node {
   Node*    next_;   // next node (next AST)
   Node*    lhs_;    // left-head side
   Node*    rhs_;    // right-head side
+
+  // "if" statement
+  Node*    cond_;
+  Node*    then_;
+  Node*    els_;
+  
   Var*     var_;    // use it if kind == ND_VAR
   long     val_;    // use it if Kind == ND_NUM
 };

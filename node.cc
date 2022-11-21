@@ -35,6 +35,19 @@ Node* Node::Stmt(Token** tok) {
     Token::Expect(tok, ";");
     return node;
   }
+
+  if (Token::Consume(tok, "if")) {
+    Node* node = new Node(ND_IF);
+    Token::Expect(tok, "(");
+    node->cond_ = Expr(tok);
+    Token::Expect(tok, ")");
+    node->then_ = Stmt(tok);
+    if (Token::Consume(tok, "else")) {
+      node->els_ = Stmt(tok);
+    }
+    return node;
+  }
+
   Node* node = new Node(ND_EXPR_STMT, Expr(tok));
   Token::Expect(tok, ";");
   return node;
@@ -144,16 +157,22 @@ Node* Node::Primary(Token** tok) {
   return new Node((long)Token::ExpectNumber(tok));
 }
 
-void Node::NodeListFree(Node* node){
-  Node* cur= node;
-  while(cur != nullptr){
+void Node::NodeListFree(Node* node) {
+  Node* cur = node;
+  while (cur != nullptr) {
     node = node->next_;
+    if(cur->kind_ == ND_IF){
+      NodeFree(cur->cond_);
+      NodeFree(cur->then_);
+      NodeFree(cur->els_);
+    }
     NodeFree(cur);
     cur = node;
   }
 }
 
 // post-order for node delete
+// TODO: rename this function to AST_Tree free
 void Node::NodeFree(Node* node) {
   if (node == nullptr)
     return;

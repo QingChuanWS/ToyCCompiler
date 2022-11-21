@@ -39,7 +39,7 @@ void LOG(const char* fmt, ...) {
 }
 
 bool StartSwith(const char* q, const char* p, int len) {
-  return strncmp(q, p, len) == 0;
+  return memcmp(q, p, len) == 0;
 }
 
 bool IsAlpha(char c) {

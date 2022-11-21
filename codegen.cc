@@ -13,6 +13,8 @@
 #include "node.h"
 #include "tools.h"
 
+static int labelseq = 0;
+
 #define ASM_GEN(...) AsmPrint(__VA_ARGS__)
 
 // recursive over state.
@@ -94,6 +96,28 @@ void CodeGenerator::AST_CodeGen(Node* node) {
     ASM_GEN("  pop rax");
     ASM_GEN("  jmp .L.return");
     return;
+  case ND_IF: {
+    int seq = labelseq++;
+    if (node->els_ != nullptr) {
+      AST_CodeGen(node->cond_);
+      ASM_GEN("  pop rax");
+      ASM_GEN("  cmp rax, 0");
+      ASM_GEN("  je .Lelse", seq);
+      AST_CodeGen(node->then_);
+      ASM_GEN("  jmp .Lend", seq);
+      ASM_GEN("  .Lelse", seq, ":");
+      AST_CodeGen(node->els_);
+      ASM_GEN("  .Lend", seq, ":");
+    } else {
+      AST_CodeGen(node->cond_);
+      ASM_GEN("  pop rax");
+      ASM_GEN("  cmp rax, 0");
+      ASM_GEN("  je .Lend", seq);
+      AST_CodeGen(node->then_);
+      ASM_GEN("  .Lend", seq, ":");
+    }
+    return;
+  }
   default: break;
   }
 

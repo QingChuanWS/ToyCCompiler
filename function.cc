@@ -10,7 +10,7 @@
  */
 #include "function.h"
 
-Function Function::Program(Token** tok) {
+Function Function::Parse(Token** tok) {
   locals = nullptr;
 
   Node* cur = Node::Program(tok);
