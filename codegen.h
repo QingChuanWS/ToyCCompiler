@@ -23,9 +23,12 @@ class CodeGenerator {
 
  private:
   static void GetVarAddr(Node* node);
-  static void Load();
-  static void Store();
-  static void AST_CodeGen(Node* node);
+  static void Push(void);
+  static void Pop(const char* arg);
+  static void ExprGen(Node* node);
+  static void StmtGen(Node* node);
+
+  static int depth;
 };
 
 #endif   // !CODEGEN_GRUAD

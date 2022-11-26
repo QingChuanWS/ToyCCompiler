@@ -38,8 +38,8 @@ void LOG(const char* fmt, ...) {
   fprintf(stderr, "\n");
 }
 
-bool StartSwith(const char* q, const char* p, int len) {
-  return memcmp(q, p, len) == 0;
+bool StrEqual(const char* src, const char* dst, int src_len) {
+  return memcmp(src, dst, src_len) == 0 && dst[src_len] == '\0';
 }
 
 bool IsAlpha(char c) {

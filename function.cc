@@ -10,11 +10,15 @@
  */
 #include "function.h"
 
-Function Function::Parse(Token** tok) {
+Function Function::Parse(Token* tok) {
   locals = nullptr;
 
   Node* cur = Node::Program(tok);
   return Function(cur, locals);
+}
+
+static int Align2(int n, int align) {
+  return (n + align - 1) / align * align;
 }
 
 void Function::OffsetCal() {
@@ -23,7 +27,7 @@ void Function::OffsetCal() {
     offset += 8;
     cur->offset_ = offset;
   }
-  stack_size_ = offset;
+  stack_size_ = Align2(offset, 16);;
 }
 
 void Function::FunctionFree() {

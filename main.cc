@@ -15,21 +15,15 @@
 #include "token.h"
 #include "tools.h"
 
-#include <cassert>
-#include <cctype>
-#include <string>
-
 int main(int argc, char** argv) {
   if (argc != 2) {
     fprintf(stderr, "%s: invalid number of arguments\n", argv[0]);
     return 1;
   }
 
-  Token     head = Token();
-  Token*    cur  = Token::TokenCreate(head, argv[1]);
-  Function prog = Function::Parse(&cur);
-
-  prog.OffsetCal();
+  Token    head = Token();
+  Token*   cur  = Token::TokenCreate(head, argv[1]);
+  Function prog = Function::Parse(cur);
 
   CodeGenerator gene;
   gene.CodeGen(&prog);

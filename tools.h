@@ -16,6 +16,7 @@
 #include <cstdio>
 #include <cstring>
 #include <iostream>
+#include <cassert>
 
 #define DEBUG(expr) assert(expr)
 #define DLOG(expr) Log(expr)
@@ -27,7 +28,7 @@ void ErrorAt(char* prg, char* loc, const char* fmt, ...);
 // Log message
 void Log(const char* fmt, ...);
 // compare two string based strncmp
-bool StartSwith(const char * q, const char* p, int len);
+bool StrEqual(const char* src, const char* dst, int src_len);
 // check whether current character is alpha
 bool IsAlpha(char c);
 // check whether current character is alpha or number

@@ -17,9 +17,10 @@
 #include <cstring>
 
 enum Tokenkind {
-  TK_RESERVED,
-  TK_NUM,
+  TK_PUNCT,
   TK_IDENT,
+  TK_KEYWORD,
+  TK_NUM,
   TK_EOF,
 };
 
@@ -55,29 +56,27 @@ class Token {
 
   // Check the current token->str is char op or not.
   // If the token's str is equal with op, return ture.
-  static bool Consume(Token** tok, const char* op);
-  // Check whether the current string is specified
-  // identifier type
-  static Token* ConsumeIdent(Token** tok);
-  // Check whether the current token's str is equal to op,
-  // otherwise exit.
-  static void Expect(Token** tok, const char* op);
-  // Check whether the current token's kind is number,
-  // if yse, return value, otherwise exit.
-  static long ExpectNumber(Token** tok);
+  Token* SkipToken(const char* op);
   // Check whether the current token's kind is EOF,
   // otherwise return false.
-  static bool IsEof(Token* tok) { return tok->kind_ == TK_EOF; }
+  bool IsEof() { return this->kind_ == TK_EOF; }
+  // Check whether Token string equal special string
+  bool Equal(const char* op);
+
+  // Report an error in token list
+  static void ErrorTok(char* prg, Token* tok, const char* fmt, ...);
 
  private:
-  // Get next token.
-  static void NextToken(Token** tok) { *tok = (*tok)->next_; }
   // matching reserved keyword based start.
-  static const char* StartWithReserved(char* p);
+  static void ConvertToReserved(Token* tok);
+  // matching punction
+  static int ReadPunct(char* p);
 
   friend class Function;
   friend class Node;
   friend class Var;
+
+  friend void ErrorTok(char* prg, Token* tok, const char* fmt, ...);
 
   static char* prg_;
 

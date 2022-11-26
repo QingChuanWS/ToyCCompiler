@@ -21,7 +21,7 @@ struct Function {
       , stack_size_(0) {}
 
   // parsing token list and generate AST.
-  static Function Parse(Token** tok);
+  static Function Parse(Token* tok);
 
   void FunctionFree();
   void OffsetCal();
