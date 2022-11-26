@@ -33,7 +33,7 @@ enum NodeKind {
   ND_RETURN,      // return
   ND_BLOCK,       // { ... }
   ND_IF,          // if
-  ND_FOR,         // for
+  ND_FOR,         // for and while
   ND_VAR,         // variable
   ND_END,
 };
@@ -129,6 +129,7 @@ class Node {
   // stmt = "return" expr ";" |
   // "if" "(" expr ")" stmt ("else" stmt)? |
   // "for" "(" expr-stmt expr? ";" expr? ")" stmt |
+  // "while" "(" expr ")" stmt |
   // "{" compuound-stmt |
   // expr-stmt
   static Node* Stmt(Token** rest, Token* tok);

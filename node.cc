@@ -84,6 +84,19 @@ Node* Node::Stmt(Token** rest, Token* tok) {
     return node;
   }
 
+  if (tok->Equal("while")) {
+    Node* node = new Node(ND_FOR);
+    tok        = tok->next_;
+    tok        = tok->SkipToken("(");
+
+    node->cond_ = Expr(&tok, tok);
+    tok         = tok->SkipToken(")");
+
+    node->then_ = Stmt(rest, tok);
+
+    return node;
+  }
+
   if (tok->Equal("{")) {
     return CompoundStmt(rest, tok->next_);
   }
@@ -250,7 +263,7 @@ void Node::NodeListFree(Node* node) {
       NodeListFree(cur->then_);
       NodeListFree(cur->els_);
     }
-    if(cur->kind_ == ND_FOR){
+    if (cur->kind_ == ND_FOR) {
       NodeFree(cur->init_);
       NodeFree(cur->cond_);
       NodeFree(cur->inc_);

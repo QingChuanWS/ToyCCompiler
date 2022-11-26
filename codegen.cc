@@ -105,7 +105,8 @@ void CodeGenerator::StmtGen(Node* node) {
   }
   case ND_FOR: {
     int seq = Count();
-    StmtGen(node->init_);
+    if(node->init_ != nullptr)
+      StmtGen(node->init_);
     ASM_GEN(".L.begin.", seq, ":");
     if (node->cond_ != nullptr) {
       ExprGen(node->cond_);
