@@ -62,7 +62,6 @@ class Token {
   bool IsEof() { return this->kind_ == TK_EOF; }
   // Check whether Token string equal special string
   bool Equal(const char* op);
-
   // Report an error in token list
   static void ErrorTok(char* prg, Token* tok, const char* fmt, ...);
 

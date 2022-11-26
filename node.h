@@ -33,6 +33,7 @@ enum NodeKind {
   ND_RETURN,      // return
   ND_BLOCK,       // { ... }
   ND_IF,          // if
+  ND_FOR,         // for
   ND_VAR,         // variable
   ND_END,
 };
@@ -48,6 +49,8 @@ class Node {
       , then_(nullptr)
       , els_(nullptr)
       , body_(nullptr)
+      , init_(nullptr)
+      , inc_(nullptr)
       , val_(0)
       , var_() {}
 
@@ -60,6 +63,8 @@ class Node {
       , then_(nullptr)
       , els_(nullptr)
       , body_(nullptr)
+      , init_(nullptr)
+      , inc_(nullptr)
       , val_(0)
       , var_() {
     if (kind == ND_BLOCK) {
@@ -78,6 +83,8 @@ class Node {
       , then_(nullptr)
       , els_(nullptr)
       , body_(nullptr)
+      , init_(nullptr)
+      , inc_(nullptr)
       , val_(0)
       , var_() {}
 
@@ -90,6 +97,8 @@ class Node {
       , then_(nullptr)
       , els_(nullptr)
       , body_(nullptr)
+      , init_(nullptr)
+      , inc_(nullptr)
       , val_(val)
       , var_() {}
 
@@ -102,6 +111,8 @@ class Node {
       , then_(nullptr)
       , els_(nullptr)
       , body_(nullptr)
+      , init_(nullptr)
+      , inc_(nullptr)
       , val_(0)
       , var_(var) {}
 
@@ -111,14 +122,15 @@ class Node {
   // post-order for AST delete
   static void NodeFree(Node* node);
   // parsing token list and generate AST.
-  // program = node::stmt*
+  // program = stmt*
   static Node* Program(Token* tok);
   // compound-stmt = stmt* "}"
   static Node* CompoundStmt(Token** rest, Token* tok);
   // stmt = "return" expr ";" |
   // "if" "(" expr ")" stmt ("else" stmt)? |
+  // "for" "(" expr-stmt expr? ";" expr? ")" stmt |
   // "{" compuound-stmt |
-  // ExprStmt
+  // expr-stmt
   static Node* Stmt(Token** rest, Token* tok);
   // expr-stmt = expr ";"
   static Node* ExprStmt(Token** rest, Token* tok);
@@ -158,6 +170,10 @@ class Node {
   Node* cond_;
   Node* then_;
   Node* els_;
+
+  // for "for" statement
+  Node* init_;
+  Node* inc_;
 
   Var* var_;   // use it if kind == ND_VAR
   long val_;   // use it if Kind == ND_NUM

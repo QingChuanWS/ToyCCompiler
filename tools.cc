@@ -49,3 +49,7 @@ bool IsAlpha(char c) {
 bool IsAlnum(char c) {
   return IsAlpha(c) || ('0' <= c && c <= '9');
 }
+
+int AlignTo(int n, int align) {
+  return (n + align - 1) / align * align;
+}

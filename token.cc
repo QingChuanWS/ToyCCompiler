@@ -85,7 +85,7 @@ int Token::ReadPunct(char* p) {
 }
 
 void Token::ConvertToReserved(Token* tok) {
-  static const char* kw[] = {"return", "if", "else"};
+  static const char* kw[] = {"return", "if", "else", "for"};
   for (Token* t = tok; t != nullptr; t = t->next_) {
     for (int i = 0; i < sizeof(kw) / sizeof(*kw); i++) {
       if (StrEqual(t->str_, kw[i], t->strlen_)) {

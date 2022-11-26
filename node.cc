@@ -40,6 +40,7 @@ Node* Node::CompoundStmt(Token** rest, Token* tok) {
 
 // stmt = "return" expr ";" |
 // "if" "(" expr ")" stmt ("else" stmt)? |
+// "for" "(" expr-stmt expr? ";" expr? ")" stmt |
 // "{" compuound-stmt |
 // expr-stmt
 Node* Node::Stmt(Token** rest, Token* tok) {
@@ -58,6 +59,28 @@ Node* Node::Stmt(Token** rest, Token* tok) {
       node->els_ = Stmt(&tok, tok->next_);
     }
     *rest = tok;
+    return node;
+  }
+
+  if (tok->Equal("for")) {
+    Node* node = new Node(ND_FOR);
+    tok        = tok->next_;
+    tok        = tok->SkipToken("(");
+
+    node->init_ = ExprStmt(&tok, tok);
+
+    if (!tok->Equal(";")) {
+      node->cond_ = Expr(&tok, tok);
+    }
+    tok = tok->SkipToken(";");
+
+    if (!tok->Equal(")")) {
+      node->inc_ = Expr(&tok, tok);
+    }
+    tok = tok->SkipToken(")");
+    // then branch, not support {...}
+    node->then_ = Stmt(rest, tok);
+
     return node;
   }
 
@@ -80,6 +103,7 @@ Node* Node::ExprStmt(Token** rest, Token* tok) {
   return node;
 }
 
+// expr = assign
 Node* Node::Expr(Token** rest, Token* tok) {
   return Assign(rest, tok);
 }
@@ -225,6 +249,12 @@ void Node::NodeListFree(Node* node) {
       NodeFree(cur->cond_);
       NodeListFree(cur->then_);
       NodeListFree(cur->els_);
+    }
+    if(cur->kind_ == ND_FOR){
+      NodeFree(cur->init_);
+      NodeFree(cur->cond_);
+      NodeFree(cur->inc_);
+      NodeListFree(cur->then_);
     }
     if (cur->kind_ == ND_BLOCK) {
       NodeListFree(cur->body_);

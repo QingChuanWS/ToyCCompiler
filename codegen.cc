@@ -13,9 +13,9 @@
 #include "node.h"
 #include "tools.h"
 
-static int CountIF() {
-  static int if_count = 0;
-  return if_count++;
+static int Count() {
+  static int count = 0;
+  return count++;
 }
 
 int CodeGenerator::depth = 0;
@@ -90,17 +90,34 @@ void CodeGenerator::StmtGen(Node* node) {
     ASM_GEN("  jmp .L.return");
     return;
   case ND_IF: {
-    int seq = CountIF();
+    int seq = Count();
     ExprGen(node->cond_);
     ASM_GEN("  cmp \%rax, 0");
-    ASM_GEN("  je .Lelse", seq);
+    ASM_GEN("  je .L.else.", seq);
     StmtGen(node->then_);
-    ASM_GEN("  jmp .Lend", seq);
-    ASM_GEN(".Lelse", seq, ":");
+    ASM_GEN("  jmp .L.end.", seq);
+    ASM_GEN(".L.else.", seq, ":");
     if (node->els_ != nullptr) {
       StmtGen(node->els_);
     }
-    ASM_GEN(".Lend", seq, ":");
+    ASM_GEN(".L.end.", seq, ":");
+    return;
+  }
+  case ND_FOR: {
+    int seq = Count();
+    StmtGen(node->init_);
+    ASM_GEN(".L.begin.", seq, ":");
+    if (node->cond_ != nullptr) {
+      ExprGen(node->cond_);
+      ASM_GEN("  cmp \%rax, 0");
+      ASM_GEN("  je .L.end.", seq);
+    }
+    StmtGen(node->then_);
+    if (node->inc_ != nullptr) {
+      ExprGen(node->inc_);
+    }
+    ASM_GEN("  jmp .L.begin.", seq);
+    ASM_GEN(".L.end.", seq, ":");
     return;
   }
   default: break;

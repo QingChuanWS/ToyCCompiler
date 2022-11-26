@@ -16,10 +16,9 @@
 Var* locals;
 
 Var* Var::Find(Token* tok) {
-  for (Var* cur = this; cur != nullptr; cur = cur->next_) {
-    if (std::strlen(cur->name_) == tok->strlen_ &&
-        strncmp(cur->name_, tok->str_, tok->strlen_) == 0) {
-      return cur;
+  for (Var* v = this; v != nullptr; v = v->next_) {
+    if (tok->Equal(v->name_)) {
+      return v;
     }
   }
   return nullptr;
@@ -29,7 +28,7 @@ void Var::VarFree(Var* head){
   Var* cur = head;
   while(cur != nullptr){
     head = head->next_;
-    delete cur->name_;
+    free(cur->name_);
     delete cur;
     cur = head;
   }

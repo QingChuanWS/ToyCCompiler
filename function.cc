@@ -17,10 +17,6 @@ Function Function::Parse(Token* tok) {
   return Function(cur, locals);
 }
 
-static int AlignTo(int n, int align) {
-  return (n + align - 1) / align * align;
-}
-
 void Function::OffsetCal() {
   int offset = 0;
   for (Var* cur = var_head_; cur != nullptr; cur = cur->next_) {

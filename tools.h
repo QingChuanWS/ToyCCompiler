@@ -33,5 +33,7 @@ bool StrEqual(const char* src, const char* dst, int src_len);
 bool IsAlpha(char c);
 // check whether current character is alpha or number
 bool IsAlnum(char c); 
+// round up `n` to the nearest multiple of `align`.
+int AlignTo(int n, int align);
 
 #endif   // !TOOLS_GRUAD
