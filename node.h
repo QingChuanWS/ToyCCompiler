@@ -113,13 +113,13 @@ class Node {
   // parsing token list and generate AST.
   // program = node::stmt*
   static Node* Program(Token* tok);
+  // compound-stmt = stmt* "}"
+  static Node* CompoundStmt(Token** rest, Token* tok);
   // stmt = "return" expr ";" |
   // "if" "(" expr ")" stmt ("else" stmt)? |
   // "{" compuound-stmt |
   // ExprStmt
   static Node* Stmt(Token** rest, Token* tok);
-  // compound-stmt = stmt* "}"
-  static Node* CompoundStmt(Token** rest, Token* tok);
   // expr-stmt = expr ";"
   static Node* ExprStmt(Token** rest, Token* tok);
   // expr = assign

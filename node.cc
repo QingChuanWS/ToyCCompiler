@@ -24,6 +24,20 @@ Node* Node::Program(Token* tok) {
   return CompoundStmt(&tok, tok);
 }
 
+// compound-stmt = stmt* "}"
+Node* Node::CompoundStmt(Token** rest, Token* tok) {
+  Node  head = Node(ND_END);
+  Node* cur  = &head;
+
+  while (!tok->Equal("}")) {
+    cur->next_ = Node::Stmt(&tok, tok);
+    cur        = cur->next_;
+  }
+  Node* node = new Node(ND_BLOCK, head.next_);
+  *rest      = tok->next_;
+  return node;
+}
+
 // stmt = "return" expr ";" |
 // "if" "(" expr ")" stmt ("else" stmt)? |
 // "{" compuound-stmt |
@@ -54,22 +68,13 @@ Node* Node::Stmt(Token** rest, Token* tok) {
   return ExprStmt(rest, tok);
 }
 
-// compound-stmt = stmt* "}"
-Node* Node::CompoundStmt(Token** rest, Token* tok) {
-  Node  head = Node(ND_END);
-  Node* cur  = &head;
-
-  while (!tok->Equal("}")) {
-    cur->next_ = Node::Stmt(&tok, tok);
-    cur        = cur->next_;
-  }
-  Node* node =  new Node(ND_BLOCK, head.next_);
-  *rest = tok->next_;
-  return node;
-}
-
 // expr-stmt = expr ";"
 Node* Node::ExprStmt(Token** rest, Token* tok) {
+  if (tok->Equal(";")) {
+    *rest = tok->next_;
+    return new Node(ND_BLOCK);
+  }
+
   Node* node = new Node(ND_EXPR_STMT, Expr(&tok, tok));
   *rest      = tok->SkipToken(";");
   return node;
