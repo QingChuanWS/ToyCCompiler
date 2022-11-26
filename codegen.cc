@@ -13,7 +13,10 @@
 #include "node.h"
 #include "tools.h"
 
-static int labelseq = 0;
+static int CountIF() {
+  static int if_count = 0;
+  return if_count++;
+}
 
 int CodeGenerator::depth = 0;
 
@@ -87,23 +90,17 @@ void CodeGenerator::StmtGen(Node* node) {
     ASM_GEN("  jmp .L.return");
     return;
   case ND_IF: {
-    int seq = labelseq++;
+    int seq = CountIF();
+    ExprGen(node->cond_);
+    ASM_GEN("  cmp \%rax, 0");
+    ASM_GEN("  je .Lelse", seq);
+    StmtGen(node->then_);
+    ASM_GEN("  jmp .Lend", seq);
+    ASM_GEN(".Lelse", seq, ":");
     if (node->els_ != nullptr) {
-      ExprGen(node->cond_);
-      ASM_GEN("  cmp \%rax, 0");
-      ASM_GEN("  je .Lelse", seq);
-      StmtGen(node->then_);
-      ASM_GEN("  jmp .Lend", seq);
-      ASM_GEN("  .Lelse", seq, ":");
       StmtGen(node->els_);
-      ASM_GEN("  .Lend", seq, ":");
-    } else {
-      ExprGen(node->cond_);
-      ASM_GEN("  cmp \%rax, 0");
-      ASM_GEN("  je .Lend", seq);
-      StmtGen(node->then_);
-      ASM_GEN("  .Lend", seq, ":");
     }
+    ASM_GEN(".Lend", seq, ":");
     return;
   }
   default: break;
