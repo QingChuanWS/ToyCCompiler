@@ -63,8 +63,8 @@ class Token {
   // Check whether Token string equal special string
   bool Equal(const char* op);
   // Report an error in token list
-  static void ErrorTok(char* prg, Token* tok, const char* fmt, ...);
-
+  void ErrorTok(const char* fmt, ...);
+  
  private:
   // matching reserved keyword based start.
   static void ConvertToReserved(Token* tok);
@@ -74,9 +74,6 @@ class Token {
   friend class Function;
   friend class Node;
   friend class Var;
-
-  friend void ErrorTok(char* prg, Token* tok, const char* fmt, ...);
-
   static char* prg_;
 
   Tokenkind kind_;

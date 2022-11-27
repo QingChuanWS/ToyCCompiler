@@ -106,12 +106,12 @@ Token* Token::SkipToken(const char* op) {
   return this->next_;
 }
 
-void Token::ErrorTok(char* prg, Token* tok, const char* fmt, ...) {
+void Token::ErrorTok(const char* fmt, ...) {
   va_list ap;
   va_start(ap, fmt);
 
-  int pos = tok->str_ - prg_;
-  fprintf(stderr, "%s\n", prg);
+  int pos = this->str_ - prg_;
+  fprintf(stderr, "%s\n", prg_);
   fprintf(stderr, "%*s", pos, "");   // print pos spaces.
   fprintf(stderr, "^ ");
   vfprintf(stderr, fmt, ap);

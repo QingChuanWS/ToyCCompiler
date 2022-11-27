@@ -23,6 +23,7 @@ enum NodeKind {
   ND_SUB,         // -
   ND_MUL,         // *
   ND_DIV,         // /
+  ND_NEG,         // unary -
   ND_EQ,          // ==
   ND_NE,          // !=
   ND_LT,          // <
@@ -40,8 +41,9 @@ enum NodeKind {
 
 class Node {
  public:
-  explicit Node(NodeKind kind)
+  explicit Node(NodeKind kind, Token* tok)
       : kind_(kind)
+      , tok_(tok)
       , next_(nullptr)
       , lhs_(nullptr)
       , rhs_(nullptr)
@@ -54,8 +56,9 @@ class Node {
       , val_(0)
       , var_() {}
 
-  explicit Node(NodeKind kind, Node* b_one)
+  explicit Node(NodeKind kind, Token* tok, Node* b_one)
       : kind_(kind)
+      , tok_(tok)
       , next_(nullptr)
       , lhs_(nullptr)
       , rhs_(nullptr)
@@ -74,8 +77,9 @@ class Node {
     lhs_ = b_one;
   }
 
-  explicit Node(NodeKind kind, Node* lhs, Node* rhs)
+  explicit Node(NodeKind kind, Token* tok, Node* lhs, Node* rhs)
       : kind_(kind)
+      , tok_(tok)
       , next_(nullptr)
       , lhs_(lhs)
       , rhs_(rhs)
@@ -88,8 +92,9 @@ class Node {
       , val_(0)
       , var_() {}
 
-  explicit Node(long val)
+  explicit Node(long val, Token* tok)
       : kind_(ND_NUM)
+      , tok_(tok)
       , next_(nullptr)
       , lhs_(nullptr)
       , rhs_(nullptr)
@@ -102,8 +107,9 @@ class Node {
       , val_(val)
       , var_() {}
 
-  explicit Node(Var* var)
+  explicit Node(Var* var, Token* tok)
       : kind_(ND_VAR)
+      , tok_(tok)
       , next_(nullptr)
       , lhs_(nullptr)
       , rhs_(nullptr)
@@ -156,6 +162,7 @@ class Node {
   friend class Function;
 
   NodeKind kind_;   // Node kind
+  Token*   tok_;    // Representative node
 
   // for next node (next AST)
   Node* next_;

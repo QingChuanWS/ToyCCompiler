@@ -26,14 +26,14 @@ Node* Node::Program(Token* tok) {
 
 // compound-stmt = stmt* "}"
 Node* Node::CompoundStmt(Token** rest, Token* tok) {
-  Node  head = Node(ND_END);
+  Node  head = Node(ND_END, tok);
   Node* cur  = &head;
 
   while (!tok->Equal("}")) {
     cur->next_ = Node::Stmt(&tok, tok);
     cur        = cur->next_;
   }
-  Node* node = new Node(ND_BLOCK, head.next_);
+  Node* node = new Node(ND_BLOCK, tok, head.next_);
   *rest      = tok->next_;
   return node;
 }
@@ -45,13 +45,13 @@ Node* Node::CompoundStmt(Token** rest, Token* tok) {
 // expr-stmt
 Node* Node::Stmt(Token** rest, Token* tok) {
   if (tok->Equal("return")) {
-    Node* node = new Node(ND_RETURN, Expr(&tok, tok->next_));
+    Node* node = new Node(ND_RETURN, tok, Expr(&tok, tok->next_));
     *rest      = tok->SkipToken(";");
     return node;
   }
 
   if (tok->Equal("if")) {
-    Node* node  = new Node(ND_IF);
+    Node* node  = new Node(ND_IF, tok);
     tok         = tok->next_;
     node->cond_ = Expr(&tok, tok->SkipToken("("));
     node->then_ = Stmt(&tok, tok->SkipToken(")"));
@@ -63,7 +63,7 @@ Node* Node::Stmt(Token** rest, Token* tok) {
   }
 
   if (tok->Equal("for")) {
-    Node* node = new Node(ND_FOR);
+    Node* node = new Node(ND_FOR, tok);
     tok        = tok->next_;
     tok        = tok->SkipToken("(");
 
@@ -85,7 +85,7 @@ Node* Node::Stmt(Token** rest, Token* tok) {
   }
 
   if (tok->Equal("while")) {
-    Node* node = new Node(ND_FOR);
+    Node* node = new Node(ND_FOR, tok);
     tok        = tok->next_;
     tok        = tok->SkipToken("(");
 
@@ -108,10 +108,10 @@ Node* Node::Stmt(Token** rest, Token* tok) {
 Node* Node::ExprStmt(Token** rest, Token* tok) {
   if (tok->Equal(";")) {
     *rest = tok->next_;
-    return new Node(ND_BLOCK);
+    return new Node(ND_BLOCK, tok);
   }
 
-  Node* node = new Node(ND_EXPR_STMT, Expr(&tok, tok));
+  Node* node = new Node(ND_EXPR_STMT, tok, Expr(&tok, tok));
   *rest      = tok->SkipToken(";");
   return node;
 }
@@ -125,7 +125,7 @@ Node* Node::Assign(Token** rest, Token* tok) {
   Node* node = Equality(&tok, tok);
 
   if (tok->Equal("=")) {
-    node = new Node(ND_ASSIGN, node, Assign(&tok, tok->next_));
+    return new Node(ND_ASSIGN, tok, node, Assign(rest, tok->next_));
   }
   *rest = tok;
   return node;
@@ -135,12 +135,13 @@ Node* Node::Equality(Token** rest, Token* tok) {
   Node* node = Relational(&tok, tok);
 
   for (;;) {
+    Token* start = tok;
     if (tok->Equal("==")) {
-      node = new Node(ND_EQ, node, Relational(&tok, tok->next_));
+      node = new Node(ND_EQ, start, node, Relational(&tok, tok->next_));
       continue;
     }
     if (tok->Equal("!=")) {
-      node = new Node(ND_NE, node, Relational(&tok, tok->next_));
+      node = new Node(ND_NE, start, node, Relational(&tok, tok->next_));
       continue;
     }
 
@@ -153,23 +154,24 @@ Node* Node::Relational(Token** rest, Token* tok) {
   Node* node = Add(&tok, tok);
 
   for (;;) {
+    Token* start = tok;
     if (tok->Equal("<")) {
-      node = new Node(ND_LT, node, Add(&tok, tok->next_));
+      node = new Node(ND_LT, start, node, Add(&tok, tok->next_));
       continue;
     }
 
     if (tok->Equal("<=")) {
-      node = new Node(ND_LE, node, Add(&tok, tok->next_));
+      node = new Node(ND_LE, start, node, Add(&tok, tok->next_));
       continue;
     }
 
     if (tok->Equal(">")) {
-      node = new Node(ND_LT, Add(&tok, tok->next_), node);
+      node = new Node(ND_LT, start, Add(&tok, tok->next_), node);
       continue;
     }
 
     if (tok->Equal(">=")) {
-      node = new Node(ND_LE, Add(&tok, tok->next_), node);
+      node = new Node(ND_LE, start, Add(&tok, tok->next_), node);
       continue;
     }
 
@@ -182,13 +184,14 @@ Node* Node::Add(Token** rest, Token* tok) {
   Node* node = Mul(&tok, tok);
 
   for (;;) {
+    Token* start = tok;
     if (tok->Equal("+")) {
-      node = new Node(ND_ADD, node, Mul(&tok, tok->next_));
+      node = new Node(ND_ADD, start, node, Mul(&tok, tok->next_));
       continue;
     }
 
     if (tok->Equal("-")) {
-      node = new Node(ND_SUB, node, Mul(&tok, tok->next_));
+      node = new Node(ND_SUB, start, node, Mul(&tok, tok->next_));
       continue;
     }
 
@@ -201,13 +204,14 @@ Node* Node::Mul(Token** rest, Token* tok) {
   Node* node = Unary(&tok, tok);
 
   for (;;) {
+    Token* start = tok;
     if (tok->Equal("*")) {
-      node = new Node(ND_MUL, node, Primary(&tok, tok->next_));
+      node = new Node(ND_MUL, start, node, Primary(&tok, tok->next_));
       continue;
     }
 
     if (tok->Equal("/")) {
-      node = new Node(ND_DIV, node, Primary(&tok, tok->next_));
+      node = new Node(ND_DIV, start, node, Primary(&tok, tok->next_));
       continue;
     }
 
@@ -222,7 +226,7 @@ Node* Node::Unary(Token** rest, Token* tok) {
   }
 
   if (tok->Equal("-")) {
-    return new Node(ND_SUB, new Node((long)0), Unary(rest, tok->next_));
+    return new Node(ND_NEG, tok, Unary(rest, tok->next_));
   }
   return Primary(rest, tok);
 }
@@ -241,16 +245,16 @@ Node* Node::Primary(Token** rest, Token* tok) {
       locals = var;
     }
     *rest = tok->next_;
-    return new Node(var);
+    return new Node(var, tok);
   }
 
   if (tok->kind_ == TK_NUM) {
-    Node* node = new Node(tok->val_);
+    Node* node = new Node(tok->val_, tok);
     *rest      = tok->next_;
     return node;
   }
 
-  Token::ErrorTok(Token::prg_, tok, "expected an expression");
+  tok->ErrorTok("expected an expression");
   return nullptr;
 }
 
