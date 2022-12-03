@@ -9,6 +9,7 @@
  * Copyright (c) 2022 by QingChuanWS, All Rights Reserved.
  */
 #include "function.h"
+#include "type.h"
 
 Function Function::Parse(Token* tok) {
   locals = nullptr;
@@ -29,4 +30,5 @@ void Function::OffsetCal() {
 void Function::FunctionFree() {
   Node::NodeListFree(this->node_);
   Var::VarFree(this->var_head_);
+  delete ty_int;
 }

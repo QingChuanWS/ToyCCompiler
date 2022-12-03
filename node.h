@@ -14,6 +14,7 @@
 
 #include "token.h"
 #include "tools.h"
+#include "type.h"
 #include "var.h"
 
 #include <string>
@@ -56,7 +57,8 @@ class Node {
       , init_(nullptr)
       , inc_(nullptr)
       , val_(0)
-      , var_() {}
+      , var_()
+      , ty_() {}
 
   explicit Node(NodeKind kind, Token* tok, Node* b_one)
       : kind_(kind)
@@ -71,7 +73,8 @@ class Node {
       , init_(nullptr)
       , inc_(nullptr)
       , val_(0)
-      , var_() {
+      , var_()
+      , ty_() {
     if (kind == ND_BLOCK) {
       body_ = b_one;
       return;
@@ -79,20 +82,7 @@ class Node {
     lhs_ = b_one;
   }
 
-  explicit Node(NodeKind kind, Token* tok, Node* lhs, Node* rhs)
-      : kind_(kind)
-      , tok_(tok)
-      , next_(nullptr)
-      , lhs_(lhs)
-      , rhs_(rhs)
-      , cond_(nullptr)
-      , then_(nullptr)
-      , els_(nullptr)
-      , body_(nullptr)
-      , init_(nullptr)
-      , inc_(nullptr)
-      , val_(0)
-      , var_() {}
+  explicit Node(NodeKind kind, Token* tok, Node* lhs, Node* rhs);
 
   explicit Node(long val, Token* tok)
       : kind_(ND_NUM)
@@ -107,7 +97,8 @@ class Node {
       , init_(nullptr)
       , inc_(nullptr)
       , val_(val)
-      , var_() {}
+      , var_()
+      , ty_() {}
 
   explicit Node(Var* var, Token* tok)
       : kind_(ND_VAR)
@@ -122,7 +113,8 @@ class Node {
       , init_(nullptr)
       , inc_(nullptr)
       , val_(0)
-      , var_(var) {}
+      , var_(var)
+      , ty_() {}
 
   static void NodeListFree(Node* node);
 
@@ -162,6 +154,11 @@ class Node {
   // post-order for AST delete
   static void NodeFree(Node* node);
 
+  // Report an error based on tok
+  void ErrorTok(const char* fmt, ...);
+
+  void TypeInfer();
+
   friend class CodeGenerator;
   friend class Function;
 
@@ -187,8 +184,9 @@ class Node {
   Node* init_;
   Node* inc_;
 
-  Var* var_;   // use it if kind == ND_VAR
-  long val_;   // use it if Kind == ND_NUM
+  Var*  var_;   // use it if kind == ND_VAR
+  long  val_;   // use it if Kind == ND_NUM
+  Type* ty_;
 };
 
 #endif   // !NODE_GRUAD

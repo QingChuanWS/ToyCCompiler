@@ -4,4 +4,4 @@ project(ToyC)
 
 include_directories(.)
 
-add_executable(toyc tools.cc function.cc node.cc var.cc main.cc codegen.cc token.cc)
+add_executable(toyc tools.cc function.cc node.cc type.cc var.cc main.cc codegen.cc token.cc)
