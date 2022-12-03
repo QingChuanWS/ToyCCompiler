@@ -30,6 +30,8 @@ enum NodeKind {
   ND_LE,          // <=
   ND_NUM,         // number
   ND_ASSIGN,      // =
+  ND_ADDR,        // unary &
+  ND_DEREF,       // *
   ND_EXPR_STMT,   // expression statement
   ND_RETURN,      // return
   ND_BLOCK,       // { ... }
@@ -124,12 +126,11 @@ class Node {
 
   static void NodeListFree(Node* node);
 
- private:
-  // post-order for AST delete
-  static void NodeFree(Node* node);
   // parsing token list and generate AST.
   // program = stmt*
   static Node* Program(Token* tok);
+
+ private:
   // compound-stmt = stmt* "}"
   static Node* CompoundStmt(Token** rest, Token* tok);
   // stmt = "return" expr ";" |
@@ -153,10 +154,13 @@ class Node {
   static Node* Add(Token** rest, Token* tok);
   // mul = unary ("*" unary | "/" unary)
   static Node* Mul(Token** rest, Token* tok);
-  // unary = ("+" | "-") ? unary | primary
+  // unary = ("+" | "-" | "*" | "&") ? unary | primary
   static Node* Unary(Token** rest, Token* tok);
   // primary = "(" expr ")" | ident | num
   static Node* Primary(Token** rest, Token* tok);
+
+  // post-order for AST delete
+  static void NodeFree(Node* node);
 
   friend class CodeGenerator;
   friend class Function;

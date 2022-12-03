@@ -35,9 +35,15 @@ static void AsmPrint(const T first_arg, const Types... args) {
 }
 
 void CodeGenerator::GetVarAddr(Node* node) {
-  if (node->kind_ == ND_VAR) {
+  switch (node->kind_) {
+  case ND_VAR:
     ASM_GEN("  lea rax, [rbp - ", node->var_->offset_, "]");
     return;
+  case ND_DEREF:
+    ExprGen(node->lhs_);
+    return;
+  default:
+    break;
   }
 
   node->tok_->ErrorTok("not an lvalue");
@@ -137,6 +143,13 @@ void CodeGenerator::ExprGen(Node* node) {
   case ND_VAR:
     GetVarAddr(node);
     ASM_GEN("  mov rax, [rax]");
+    return;
+  case ND_DEREF:
+    ExprGen(node->lhs_);
+    ASM_GEN("  mov rax, [rax]");
+    return;
+  case ND_ADDR:
+    GetVarAddr(node->lhs_);
     return;
   case ND_ASSIGN:
     GetVarAddr(node->lhs_);

@@ -81,7 +81,7 @@ int Token::ReadPunct(char* p) {
     }
   }
 
-  return std::strchr("+-*/()<>;={}", *p) != 0 ? 1 : 0;
+  return std::strchr("+-*/()<>;={}&", *p) != 0 ? 1 : 0;
 }
 
 void Token::ConvertToReserved(Token* tok) {

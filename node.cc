@@ -220,6 +220,7 @@ Node* Node::Mul(Token** rest, Token* tok) {
   }
 }
 
+// unary = ("+" | "-" | "*" | "&") ? unary | primary
 Node* Node::Unary(Token** rest, Token* tok) {
   if (tok->Equal("+")) {
     return Unary(rest, tok->next_);
@@ -228,6 +229,15 @@ Node* Node::Unary(Token** rest, Token* tok) {
   if (tok->Equal("-")) {
     return new Node(ND_NEG, tok, Unary(rest, tok->next_));
   }
+
+  if (tok->Equal("&")) {
+    return new Node(ND_ADDR, tok, Unary(rest, tok->next_));
+  }
+  
+  if (tok->Equal("*")) {
+    return new Node(ND_DEREF, tok, Unary(rest, tok->next_));
+  }
+
   return Primary(rest, tok);
 }
 
