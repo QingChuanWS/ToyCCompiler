@@ -32,6 +32,7 @@ Node::Node(NodeKind kind, Token* tok, Node* lhs, Node* rhs)
     , body_(nullptr)
     , init_(nullptr)
     , inc_(nullptr)
+    , function(nullptr)
     , val_(0)
     , var_()
     , ty_(nullptr) {
@@ -106,9 +107,9 @@ Node* Node::CompoundStmt(Token** rest, Token* tok) {
     cur = cur->next_;
     cur->TypeInfer();
   }
-  Node* node = new Node(ND_BLOCK, tok);
-  node->body_ =  head.next_;
-  *rest      = tok->next_;
+  Node* node  = new Node(ND_BLOCK, tok);
+  node->body_ = head.next_;
+  *rest       = tok->next_;
   return node;
 }
 
@@ -382,6 +383,13 @@ Node* Node::Primary(Token** rest, Token* tok) {
   }
 
   if (tok->kind_ == TK_IDENT) {
+    if (tok->next_->Equal("(")) {
+      Node* node     = new Node(ND_FUNCTION, tok);
+      node->function = tok->GetIdent();
+      tok = tok->next_->next_;
+      *rest          = tok->SkipToken(")");
+      return node;
+    }
     Var* var = locals->Find(tok);
     if (var == nullptr) {
       tok->ErrorTok("undefined variable.");
@@ -440,6 +448,9 @@ void Node::NodeFree(Node* node) {
   if (node->kind_ == ND_ADDR) {
     delete node->ty_;
   }
+  if (node->kind_ == ND_FUNCTION) {
+    free(node->function);
+  }
   if (node->kind_ == ND_VAR) {
     if (node->var_->ty_ != nullptr) {
       Type::TypeFree(node->var_->ty_);
@@ -492,7 +503,8 @@ void Node::TypeInfer() {
   case ND_NE:
   case ND_LE:
   case ND_LT:
-  case ND_NUM: ty_ = ty_int; return;
+  case ND_NUM:
+  case ND_FUNCTION: ty_ = ty_int; return;
   case ND_VAR: ty_ = var_->ty_; return;
   case ND_ADDR: ty_ = new Type(TY_PRT, lhs_->ty_); return;
   case ND_DEREF:

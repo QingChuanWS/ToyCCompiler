@@ -36,6 +36,7 @@ enum NodeKind {
   ND_EXPR_STMT,   // expression statement
   ND_RETURN,      // return
   ND_BLOCK,       // { ... }
+  ND_FUNCTION,    // Function call
   ND_IF,          // if
   ND_FOR,         // for and while
   ND_VAR,         // variable
@@ -56,6 +57,7 @@ class Node {
       , body_(nullptr)
       , init_(nullptr)
       , inc_(nullptr)
+      , function(nullptr)
       , val_(0)
       , var_()
       , ty_(nullptr) {}
@@ -72,6 +74,7 @@ class Node {
       , body_(nullptr)
       , init_(nullptr)
       , inc_(nullptr)
+      , function(nullptr)
       , val_(0)
       , var_()
       , ty_(nullptr) {
@@ -96,6 +99,7 @@ class Node {
       , body_(nullptr)
       , init_(nullptr)
       , inc_(nullptr)
+      , function(nullptr)
       , val_(val)
       , var_()
       , ty_(nullptr) {}
@@ -112,6 +116,7 @@ class Node {
       , body_(nullptr)
       , init_(nullptr)
       , inc_(nullptr)
+      , function(nullptr)
       , val_(0)
       , var_(var)
       , ty_(nullptr) {}
@@ -125,12 +130,12 @@ class Node {
  private:
   // compound-stmt = stmt* "}"
   static Node* CompoundStmt(Token** rest, Token* tok);
-  // declaration = declspec ( 
-  //                 declarator ( "=" expr)? 
+  // declaration = declspec (
+  //                 declarator ( "=" expr)?
   //                 ("," declarator ("=" expr)? ) * )? ";"
   static Node* Declaration(Token** rest, Token* tok);
   // declspec = "int"
-  static Type* Declspec(Token** rest,Token* tok);
+  static Type* Declspec(Token** rest, Token* tok);
   // declarator = "*"* ident
   static Type* Declarator(Token** rest, Token* tok, Type* ty);
   // stmt = "return" expr ";" |
@@ -156,7 +161,8 @@ class Node {
   static Node* Mul(Token** rest, Token* tok);
   // unary = ("+" | "-" | "*" | "&") ? unary | primary
   static Node* Unary(Token** rest, Token* tok);
-  // primary = "(" expr ")" | ident | num
+  // primary = "(" expr ")" | ident args? | num
+  // args = "(" ")"
   static Node* Primary(Token** rest, Token* tok);
 
   // post-order for AST delete
@@ -191,6 +197,9 @@ class Node {
   // for "for" statement
   Node* init_;
   Node* inc_;
+
+  // function;
+  char* function;
 
   Var*  var_;   // use it if kind == ND_VAR
   long  val_;   // use it if Kind == ND_NUM

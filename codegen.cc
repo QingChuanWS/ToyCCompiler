@@ -158,6 +158,10 @@ void CodeGenerator::ExprGen(Node* node) {
     Pop("rdi");
     ASM_GEN("  mov [rdi], rax");
     return;
+  case ND_FUNCTION:
+    ASM_GEN("  mov rax, 0");
+    ASM_GEN("  call ", node->function);
+    return;
   default: break;
   }
 
