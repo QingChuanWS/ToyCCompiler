@@ -15,8 +15,8 @@
 #include "var.h"
 
 struct Function {
-  Function(Node* node, Var* var_head = nullptr)
-      : node_(node)
+  Function(Node* body, Var* var_head = nullptr)
+      : body_(body)
       , var_head_(var_head)
       , stack_size_(0) {}
 
@@ -26,7 +26,7 @@ struct Function {
   void FunctionFree();
   void OffsetCal();
 
-  Node* node_;
+  Node* body_;
   Var*  var_head_;
   int   stack_size_;
 };

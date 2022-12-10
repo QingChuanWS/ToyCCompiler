@@ -29,6 +29,7 @@ class CodeGenerator {
   static void StmtGen(Node* node);
 
   static int depth;
+  static const char* argreg[6];
 };
 
 #endif   // !CODEGEN_GRUAD

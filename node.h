@@ -57,7 +57,8 @@ class Node {
       , body_(nullptr)
       , init_(nullptr)
       , inc_(nullptr)
-      , function(nullptr)
+      , function_(nullptr)
+      , args_(nullptr)
       , val_(0)
       , var_()
       , ty_(nullptr) {}
@@ -74,7 +75,8 @@ class Node {
       , body_(nullptr)
       , init_(nullptr)
       , inc_(nullptr)
-      , function(nullptr)
+      , function_(nullptr)
+      , args_(nullptr)
       , val_(0)
       , var_()
       , ty_(nullptr) {
@@ -99,7 +101,8 @@ class Node {
       , body_(nullptr)
       , init_(nullptr)
       , inc_(nullptr)
-      , function(nullptr)
+      , function_(nullptr)
+      , args_(nullptr)
       , val_(val)
       , var_()
       , ty_(nullptr) {}
@@ -116,7 +119,8 @@ class Node {
       , body_(nullptr)
       , init_(nullptr)
       , inc_(nullptr)
-      , function(nullptr)
+      , function_(nullptr)
+      , args_(nullptr)
       , val_(0)
       , var_(var)
       , ty_(nullptr) {}
@@ -128,7 +132,7 @@ class Node {
   static Node* Program(Token* tok);
 
  private:
-  // compound-stmt = stmt* "}"
+  // compound-stmt = (declaration | stmt)* "}"
   static Node* CompoundStmt(Token** rest, Token* tok);
   // declaration = declspec (
   //                 declarator ( "=" expr)?
@@ -161,9 +165,10 @@ class Node {
   static Node* Mul(Token** rest, Token* tok);
   // unary = ("+" | "-" | "*" | "&") ? unary | primary
   static Node* Unary(Token** rest, Token* tok);
-  // primary = "(" expr ")" | ident args? | num
-  // args = "(" ")"
+  // primary = "(" expr ")" | ident | num
   static Node* Primary(Token** rest, Token* tok);
+  // function = ident "(" (assign ("," assign)*)? ")"
+  static Node* Funcall(Token** rest, Token* tok);
 
   // post-order for AST delete
   static void NodeFree(Node* node);
@@ -178,8 +183,9 @@ class Node {
 
   NodeKind kind_;   // Node kind
   Token*   tok_;    // Representative node
+  Type*    ty_;
 
-  // for next node (next AST)
+  // for compound-stmt
   Node* next_;
 
   // for operation +-/*
@@ -199,11 +205,13 @@ class Node {
   Node* inc_;
 
   // function;
-  char* function;
+  char* function_;
+  Node* args_;
 
-  Var*  var_;   // use it if kind == ND_VAR
-  long  val_;   // use it if Kind == ND_NUM
-  Type* ty_;
+  // for Var
+  Var* var_;
+  // for const
+  long val_;
 };
 
 #endif   // !NODE_GRUAD

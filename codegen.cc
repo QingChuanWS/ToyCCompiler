@@ -20,6 +20,8 @@ static int Count() {
 
 int CodeGenerator::depth = 0;
 
+const char* CodeGenerator::argreg[6] = {"rdi", "rsi", "rcx", "rdx", "r8", "r9"};
+
 #define ASM_GEN(...) AsmPrint(__VA_ARGS__)
 
 // recursive over state.
@@ -36,14 +38,9 @@ static void AsmPrint(const T first_arg, const Types... args) {
 
 void CodeGenerator::GetVarAddr(Node* node) {
   switch (node->kind_) {
-  case ND_VAR:
-    ASM_GEN("  lea rax, [rbp - ", node->var_->offset_, "]");
-    return;
-  case ND_DEREF:
-    ExprGen(node->lhs_);
-    return;
-  default:
-    break;
+  case ND_VAR: ASM_GEN("  lea rax, [rbp - ", node->var_->offset_, "]"); return;
+  case ND_DEREF: ExprGen(node->lhs_); return;
+  default: break;
   }
 
   node->tok_->ErrorTok("not an lvalue");
@@ -73,7 +70,7 @@ void CodeGenerator::CodeGen(Function* prog) {
   ASM_GEN("  mov rbp, rsp");
   ASM_GEN("  sub rsp, ", prog->stack_size_);
 
-  StmtGen(prog->node_);
+  StmtGen(prog->body_);
   DEBUG(depth == 0);
 
   // Epilogue; equally instruction leave.
@@ -111,7 +108,7 @@ void CodeGenerator::StmtGen(Node* node) {
   }
   case ND_FOR: {
     int seq = Count();
-    if(node->init_ != nullptr)
+    if (node->init_ != nullptr)
       StmtGen(node->init_);
     ASM_GEN(".L.begin.", seq, ":");
     if (node->cond_ != nullptr) {
@@ -127,8 +124,7 @@ void CodeGenerator::StmtGen(Node* node) {
     ASM_GEN(".L.end.", seq, ":");
     return;
   }
-  default: 
-    node->tok_->ErrorTok("invalid statement");
+  default: node->tok_->ErrorTok("invalid statement");
   }
 }
 
@@ -148,9 +144,7 @@ void CodeGenerator::ExprGen(Node* node) {
     ExprGen(node->lhs_);
     ASM_GEN("  mov rax, [rax]");
     return;
-  case ND_ADDR:
-    GetVarAddr(node->lhs_);
-    return;
+  case ND_ADDR: GetVarAddr(node->lhs_); return;
   case ND_ASSIGN:
     GetVarAddr(node->lhs_);
     Push();
@@ -158,10 +152,22 @@ void CodeGenerator::ExprGen(Node* node) {
     Pop("rdi");
     ASM_GEN("  mov [rdi], rax");
     return;
-  case ND_FUNCTION:
+  case ND_FUNCTION: {
+    int nargs = 0;
+    for (Node* arg = node->args_; arg != nullptr; arg = arg->next_) {
+      ExprGen(arg);
+      Push();
+      nargs++;
+    }
+
+    for (int i = nargs - 1; i >= 0; i--) {
+      Pop(argreg[i]);
+    }
+
     ASM_GEN("  mov rax, 0");
-    ASM_GEN("  call ", node->function);
+    ASM_GEN("  call ", node->function_);
     return;
+  }
   default: break;
   }
 

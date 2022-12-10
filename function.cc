@@ -28,7 +28,7 @@ void Function::OffsetCal() {
 }
 
 void Function::FunctionFree() {
-  Node::NodeListFree(this->node_);
+  Node::NodeListFree(this->body_);
   Var::VarFree(this->var_head_);
   delete ty_int;
 }

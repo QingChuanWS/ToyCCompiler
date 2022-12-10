@@ -32,7 +32,8 @@ Node::Node(NodeKind kind, Token* tok, Node* lhs, Node* rhs)
     , body_(nullptr)
     , init_(nullptr)
     , inc_(nullptr)
-    , function(nullptr)
+    , function_(nullptr)
+    , args_(nullptr)
     , val_(0)
     , var_()
     , ty_(nullptr) {
@@ -93,7 +94,7 @@ Node* Node::Program(Token* tok) {
   return CompoundStmt(&tok, tok);
 }
 
-// compound-stmt = stmt* "}"
+// compound-stmt  = (declaration | stmt)* "}"
 Node* Node::CompoundStmt(Token** rest, Token* tok) {
   Node  head = Node(ND_END, tok);
   Node* cur  = &head;
@@ -255,6 +256,7 @@ Node* Node::Expr(Token** rest, Token* tok) {
   return Assign(rest, tok);
 }
 
+// assign = equality ("=" assign)?
 Node* Node::Assign(Token** rest, Token* tok) {
   Node* node = Equality(&tok, tok);
 
@@ -265,6 +267,7 @@ Node* Node::Assign(Token** rest, Token* tok) {
   return node;
 }
 
+// equality = relational ("==" relational | "!=" relational)
 Node* Node::Equality(Token** rest, Token* tok) {
   Node* node = Relational(&tok, tok);
 
@@ -284,6 +287,7 @@ Node* Node::Equality(Token** rest, Token* tok) {
   }
 }
 
+// relational = add ("<" add | "<=" add | ">" add | ">=" add)
 Node* Node::Relational(Token** rest, Token* tok) {
   Node* node = Add(&tok, tok);
 
@@ -314,6 +318,7 @@ Node* Node::Relational(Token** rest, Token* tok) {
   }
 }
 
+// add = mul ("+"mul | "-" mul)
 Node* Node::Add(Token** rest, Token* tok) {
   Node* node = Mul(&tok, tok);
 
@@ -384,11 +389,7 @@ Node* Node::Primary(Token** rest, Token* tok) {
 
   if (tok->kind_ == TK_IDENT) {
     if (tok->next_->Equal("(")) {
-      Node* node     = new Node(ND_FUNCTION, tok);
-      node->function = tok->GetIdent();
-      tok = tok->next_->next_;
-      *rest          = tok->SkipToken(")");
-      return node;
+      return Funcall(rest, tok);
     }
     Var* var = locals->Find(tok);
     if (var == nullptr) {
@@ -406,6 +407,30 @@ Node* Node::Primary(Token** rest, Token* tok) {
 
   tok->ErrorTok("expected an expression");
   return nullptr;
+}
+
+// function = ident "(" (assign ("," assign)*)? ")"
+Node* Node::Funcall(Token** rest, Token* tok) {
+  Token* start = tok;
+  tok          = tok->next_->next_;
+
+  Node  head = Node(ND_END, tok);
+  Node* cur  = &head;
+
+  while (!tok->Equal(")")) {
+    if (cur != &head) {
+      tok = tok->SkipToken(",");
+    }
+    cur->next_ = Assign(&tok, tok);
+    cur        = cur->next_;
+  }
+
+  *rest = tok->SkipToken(")");
+
+  Node* node      = new Node(ND_FUNCTION, start);
+  node->function_ = start->GetIdent();
+  node->args_     = head.next_;
+  return node;
 }
 
 void Node::NodeListFree(Node* node) {
@@ -448,14 +473,15 @@ void Node::NodeFree(Node* node) {
   if (node->kind_ == ND_ADDR) {
     delete node->ty_;
   }
-  if (node->kind_ == ND_FUNCTION) {
-    free(node->function);
-  }
   if (node->kind_ == ND_VAR) {
     if (node->var_->ty_ != nullptr) {
       Type::TypeFree(node->var_->ty_);
       node->var_->ty_ = nullptr;
     }
+  }
+  if (node->kind_ == ND_FUNCTION) {
+    free(node->function_);
+    NodeListFree(node->args_);
   }
   delete node;
   return;
