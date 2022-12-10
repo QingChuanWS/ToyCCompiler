@@ -58,7 +58,7 @@ class Node {
       , inc_(nullptr)
       , val_(0)
       , var_()
-      , ty_() {}
+      , ty_(nullptr) {}
 
   explicit Node(NodeKind kind, Token* tok, Node* b_one)
       : kind_(kind)
@@ -74,7 +74,7 @@ class Node {
       , inc_(nullptr)
       , val_(0)
       , var_()
-      , ty_() {
+      , ty_(nullptr) {
     if (kind == ND_BLOCK) {
       body_ = b_one;
       return;
@@ -98,7 +98,7 @@ class Node {
       , inc_(nullptr)
       , val_(val)
       , var_()
-      , ty_() {}
+      , ty_(nullptr) {}
 
   explicit Node(Var* var, Token* tok)
       : kind_(ND_VAR)
@@ -114,7 +114,7 @@ class Node {
       , inc_(nullptr)
       , val_(0)
       , var_(var)
-      , ty_() {}
+      , ty_(nullptr) {}
 
   static void NodeListFree(Node* node);
 
@@ -125,6 +125,14 @@ class Node {
  private:
   // compound-stmt = stmt* "}"
   static Node* CompoundStmt(Token** rest, Token* tok);
+  // declaration = declspec ( 
+  //                 declarator ( "=" expr)? 
+  //                 ("," declarator ("=" expr)? ) * )? ";"
+  static Node* Declaration(Token** rest, Token* tok);
+  // declspec = "int"
+  static Type* Declspec(Token** rest,Token* tok);
+  // declarator = "*"* ident
+  static Type* Declarator(Token** rest, Token* tok, Type* ty);
   // stmt = "return" expr ";" |
   // "if" "(" expr ")" stmt ("else" stmt)? |
   // "for" "(" expr-stmt expr? ";" expr? ")" stmt |

@@ -12,6 +12,7 @@
 #define VAR_GRUAD
 
 #include "token.h"
+#include "type.h"
 
 class Var;
 
@@ -19,17 +20,21 @@ extern Var* locals;
 
 class Var {
  public:
-  Var(char* name = nullptr, Var* next = nullptr, int offset = 0)
+  Var(char* name = nullptr, Var* next = nullptr, Type* ty = nullptr,
+      int offset = 0)
       : name_(name)
       , next_(next)
+      , ty_(ty)
       , offset_(offset) {}
 
-  Var* Find(Token* tok);
+  Var*        Find(Token* tok);
   static void VarFree(Var* head);
 
-  char* name_;
-  Var*  next_;
-  int   offset_;
+  char* name_;     // variable name
+  Type* ty_;       // Type;
+  int   offset_;   // offset from rbp
+
+  Var* next_;
 };
 
 #endif   // !VAR_GRUAD

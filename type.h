@@ -11,6 +11,8 @@
 #ifndef TYPE_GRUAD
 #define TYPE_GRUAD
 
+#include "token.h"
+
 class Type;
 
 extern Type* ty_int;
@@ -26,6 +28,7 @@ class Type {
   explicit Type()
       : kind_(TY_END)
       , base_(nullptr) {}
+  // create a pointer
   Type(TypeKind kind, Type* base)
       : kind_(kind)
       , base_(base) {}
@@ -33,10 +36,17 @@ class Type {
   bool IsInteger();
   bool IsPointer();
 
+  static void TypeFree(Type* ty);
+
  private:
   friend class Node;
   TypeKind kind_;
-  Type*    base_;
+
+  // pointer
+  Type* base_;
+
+  // Declaration
+  Token* name;
 };
 
 #endif   // !TYPE_GRUAD

@@ -1,6 +1,16 @@
 /*
  * This project is exclusively owned by QingChuanWS and shall not be used for
  * commercial and profitting purpose without QingChuanWS's permission.
+ * 
+ * @Author: bingshan45@163.com
+ * Github: https://github.com/QingChuanWS
+ * @Description: 
+ * 
+ * Copyright (c) 2022 by QingChuanWS, All Rights Reserved. 
+ */
+/*
+ * This project is exclusively owned by QingChuanWS and shall not be used for
+ * commercial and profitting purpose without QingChuanWS's permission.
  *
  * @Author: bingshan45@163.com
  * Github: https://github.com/QingChuanWS
@@ -64,6 +74,8 @@ class Token {
   bool Equal(const char* op);
   // Report an error in token list
   void ErrorTok(const char* fmt, ...);
+  // Get tok name string based copy mode.
+  char* GetIdent();
   
  private:
   // matching reserved keyword based start.

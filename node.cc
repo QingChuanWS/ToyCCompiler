@@ -34,7 +34,7 @@ Node::Node(NodeKind kind, Token* tok, Node* lhs, Node* rhs)
     , inc_(nullptr)
     , val_(0)
     , var_()
-    , ty_() {
+    , ty_(nullptr) {
   if (!(kind_ == ND_ADD || kind_ == ND_SUB)) {
     return;
   }
@@ -59,30 +59,30 @@ Node::Node(NodeKind kind, Token* tok, Node* lhs, Node* rhs)
     }
 
     rhs_ = new Node(ND_MUL, tok, rhs_, new Node(8, tok));
-    ty_ = lhs_->ty_;
-    return ;
+    ty_  = lhs_->ty_;
+    return;
   }
 
   if (kind_ == ND_SUB) {
-    // ptr - ptr 
-    if(lhs_->ty_->IsPointer() && rhs_->ty_->IsPointer()){
+    // ptr - ptr
+    if (lhs_->ty_->IsPointer() && rhs_->ty_->IsPointer()) {
       kind_ = ND_DIV;
       // careful curisive call.
       Node* node = new Node(ND_SUB, tok);
       node->lhs_ = lhs_;
       node->rhs_ = rhs_;
-      node->ty_ = ty_int;
-      lhs_ = node;
-      rhs_ = new Node(8, tok);
-      return ;
+      node->ty_  = ty_int;
+      lhs_       = node;
+      rhs_       = new Node(8, tok);
+      return;
     }
 
     // ptr - num
-    if(lhs_->ty_->IsPointer() && rhs_->ty_->IsInteger()){
+    if (lhs_->ty_->IsPointer() && rhs_->ty_->IsInteger()) {
       rhs_ = new Node(ND_MUL, tok, rhs_, new Node(8, tok));
       rhs_->TypeInfer();
       ty_ = lhs_->ty_;
-      return ;
+      return;
     }
   }
 }
@@ -98,12 +98,77 @@ Node* Node::CompoundStmt(Token** rest, Token* tok) {
   Node* cur  = &head;
 
   while (!tok->Equal("}")) {
-    cur->next_ = Node::Stmt(&tok, tok);
-    cur        = cur->next_;
+    if (tok->Equal("int")) {
+      cur->next_ = Declaration(&tok, tok);
+    } else {
+      cur->next_ = Node::Stmt(&tok, tok);
+    }
+    cur = cur->next_;
+    cur->TypeInfer();
   }
-  Node* node = new Node(ND_BLOCK, tok, head.next_);
+  Node* node = new Node(ND_BLOCK, tok);
+  node->body_ =  head.next_;
   *rest      = tok->next_;
   return node;
+}
+
+// declaration = declspec (
+//                 declarator ( "=" expr)?
+//                 ("," declarator ("=" expr)? ) * )? ";"
+Node* Node::Declaration(Token** rest, Token* tok) {
+  Type* ty_base = Declspec(&tok, tok);
+
+  Node  head = Node(ND_END, tok);
+  Node* cur  = &head;
+  int   i    = 0;
+
+  while (!tok->Equal(";")) {
+    if (i++ > 0) {
+      tok = tok->SkipToken(",");
+    }
+
+    Type* ty  = Declarator(&tok, tok, ty_base);
+    Var*  var = new Var(ty->name->GetIdent(), locals, ty);
+    locals    = var;
+
+    if (!tok->Equal("=")) {
+      continue;
+    }
+
+    Node* lhs  = new Node(var, tok);
+    Node* rhs  = Node::Assign(&tok, tok->next_);
+    Node* node = new Node(ND_ASSIGN, tok, lhs, rhs);
+    cur->next_ = new Node(ND_EXPR_STMT, tok, node);
+    cur        = cur->next_;
+  }
+
+  Node* node  = new Node(ND_BLOCK, tok);
+  node->body_ = head.next_;
+  *rest       = tok->next_;
+  return node;
+}
+
+// declspec = "int"
+Type* Node::Declspec(Token** rest, Token* tok) {
+  *rest = tok->SkipToken("int");
+  return ty_int;
+}
+
+// declarator = "*"* ident
+Type* Node::Declarator(Token** rest, Token* tok, Type* ty) {
+  while (tok->Equal("*")) {
+    ty  = new Type(TY_PRT, ty);
+    tok = tok->next_;
+  }
+  *rest = tok;
+
+  if (tok->kind_ != TK_IDENT) {
+    tok->ErrorTok("expected a variable name.");
+  }
+
+  ty->name = tok;
+  *rest    = tok->next_;
+  return ty;
 }
 
 // stmt = "return" expr ";" |
@@ -319,8 +384,7 @@ Node* Node::Primary(Token** rest, Token* tok) {
   if (tok->kind_ == TK_IDENT) {
     Var* var = locals->Find(tok);
     if (var == nullptr) {
-      var    = new Var(strndup(tok->str_, tok->strlen_), locals);
-      locals = var;
+      tok->ErrorTok("undefined variable.");
     }
     *rest = tok->next_;
     return new Node(var, tok);
@@ -373,8 +437,15 @@ void Node::NodeFree(Node* node) {
     NodeFree(node->rhs_);
     node->rhs_ = nullptr;
   }
-  if(node->kind_ == ND_ADDR)
+  if (node->kind_ == ND_ADDR) {
     delete node->ty_;
+  }
+  if (node->kind_ == ND_VAR) {
+    if (node->var_->ty_ != nullptr) {
+      Type::TypeFree(node->var_->ty_);
+      node->var_->ty_ = nullptr;
+    }
+  }
   delete node;
   return;
 }
@@ -421,17 +492,16 @@ void Node::TypeInfer() {
   case ND_NE:
   case ND_LE:
   case ND_LT:
-  case ND_VAR:
   case ND_NUM: ty_ = ty_int; return;
+  case ND_VAR: ty_ = var_->ty_; return;
   case ND_ADDR: ty_ = new Type(TY_PRT, lhs_->ty_); return;
   case ND_DEREF:
-    if (lhs_->ty_->kind_ == TY_PRT) {
-      ty_ = lhs_->ty_->base_;
-    } else {
-      ty_ = ty_int;
+    if (lhs_->ty_->kind_ != TY_PRT) {
+      ErrorTok("invalid pointer reference!");
     }
+    ty_ = lhs_->ty_->base_;
     return;
-  default: ErrorTok("expected an expression"); return;
+  default: return;
   }
 }
 

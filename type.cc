@@ -19,3 +19,12 @@ bool Type::IsInteger() {
 bool Type::IsPointer() {
   return base_ != nullptr;
 }
+
+void Type::TypeFree(Type* head){
+  Type* cur = head;
+  while(cur != ty_int){
+    head = head->base_;
+    delete cur;
+    cur = head;
+  }
+}
