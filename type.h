@@ -20,18 +20,29 @@ extern Type* ty_int;
 enum TypeKind {
   TY_INT,
   TY_PRT,
+  TY_FUNC,
   TY_END,
 };
 
 class Type {
  public:
-  explicit Type()
+  Type()
       : kind_(TY_END)
+      , name_(nullptr)
       , base_(nullptr) {}
   // create a pointer
-  Type(TypeKind kind, Type* base)
+  Type(TypeKind kind, Type* ty)
       : kind_(kind)
-      , base_(base) {}
+      , name_(nullptr) {
+    if (kind_ == TY_PRT) {
+      base_ = ty;
+      return_ty = nullptr;
+    }
+    if (kind_ == TY_FUNC) {
+      return_ty = ty;
+      base_ = nullptr;
+    }
+  }
 
   bool IsInteger();
   bool IsPointer();
@@ -40,13 +51,16 @@ class Type {
 
  private:
   friend class Node;
+  friend class Function;
+  
   TypeKind kind_;
+  // Declaration
+  Token* name_;
 
   // pointer
   Type* base_;
-
-  // Declaration
-  Token* name;
+  // Function type
+  Type* return_ty;
 };
 
 #endif   // !TYPE_GRUAD

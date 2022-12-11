@@ -30,6 +30,7 @@ class CodeGenerator {
 
   static int depth;
   static const char* argreg[6];
+  static Function* cur_fn;
 };
 
 #endif   // !CODEGEN_GRUAD

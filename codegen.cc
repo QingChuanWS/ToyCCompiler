@@ -10,6 +10,7 @@
  */
 #include "codegen.h"
 
+#include "function.h"
 #include "node.h"
 #include "tools.h"
 
@@ -21,6 +22,8 @@ static int Count() {
 int CodeGenerator::depth = 0;
 
 const char* CodeGenerator::argreg[6] = {"rdi", "rsi", "rcx", "rdx", "r8", "r9"};
+
+Function* CodeGenerator::cur_fn = nullptr;
 
 #define ASM_GEN(...) AsmPrint(__VA_ARGS__)
 
@@ -57,27 +60,31 @@ void CodeGenerator::Pop(const char* arg) {
 }
 
 void CodeGenerator::CodeGen(Function* prog) {
-  prog->OffsetCal();
+  Function::OffsetCal(prog);
 
   // using intel syntax
   // e.g. op dst, src
-  ASM_GEN("  .intel_syntax noprefix");
-  ASM_GEN("  .global main");
-  ASM_GEN("main:");
+  ASM_GEN(".intel_syntax noprefix");
+  for (Function* fn = prog; fn != nullptr; fn = fn->next_) {
+    ASM_GEN("  .global ", fn->name_);
+    ASM_GEN(fn->name_, ":");
+    cur_fn = fn;
 
-  // prologue; equally instruction "enter 0xD0,0".
-  ASM_GEN("  push rbp");
-  ASM_GEN("  mov rbp, rsp");
-  ASM_GEN("  sub rsp, ", prog->stack_size_);
+    // prologue; equally instruction "enter 0xD0,0".
+    ASM_GEN("  push rbp");
+    ASM_GEN("  mov rbp, rsp");
+    ASM_GEN("  sub rsp, ", fn->stack_size_);
 
-  StmtGen(prog->body_);
-  DEBUG(depth == 0);
+    // Emit code 
+    StmtGen(fn->body_);
+    DEBUG(depth == 0);
 
-  // Epilogue; equally instruction leave.
-  ASM_GEN(".L.return:");
-  ASM_GEN("  mov rsp, rbp");
-  ASM_GEN("  pop rbp");
-  ASM_GEN("  ret");
+    // Epilogue; equally instruction leave.
+    ASM_GEN(".L.return.", fn->name_, ":");
+    ASM_GEN("  mov rsp, rbp");
+    ASM_GEN("  pop rbp");
+    ASM_GEN("  ret");
+  }
 }
 
 void CodeGenerator::StmtGen(Node* node) {
@@ -90,7 +97,7 @@ void CodeGenerator::StmtGen(Node* node) {
     return;
   case ND_RETURN:
     ExprGen(node->lhs_);
-    ASM_GEN("  jmp .L.return");
+    ASM_GEN("  jmp .L.return.", cur_fn->name_);
     return;
   case ND_IF: {
     int seq = Count();

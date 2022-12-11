@@ -21,15 +21,15 @@ int main(int argc, char** argv) {
     return 1;
   }
 
-  Token    head = Token();
-  Token*   cur  = Token::TokenCreate(head, argv[1]);
-  Function prog = Function::Parse(cur);
+  Token     head = Token();
+  Token*    cur  = Token::TokenCreate(head, argv[1]);
+  Function* prog = Function::Parse(cur);
 
   CodeGenerator gene;
-  gene.CodeGen(&prog);
+  gene.CodeGen(prog);
 
   Token::TokenFree(head);
-  prog.FunctionFree();
+  Function::FunctionFree(prog);
 
   return 0;
 }

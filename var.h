@@ -20,18 +20,21 @@ extern Var* locals;
 
 class Var {
  public:
-  Var(char* name = nullptr, Var* next = nullptr, Type* ty = nullptr,
+  Var(char* name = nullptr, Var** next = nullptr, Type* ty = nullptr,
       int offset = 0)
       : name_(name)
-      , next_(next)
+      , next_(*next)
       , ty_(ty)
-      , offset_(offset) {}
+      , offset_(offset) {
+    *next = this;
+  }
 
-  Var*        Find(Token* tok);
+  Var* Find(Token* tok);
+
   static void VarFree(Var* head);
 
   char* name_;     // variable name
-  Type* ty_;       // Type;
+  Type* ty_;       // Type
   int   offset_;   // offset from rbp
 
   Var* next_;

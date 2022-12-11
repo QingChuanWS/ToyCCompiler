@@ -89,9 +89,9 @@ Node::Node(NodeKind kind, Token* tok, Node* lhs, Node* rhs)
   }
 }
 
-Node* Node::Program(Token* tok) {
+Node* Node::Program(Token** rest, Token* tok) {
   tok = tok->SkipToken("{");
-  return CompoundStmt(&tok, tok);
+  return CompoundStmt(rest, tok);
 }
 
 // compound-stmt  = (declaration | stmt)* "}"
@@ -130,8 +130,7 @@ Node* Node::Declaration(Token** rest, Token* tok) {
     }
 
     Type* ty  = Declarator(&tok, tok, ty_base);
-    Var*  var = new Var(ty->name->GetIdent(), locals, ty);
-    locals    = var;
+    Var*  var = new Var(ty->name_->GetIdent(), &locals, ty);
 
     if (!tok->Equal("=")) {
       continue;
@@ -156,7 +155,7 @@ Type* Node::Declspec(Token** rest, Token* tok) {
   return ty_int;
 }
 
-// declarator = "*"* ident
+// declarator = "*"* ident type-suffix
 Type* Node::Declarator(Token** rest, Token* tok, Type* ty) {
   while (tok->Equal("*")) {
     ty  = new Type(TY_PRT, ty);
@@ -168,8 +167,19 @@ Type* Node::Declarator(Token** rest, Token* tok, Type* ty) {
     tok->ErrorTok("expected a variable name.");
   }
 
-  ty->name = tok;
-  *rest    = tok->next_;
+  ty = TypeSuffix(rest, tok->next_, ty);
+  ty->name_ = tok;
+
+  return ty;
+}
+
+// type-suffix = ("(" func-param ")")?
+Type* Node::TypeSuffix(Token** rest, Token* tok, Type* ty){
+  if(tok->Equal("(")){
+    *rest = tok->next_->SkipToken(")");
+    return new Type(TY_FUNC, ty);
+  }
+  *rest = tok;
   return ty;
 }
 

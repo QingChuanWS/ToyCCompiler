@@ -129,7 +129,7 @@ class Node {
 
   // parsing token list and generate AST.
   // program = stmt*
-  static Node* Program(Token* tok);
+  static Node* Program(Token** rest, Token* tok);
 
  private:
   // compound-stmt = (declaration | stmt)* "}"
@@ -140,8 +140,10 @@ class Node {
   static Node* Declaration(Token** rest, Token* tok);
   // declspec = "int"
   static Type* Declspec(Token** rest, Token* tok);
-  // declarator = "*"* ident
+  // declarator = "*"* ident type-suffix
   static Type* Declarator(Token** rest, Token* tok, Type* ty);
+  // type-suffix = ("(" func-param ")")?
+  static Type* TypeSuffix(Token** rest, Token* tok, Type* ty);
   // stmt = "return" expr ";" |
   // "if" "(" expr ")" stmt ("else" stmt)? |
   // "for" "(" expr-stmt expr? ";" expr? ")" stmt |

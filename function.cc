@@ -9,26 +9,53 @@
  * Copyright (c) 2022 by QingChuanWS, All Rights Reserved.
  */
 #include "function.h"
+
 #include "type.h"
+#include <cstdlib>
 
-Function Function::Parse(Token* tok) {
+Function::Function(Token** rest, Token* tok) {
+  Type* ty = Node::Declspec(&tok, tok);
+  ty       = Node::Declarator(&tok, tok, ty);
+
   locals = nullptr;
+  name_  = ty->name_->GetIdent();
 
-  Node* cur = Node::Program(tok);
-  return Function(cur, locals);
+  body_     = Node::Program(rest, tok);
+  var_list_ = locals;
+  delete ty;
 }
 
-void Function::OffsetCal() {
-  int offset = 0;
-  for (Var* cur = var_head_; cur != nullptr; cur = cur->next_) {
-    offset += 8;
-    cur->offset_ = offset;
+Function* Function::Parse(Token* tok) {
+  Function  head = Function();
+  Function* cur  = &head;
+
+  while (!tok->IsEof()) {
+    cur->next_ = new Function(&tok, tok);
+    cur        = cur->next_;
   }
-  stack_size_ = AlignTo(offset, 16);
+  return head.next_;
 }
 
-void Function::FunctionFree() {
-  Node::NodeListFree(this->body_);
-  Var::VarFree(this->var_head_);
+void Function::OffsetCal(Function* prog) {
+  for (Function* fn = prog; fn != nullptr; fn = fn->next_) {
+    int offset = 0;
+    for (Var* cur = fn->var_list_; cur != nullptr; cur = cur->next_) {
+      offset += 8;
+      cur->offset_ = offset;
+    }
+    fn->stack_size_ = AlignTo(offset, 16);
+  }
+}
+
+void Function::FunctionFree(Function* head) {
+  Function* cur = head;
+  while (cur != nullptr) {
+    head = head->next_;
+    Node::NodeListFree(cur->body_);
+    Var::VarFree(cur->var_list_);
+    free(cur->name_);
+    delete cur;
+    cur = head;
+  }
   delete ty_int;
 }
