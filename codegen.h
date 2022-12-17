@@ -27,6 +27,8 @@ class CodeGenerator {
   static void Pop(const char* arg);
   static void ExprGen(Node* node);
   static void StmtGen(Node* node);
+  static void Load(Type* ty);
+  static void Store();
 
   static int depth;
   static const char* argreg[6];

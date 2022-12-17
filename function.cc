@@ -53,7 +53,7 @@ void Function::OffsetCal() {
   for (Function* fn = this; fn != nullptr; fn = fn->next_) {
     int offset = 0;
     for (Var* cur = fn->var_list_; cur != nullptr; cur = cur->next_) {
-      offset += 8;
+      offset += cur->ty_->size_;
       cur->offset_ = offset;
     }
     fn->stack_size_ = AlignTo(offset, 16);

@@ -142,8 +142,11 @@ class Node {
   static Type* Declspec(Token** rest, Token* tok);
   // declarator = "*"* ident type-suffix
   static Type* Declarator(Token** rest, Token* tok, Type* ty);
-  // type-suffix = ("(" func-param ")")?
+  // type-suffix = "(" func-params | "[" num "]" | ɛ
   static Type* TypeSuffix(Token** rest, Token* tok, Type* ty);
+  // func-param = param ("," param) *
+  // param = declspec declarator
+  static Type* FunctionParam(Token** rest, Token* tok, Type* ty);
   // stmt = "return" expr ";" |
   // "if" "(" expr ")" stmt ("else" stmt)? |
   // "for" "(" expr-stmt expr? ";" expr? ")" stmt |

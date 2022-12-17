@@ -13,6 +13,7 @@
 #include "function.h"
 #include "node.h"
 #include "tools.h"
+#include "type.h"
 
 static int Count() {
   static int count = 0;
@@ -59,6 +60,24 @@ void CodeGenerator::Pop(const char* arg) {
   depth--;
 }
 
+void CodeGenerator::Load(Type* ty) {
+  if (ty->kind_ == TY_ARRAY) {
+    // If it is a array, do not attempt to load a value to
+    // the register because we can't load entire array to
+    // register. As a result, the evaluation's result isn't
+    // the array itself but the array address. This is where
+    // "array is automatically converted to a pointer to the first
+    // element of the array in C" occur.
+    return;
+  }
+  ASM_GEN("  mov rax, [rax]");
+}
+
+void CodeGenerator::Store() {
+  Pop("rdi");
+  ASM_GEN("  mov [rdi], rax");
+}
+
 void CodeGenerator::CodeGen(Function* prog) {
   prog->OffsetCal();
 
@@ -76,11 +95,11 @@ void CodeGenerator::CodeGen(Function* prog) {
     ASM_GEN("  sub rsp, ", fn->stack_size_);
 
     int i = 0;
-    for(Var* var = fn->params; var != nullptr; var = var->next_){
+    for (Var* var = fn->params; var != nullptr; var = var->next_) {
       ASM_GEN("  mov [rbp - ", var->offset_, "], ", argreg[i++]);
     }
 
-    // Emit code 
+    // Emit code
     StmtGen(fn->body_);
     DEBUG(depth == 0);
 
@@ -150,19 +169,18 @@ void CodeGenerator::ExprGen(Node* node) {
     return;
   case ND_VAR:
     GetVarAddr(node);
-    ASM_GEN("  mov rax, [rax]");
+    Load(node->ty_);
     return;
   case ND_DEREF:
     ExprGen(node->lhs_);
-    ASM_GEN("  mov rax, [rax]");
+    Load(node->ty_);
     return;
   case ND_ADDR: GetVarAddr(node->lhs_); return;
   case ND_ASSIGN:
     GetVarAddr(node->lhs_);
     Push();
     ExprGen(node->rhs_);
-    Pop("rdi");
-    ASM_GEN("  mov [rdi], rax");
+    Store();
     return;
   case ND_CALL: {
     int nargs = 0;

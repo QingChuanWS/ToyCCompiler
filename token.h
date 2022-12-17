@@ -76,6 +76,8 @@ class Token {
   void ErrorTok(const char* fmt, ...);
   // Get tok name string based copy mode.
   char* GetIdent();
+  // Get tok value when kind == NUM
+  long GetNumber();
   
  private:
   // matching reserved keyword based start.

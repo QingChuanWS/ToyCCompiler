@@ -60,7 +60,8 @@ Node::Node(NodeKind kind, Token* tok, Node* lhs, Node* rhs)
       rhs_      = tmp;
     }
 
-    rhs_ = new Node(ND_MUL, tok, rhs_, new Node(8, tok));
+    // ptr + num
+    rhs_ = new Node(ND_MUL, tok, rhs_, new Node(lhs_->ty_->base_->size_, tok));
     ty_  = lhs_->ty_;
     return;
   }
@@ -75,13 +76,14 @@ Node::Node(NodeKind kind, Token* tok, Node* lhs, Node* rhs)
       node->rhs_ = rhs_;
       node->ty_  = ty_int;
       lhs_       = node;
-      rhs_       = new Node(8, tok);
+      rhs_       = new Node(lhs->ty_->base_->size_, tok);
       return;
     }
 
     // ptr - num
     if (lhs_->ty_->IsPointer() && rhs_->ty_->IsInteger()) {
-      rhs_ = new Node(ND_MUL, tok, rhs_, new Node(8, tok));
+      rhs_ =
+          new Node(ND_MUL, tok, rhs_, new Node(lhs_->ty_->base_->size_, tok));
       rhs_->TypeInfer();
       ty_ = lhs_->ty_;
       return;
@@ -174,34 +176,41 @@ Type* Node::Declarator(Token** rest, Token* tok, Type* ty) {
   return ty;
 }
 
-// type-suffix = ("(" func-param ")")?
-// func-param = param ("," param) *
-// param = declspec declarator
+// type-suffix = "(" func-params | "[" num "]" | ɛ
 Type* Node::TypeSuffix(Token** rest, Token* tok, Type* ty) {
   if (tok->Equal("(")) {
-    tok = tok->next_;
-
-    Type  head = Type();
-    Type* cur  = &head;
-
-    while (!tok->Equal(")")) {
-      if (cur != &head) {
-        tok = tok->SkipToken(",");
-      }
-      Type* base_ty = Declspec(&tok, tok);
-      Type* ty      = Declarator(&tok, tok, base_ty);
-      cur->next_    = new Type(ty);
-      cur           = cur->next_;
-    }
-
-    ty          = new Type(TY_FUNC, ty);
-    ty->params_ = head.next_;
-
-    *rest = tok->next_;
-    return ty;
+    return FunctionParam(rest, tok->next_, ty);
+  }
+  if (tok->Equal("[")) {
+    int len = tok->next_->GetNumber();
+    *rest    = tok->next_->next_->SkipToken("]");
+    return new Type(TY_ARRAY, ty, len);
   }
 
   *rest = tok;
+  return ty;
+}
+
+// func-param = param ("," param) *
+// param = declspec declarator
+Type* Node::FunctionParam(Token** rest, Token* tok, Type* ty) {
+  Type  head = Type();
+  Type* cur  = &head;
+
+  while (!tok->Equal(")")) {
+    if (cur != &head) {
+      tok = tok->SkipToken(",");
+    }
+    Type* base_ty = Declspec(&tok, tok);
+    Type* ty      = Declarator(&tok, tok, base_ty);
+    cur->next_    = new Type(ty);
+    cur           = cur->next_;
+  }
+
+  ty          = new Type(TY_FUNC, ty);
+  ty->params_ = head.next_;
+
+  *rest = tok->next_;
   return ty;
 }
 
@@ -552,8 +561,13 @@ void Node::TypeInfer() {
   case ND_SUB:
   case ND_MUL:
   case ND_DIV:
-  case ND_NEG:
-  case ND_ASSIGN: ty_ = lhs_->ty_; return;
+  case ND_NEG: ty_ = lhs_->ty_; return;
+  case ND_ASSIGN:
+    if (lhs_->ty_->kind_ == TY_ARRAY) {
+      lhs_->tok_->ErrorTok("not an lvalue");
+    }
+    ty_ = lhs_->ty_;
+    return;
   case ND_EQ:
   case ND_NE:
   case ND_LE:
@@ -561,9 +575,15 @@ void Node::TypeInfer() {
   case ND_NUM:
   case ND_CALL: ty_ = ty_int; return;
   case ND_VAR: ty_ = var_->ty_; return;
-  case ND_ADDR: ty_ = new Type(TY_PRT, lhs_->ty_); return;
+  case ND_ADDR:
+    if (lhs_->ty_->kind_ == TY_ARRAY) {
+      ty_ = new Type(TY_PRT, lhs_->ty_->base_);
+    } else {
+      ty_ = new Type(TY_PRT, lhs_->ty_);
+    }
+    return;
   case ND_DEREF:
-    if (lhs_->ty_->kind_ != TY_PRT) {
+    if (lhs_->ty_->base_ == nullptr) {
       ErrorTok("invalid pointer reference!");
     }
     ty_ = lhs_->ty_->base_;

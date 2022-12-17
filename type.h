@@ -21,6 +21,7 @@ enum TypeKind {
   TY_INT,
   TY_PRT,
   TY_FUNC,
+  TY_ARRAY,
   TY_END,
 };
 
@@ -29,14 +30,16 @@ class Type {
   Type()
       : kind_(TY_END)
       , name_(nullptr)
+      , size_(0)
       , base_(nullptr)
+      , array_len_(0)
       , return_ty_(nullptr)
       , params_(nullptr)
       , next_(nullptr) {}
   // copy construct.
   Type(const Type* ty);
   // create a pointer.
-  Type(TypeKind kind, Type* ty);
+  Type(TypeKind kind, Type* base, int len = 0);
 
   bool IsInteger();
   bool IsPointer();
@@ -46,18 +49,22 @@ class Type {
  private:
   friend class Node;
   friend class Function;
+  friend class CodeGenerator;
 
   TypeKind kind_;
-  // Declaration
+  // Declaration.
   Token* name_;
-
-  // pointer
+  // sizeof() value.
+  int size_;
+  // Pointer-to or array type. Using a same member to
+  // represent pointer/array duality in C.
   Type* base_;
+  // Array
+  int array_len_;
   // Function type
   Type* return_ty_;
   Type* params_;
-  // for params type list.
-  Type* next_; 
+  Type* next_;   // for params type list.
 };
 
 #endif   // !TYPE_GRUAD
