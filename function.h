@@ -36,16 +36,19 @@ struct Function {
   // parsing token list and generate AST.
   static Function* Parse(Token* tok);
 
+  void OffsetCal();
+  void CreateParamLVar(Type* param);
+
   static void FunctionFree(Function* head);
-  static void OffsetCal(Function* prog);
 
   Function* next_;
 
-  Node* body_;
   char* name_;
-  Var*  var_list_;
+  Node* body_;
+  Var*  params;
 
-  int stack_size_;
+  Var* var_list_;
+  int  stack_size_;
 };
 
 

@@ -11,6 +11,8 @@
 #include "function.h"
 
 #include "type.h"
+#include "var.h"
+
 #include <cstdlib>
 
 Function::Function(Token** rest, Token* tok) {
@@ -19,10 +21,21 @@ Function::Function(Token** rest, Token* tok) {
 
   locals = nullptr;
   name_  = ty->name_->GetIdent();
+  CreateParamLVar(ty->params_);
+  params = locals;
 
   body_     = Node::Program(rest, tok);
   var_list_ = locals;
+
+  // Type::TypeFree(ty->params_);
   delete ty;
+}
+
+void Function::CreateParamLVar(Type* param) {
+  if (param != nullptr) {
+    CreateParamLVar(param->next_);
+    Var* var = new Var(param->name_->GetIdent(), &locals, param);
+  }
 }
 
 Function* Function::Parse(Token* tok) {
@@ -36,8 +49,8 @@ Function* Function::Parse(Token* tok) {
   return head.next_;
 }
 
-void Function::OffsetCal(Function* prog) {
-  for (Function* fn = prog; fn != nullptr; fn = fn->next_) {
+void Function::OffsetCal() {
+  for (Function* fn = this; fn != nullptr; fn = fn->next_) {
     int offset = 0;
     for (Var* cur = fn->var_list_; cur != nullptr; cur = cur->next_) {
       offset += 8;

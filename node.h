@@ -36,7 +36,7 @@ enum NodeKind {
   ND_EXPR_STMT,   // expression statement
   ND_RETURN,      // return
   ND_BLOCK,       // { ... }
-  ND_FUNCTION,    // Function call
+  ND_CALL,    // Function call
   ND_IF,          // if
   ND_FOR,         // for and while
   ND_VAR,         // variable
@@ -57,7 +57,7 @@ class Node {
       , body_(nullptr)
       , init_(nullptr)
       , inc_(nullptr)
-      , function_(nullptr)
+      , call_(nullptr)
       , args_(nullptr)
       , val_(0)
       , var_()
@@ -75,7 +75,7 @@ class Node {
       , body_(nullptr)
       , init_(nullptr)
       , inc_(nullptr)
-      , function_(nullptr)
+      , call_(nullptr)
       , args_(nullptr)
       , val_(0)
       , var_()
@@ -101,7 +101,7 @@ class Node {
       , body_(nullptr)
       , init_(nullptr)
       , inc_(nullptr)
-      , function_(nullptr)
+      , call_(nullptr)
       , args_(nullptr)
       , val_(val)
       , var_()
@@ -119,7 +119,7 @@ class Node {
       , body_(nullptr)
       , init_(nullptr)
       , inc_(nullptr)
-      , function_(nullptr)
+      , call_(nullptr)
       , args_(nullptr)
       , val_(0)
       , var_(var)
@@ -170,11 +170,10 @@ class Node {
   // primary = "(" expr ")" | ident | num
   static Node* Primary(Token** rest, Token* tok);
   // function = ident "(" (assign ("," assign)*)? ")"
-  static Node* Funcall(Token** rest, Token* tok);
+  static Node* Call(Token** rest, Token* tok);
 
   // post-order for AST delete
   static void NodeFree(Node* node);
-
   // Report an error based on tok
   void ErrorTok(const char* fmt, ...);
 
@@ -207,7 +206,7 @@ class Node {
   Node* inc_;
 
   // function;
-  char* function_;
+  char* call_;
   Node* args_;
 
   // for Var

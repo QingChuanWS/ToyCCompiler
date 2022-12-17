@@ -14,8 +14,8 @@ assert() {
   expected="$1"
   input="$2"
 
-  # valgrind --tool=memcheck --leak-check=full ./toyc "$input" > tmp.s
-  ./toyc "$input" > tmp.s || exit
+  valgrind --tool=memcheck --leak-check=full ./toyc "$input" > tmp.s
+  # ./toyc "$input" > tmp.s || exit
   gcc -static -o tmp tmp.s tmp2.o
   ./tmp
   actual="$?"
@@ -26,7 +26,7 @@ assert() {
     echo "$input => $expected expected, but got $actual"
     exit 1
   fi
-  # read -p "Check complier memory" char
+  read -p "Check complier memory" char
 }
 
 assert 0 'int main() { return 0; }'
@@ -110,5 +110,9 @@ assert 66 'int main() { return add6(1,2,add6(3,4,5,6,7,8),9,10,11); }'
 assert 136 'int main() { return add6(1,2,add6(3,add6(4,5,6,7,8,9),10,11,12,13),14,15,16); }'
 
 assert 32 'int main() { return ret32(); } int ret32() { return 32; }'
+assert 7 'int main() { return add2(3,4); } int add2(int x, int y) { return x+y; }'
+assert 1 'int main() { return sub2(4,3); } int sub2(int x, int y) { return x-y; }'
+assert 55 'int main() { return fib(9); } int fib(int x) { if (x<=1) return 1; return fib(x-1) + fib(x-2); }'
+
 
 echo OK

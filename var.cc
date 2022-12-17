@@ -10,6 +10,7 @@
  */
 
 #include "var.h"
+#include "type.h"
 
 // All local variable instances created during parsing are
 // accumulated to this list.
@@ -28,6 +29,9 @@ void Var::VarFree(Var* head){
   Var* cur = head;
   while(cur != nullptr){
     head = head->next_;
+    if(cur->ty_ != nullptr){
+      Type::TypeFree(cur->ty_);
+    }
     free(cur->name_);
     delete cur;
     cur = head;

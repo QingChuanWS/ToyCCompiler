@@ -60,7 +60,7 @@ void CodeGenerator::Pop(const char* arg) {
 }
 
 void CodeGenerator::CodeGen(Function* prog) {
-  Function::OffsetCal(prog);
+  prog->OffsetCal();
 
   // using intel syntax
   // e.g. op dst, src
@@ -74,6 +74,11 @@ void CodeGenerator::CodeGen(Function* prog) {
     ASM_GEN("  push rbp");
     ASM_GEN("  mov rbp, rsp");
     ASM_GEN("  sub rsp, ", fn->stack_size_);
+
+    int i = 0;
+    for(Var* var = fn->params; var != nullptr; var = var->next_){
+      ASM_GEN("  mov [rbp - ", var->offset_, "], ", argreg[i++]);
+    }
 
     // Emit code 
     StmtGen(fn->body_);
@@ -159,7 +164,7 @@ void CodeGenerator::ExprGen(Node* node) {
     Pop("rdi");
     ASM_GEN("  mov [rdi], rax");
     return;
-  case ND_FUNCTION: {
+  case ND_CALL: {
     int nargs = 0;
     for (Node* arg = node->args_; arg != nullptr; arg = arg->next_) {
       ExprGen(arg);
@@ -172,7 +177,7 @@ void CodeGenerator::ExprGen(Node* node) {
     }
 
     ASM_GEN("  mov rax, 0");
-    ASM_GEN("  call ", node->function_);
+    ASM_GEN("  call ", node->call_);
     return;
   }
   default: break;

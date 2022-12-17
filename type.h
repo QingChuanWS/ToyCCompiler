@@ -29,20 +29,14 @@ class Type {
   Type()
       : kind_(TY_END)
       , name_(nullptr)
-      , base_(nullptr) {}
-  // create a pointer
-  Type(TypeKind kind, Type* ty)
-      : kind_(kind)
-      , name_(nullptr) {
-    if (kind_ == TY_PRT) {
-      base_ = ty;
-      return_ty = nullptr;
-    }
-    if (kind_ == TY_FUNC) {
-      return_ty = ty;
-      base_ = nullptr;
-    }
-  }
+      , base_(nullptr)
+      , return_ty_(nullptr)
+      , params_(nullptr)
+      , next_(nullptr) {}
+  // copy construct.
+  Type(const Type* ty);
+  // create a pointer.
+  Type(TypeKind kind, Type* ty);
 
   bool IsInteger();
   bool IsPointer();
@@ -52,7 +46,7 @@ class Type {
  private:
   friend class Node;
   friend class Function;
-  
+
   TypeKind kind_;
   // Declaration
   Token* name_;
@@ -60,7 +54,10 @@ class Type {
   // pointer
   Type* base_;
   // Function type
-  Type* return_ty;
+  Type* return_ty_;
+  Type* params_;
+  // for params type list.
+  Type* next_; 
 };
 
 #endif   // !TYPE_GRUAD

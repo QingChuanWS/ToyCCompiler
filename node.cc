@@ -32,7 +32,7 @@ Node::Node(NodeKind kind, Token* tok, Node* lhs, Node* rhs)
     , body_(nullptr)
     , init_(nullptr)
     , inc_(nullptr)
-    , function_(nullptr)
+    , call_(nullptr)
     , args_(nullptr)
     , val_(0)
     , var_()
@@ -110,7 +110,8 @@ Node* Node::CompoundStmt(Token** rest, Token* tok) {
   }
   Node* node  = new Node(ND_BLOCK, tok);
   node->body_ = head.next_;
-  *rest       = tok->next_;
+
+  *rest = tok->next_;
   return node;
 }
 
@@ -168,17 +169,38 @@ Type* Node::Declarator(Token** rest, Token* tok, Type* ty) {
   }
 
   ty = TypeSuffix(rest, tok->next_, ty);
-  ty->name_ = tok;
 
+  ty->name_ = tok;
   return ty;
 }
 
 // type-suffix = ("(" func-param ")")?
-Type* Node::TypeSuffix(Token** rest, Token* tok, Type* ty){
-  if(tok->Equal("(")){
-    *rest = tok->next_->SkipToken(")");
-    return new Type(TY_FUNC, ty);
+// func-param = param ("," param) *
+// param = declspec declarator
+Type* Node::TypeSuffix(Token** rest, Token* tok, Type* ty) {
+  if (tok->Equal("(")) {
+    tok = tok->next_;
+
+    Type  head = Type();
+    Type* cur  = &head;
+
+    while (!tok->Equal(")")) {
+      if (cur != &head) {
+        tok = tok->SkipToken(",");
+      }
+      Type* base_ty = Declspec(&tok, tok);
+      Type* ty      = Declarator(&tok, tok, base_ty);
+      cur->next_    = new Type(ty);
+      cur           = cur->next_;
+    }
+
+    ty          = new Type(TY_FUNC, ty);
+    ty->params_ = head.next_;
+
+    *rest = tok->next_;
+    return ty;
   }
+
   *rest = tok;
   return ty;
 }
@@ -399,7 +421,7 @@ Node* Node::Primary(Token** rest, Token* tok) {
 
   if (tok->kind_ == TK_IDENT) {
     if (tok->next_->Equal("(")) {
-      return Funcall(rest, tok);
+      return Call(rest, tok);
     }
     Var* var = locals->Find(tok);
     if (var == nullptr) {
@@ -420,7 +442,7 @@ Node* Node::Primary(Token** rest, Token* tok) {
 }
 
 // function = ident "(" (assign ("," assign)*)? ")"
-Node* Node::Funcall(Token** rest, Token* tok) {
+Node* Node::Call(Token** rest, Token* tok) {
   Token* start = tok;
   tok          = tok->next_->next_;
 
@@ -437,9 +459,9 @@ Node* Node::Funcall(Token** rest, Token* tok) {
 
   *rest = tok->SkipToken(")");
 
-  Node* node      = new Node(ND_FUNCTION, start);
-  node->function_ = start->GetIdent();
-  node->args_     = head.next_;
+  Node* node  = new Node(ND_CALL, start);
+  node->call_ = start->GetIdent();
+  node->args_ = head.next_;
   return node;
 }
 
@@ -467,7 +489,6 @@ void Node::NodeListFree(Node* node) {
 }
 
 // post-order for node delete
-// TODO: rename this function to AST_Tree free
 void Node::NodeFree(Node* node) {
   if (node == nullptr)
     return;
@@ -484,13 +505,11 @@ void Node::NodeFree(Node* node) {
     delete node->ty_;
   }
   if (node->kind_ == ND_VAR) {
-    if (node->var_->ty_ != nullptr) {
-      Type::TypeFree(node->var_->ty_);
-      node->var_->ty_ = nullptr;
-    }
+    // all of var will create a list and is freed in Funciton class.
+    ;
   }
-  if (node->kind_ == ND_FUNCTION) {
-    free(node->function_);
+  if (node->kind_ == ND_CALL) {
+    free(node->call_);
     NodeListFree(node->args_);
   }
   delete node;
@@ -540,7 +559,7 @@ void Node::TypeInfer() {
   case ND_LE:
   case ND_LT:
   case ND_NUM:
-  case ND_FUNCTION: ty_ = ty_int; return;
+  case ND_CALL: ty_ = ty_int; return;
   case ND_VAR: ty_ = var_->ty_; return;
   case ND_ADDR: ty_ = new Type(TY_PRT, lhs_->ty_); return;
   case ND_DEREF:
