@@ -176,14 +176,15 @@ Type* Node::Declarator(Token** rest, Token* tok, Type* ty) {
   return ty;
 }
 
-// type-suffix = "(" func-params | "[" num "]" | ɛ
+// type-suffix = "(" func-params | "[" num "]" type-suffix | ɛ
 Type* Node::TypeSuffix(Token** rest, Token* tok, Type* ty) {
   if (tok->Equal("(")) {
     return FunctionParam(rest, tok->next_, ty);
   }
   if (tok->Equal("[")) {
     int len = tok->next_->GetNumber();
-    *rest    = tok->next_->next_->SkipToken("]");
+    tok    = tok->next_->next_->SkipToken("]");
+    ty = TypeSuffix(rest, tok, ty);
     return new Type(TY_ARRAY, ty, len);
   }
 
