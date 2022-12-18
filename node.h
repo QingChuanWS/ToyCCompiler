@@ -172,7 +172,7 @@ class Node {
   static Node* Unary(Token** rest, Token* tok);
   // postfix = primary ("[" Expr "]")*
   static Node* Postfix(Token** rest, Token* tok);
-  // primary = "(" expr ")" | ident | num
+  // primary = "(" expr ")" | "sizeof" unary | ident | num
   static Node* Primary(Token** rest, Token* tok);
   // function = ident "(" (assign ("," assign)*)? ")"
   static Node* Call(Token** rest, Token* tok);

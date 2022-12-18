@@ -183,8 +183,8 @@ Type* Node::TypeSuffix(Token** rest, Token* tok, Type* ty) {
   }
   if (tok->Equal("[")) {
     int len = tok->next_->GetNumber();
-    tok    = tok->next_->next_->SkipToken("]");
-    ty = TypeSuffix(rest, tok, ty);
+    tok     = tok->next_->next_->SkipToken("]");
+    ty      = TypeSuffix(rest, tok, ty);
     return new Type(TY_ARRAY, ty, len);
   }
 
@@ -422,25 +422,34 @@ Node* Node::Unary(Token** rest, Token* tok) {
   return Postfix(rest, tok);
 }
 
-Node* Node::Postfix(Token** rest, Token* tok){
-  Node* node = Primary(&tok,tok);
+Node* Node::Postfix(Token** rest, Token* tok) {
+  Node* node = Primary(&tok, tok);
 
-  while(tok->Equal("[")){
+  while (tok->Equal("[")) {
     // x[y] is short for *(x + y)
     Token* start = tok;
-    Node* idx = Expr(&tok, tok->next_);
-    tok = tok->SkipToken("]");
+    Node*  idx   = Expr(&tok, tok->next_);
+    tok          = tok->SkipToken("]");
     node = new Node(ND_DEREF, start, new Node(ND_ADD, start, node, idx));
   }
   *rest = tok;
   return node;
 }
 
+// primary = "(" expr ")" | "sizeof" unary | ident | num
 Node* Node::Primary(Token** rest, Token* tok) {
   if (tok->Equal("(")) {
     Node* node = Expr(&tok, tok->next_);
     *rest      = tok->SkipToken(")");
     return node;
+  }
+
+  if (tok->Equal("sizeof")) {
+    Node* node = Unary(rest, tok->next_);
+    node->TypeInfer();
+    long size = node->ty_->size_;
+    NodeFree(node);
+    return new Node(size, tok);
   }
 
   if (tok->kind_ == TK_IDENT) {

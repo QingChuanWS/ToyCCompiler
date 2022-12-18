@@ -85,7 +85,8 @@ int Token::ReadPunct(char* p) {
 }
 
 void Token::ConvertToReserved(Token* tok) {
-  static const char* kw[] = {"return", "if", "else", "for", "while", "int"};
+  static const char* kw[] = {
+      "return", "if", "else", "for", "while", "int", "sizeof"};
   for (Token* t = tok; t != nullptr; t = t->next_) {
     for (int i = 0; i < sizeof(kw) / sizeof(*kw); i++) {
       if (StrEqual(t->str_, kw[i], t->strlen_)) {
@@ -119,15 +120,15 @@ void Token::ErrorTok(const char* fmt, ...) {
   exit(1);
 }
 
-char* Token::GetIdent(){
-  if(kind_ != TK_IDENT){
+char* Token::GetIdent() {
+  if (kind_ != TK_IDENT) {
     ErrorTok("GetIdent expect an identifier.");
   }
   return strndup(str_, strlen_);
 }
 
-long Token::GetNumber(){
-  if(kind_ != TK_NUM){
+long Token::GetNumber() {
+  if (kind_ != TK_NUM) {
     ErrorTok("GetNumber expect an number.");
   }
   return val_;
