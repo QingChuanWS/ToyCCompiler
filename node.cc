@@ -419,7 +419,21 @@ Node* Node::Unary(Token** rest, Token* tok) {
     return new Node(ND_DEREF, tok, Unary(rest, tok->next_));
   }
 
-  return Primary(rest, tok);
+  return Postfix(rest, tok);
+}
+
+Node* Node::Postfix(Token** rest, Token* tok){
+  Node* node = Primary(&tok,tok);
+
+  while(tok->Equal("[")){
+    // x[y] is short for *(x + y)
+    Token* start = tok;
+    Node* idx = Expr(&tok, tok->next_);
+    tok = tok->SkipToken("]");
+    node = new Node(ND_DEREF, start, new Node(ND_ADD, start, node, idx));
+  }
+  *rest = tok;
+  return node;
 }
 
 Node* Node::Primary(Token** rest, Token* tok) {

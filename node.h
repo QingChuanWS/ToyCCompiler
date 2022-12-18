@@ -170,6 +170,8 @@ class Node {
   static Node* Mul(Token** rest, Token* tok);
   // unary = ("+" | "-" | "*" | "&") ? unary | primary
   static Node* Unary(Token** rest, Token* tok);
+  // postfix = primary ("[" Expr "]")*
+  static Node* Postfix(Token** rest, Token* tok);
   // primary = "(" expr ")" | ident | num
   static Node* Primary(Token** rest, Token* tok);
   // function = ident "(" (assign ("," assign)*)? ")"
