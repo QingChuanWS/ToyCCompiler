@@ -10,8 +10,8 @@
  */
 
 #include "codegen.h"
-#include "function.h"
 #include "node.h"
+#include "object.h"
 #include "token.h"
 #include "tools.h"
 
@@ -21,15 +21,16 @@ int main(int argc, char** argv) {
     return 1;
   }
 
-  Token     head = Token();
-  Token*    cur  = Token::TokenCreate(head, argv[1]);
-  Function* prog = Function::Parse(cur);
+  Token   head = Token();
+  Token*  cur  = Token::TokenCreate(head, argv[1]);
+  Object* prog = Object::Parse(cur);
 
   CodeGenerator gene;
   gene.CodeGen(prog);
 
   Token::TokenFree(head);
-  Function::FunctionFree(prog);
+  Object::ObjectFree(prog);
+  delete ty_int;
 
   return 0;
 }

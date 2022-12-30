@@ -48,7 +48,7 @@ class Type {
 
  private:
   friend class Node;
-  friend class Function;
+  friend class Object;
   friend class CodeGenerator;
 
   TypeKind kind_;

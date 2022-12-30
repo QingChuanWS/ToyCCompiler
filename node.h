@@ -12,10 +12,10 @@
 #ifndef NODE_GRUAD
 #define NODE_GRUAD
 
+#include "object.h"
 #include "token.h"
 #include "tools.h"
 #include "type.h"
-#include "var.h"
 
 #include <string>
 
@@ -107,7 +107,7 @@ class Node {
       , var_()
       , ty_(nullptr) {}
 
-  explicit Node(Var* var, Token* tok)
+  explicit Node(Object* var, Token* tok)
       : kind_(ND_VAR)
       , tok_(tok)
       , next_(nullptr)
@@ -185,7 +185,7 @@ class Node {
   void TypeInfer();
 
   friend class CodeGenerator;
-  friend class Function;
+  friend class Object;
 
   NodeKind kind_;   // Node kind
   Token*   tok_;    // Representative node
@@ -215,7 +215,7 @@ class Node {
   Node* args_;
 
   // for Var
-  Var* var_;
+  Object* var_;
   // for const
   long val_;
 };

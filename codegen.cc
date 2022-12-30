@@ -8,10 +8,11 @@
  *
  * Copyright (c) 2022 by QingChuanWS, All Rights Reserved.
  */
+ 
 #include "codegen.h"
 
-#include "function.h"
 #include "node.h"
+#include "object.h"
 #include "tools.h"
 #include "type.h"
 
@@ -24,7 +25,7 @@ int CodeGenerator::depth = 0;
 
 const char* CodeGenerator::argreg[6] = {"rdi", "rsi", "rcx", "rdx", "r8", "r9"};
 
-Function* CodeGenerator::cur_fn = nullptr;
+Object* cur_fn = nullptr;
 
 #define ASM_GEN(...) AsmPrint(__VA_ARGS__)
 
@@ -78,13 +79,13 @@ void CodeGenerator::Store() {
   ASM_GEN("  mov [rdi], rax");
 }
 
-void CodeGenerator::CodeGen(Function* prog) {
+void CodeGenerator::CodeGen(Object* prog) {
   prog->OffsetCal();
 
   // using intel syntax
   // e.g. op dst, src
   ASM_GEN(".intel_syntax noprefix");
-  for (Function* fn = prog; fn != nullptr; fn = fn->next_) {
+  for (Object* fn = prog; fn != nullptr; fn = fn->next_) {
     ASM_GEN("  .global ", fn->name_);
     ASM_GEN(fn->name_, ":");
     cur_fn = fn;
@@ -95,7 +96,7 @@ void CodeGenerator::CodeGen(Function* prog) {
     ASM_GEN("  sub rsp, ", fn->stack_size_);
 
     int i = 0;
-    for (Var* var = fn->params; var != nullptr; var = var->next_) {
+    for (Object* var = fn->params_; var != nullptr; var = var->next_) {
       ASM_GEN("  mov [rbp - ", var->offset_, "], ", argreg[i++]);
     }
 

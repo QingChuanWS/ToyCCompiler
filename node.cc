@@ -11,14 +11,14 @@
 
 #include "node.h"
 
+#include "object.h"
 #include "token.h"
 #include "tools.h"
 #include "type.h"
-#include "var.h"
 
 #include <cstring>
 
-extern Var* locals;
+extern Object* locals;
 
 Node::Node(NodeKind kind, Token* tok, Node* lhs, Node* rhs)
     : kind_(kind)
@@ -133,7 +133,7 @@ Node* Node::Declaration(Token** rest, Token* tok) {
     }
 
     Type* ty  = Declarator(&tok, tok, ty_base);
-    Var*  var = new Var(ty->name_->GetIdent(), &locals, ty);
+    Object*  var = new Object(OB_LOCAL, ty->name_->GetIdent(), &locals, ty);
 
     if (!tok->Equal("=")) {
       continue;
@@ -456,7 +456,7 @@ Node* Node::Primary(Token** rest, Token* tok) {
     if (tok->next_->Equal("(")) {
       return Call(rest, tok);
     }
-    Var* var = locals->Find(tok);
+    Object* var = locals->Find(tok);
     if (var == nullptr) {
       tok->ErrorTok("undefined variable.");
     }
