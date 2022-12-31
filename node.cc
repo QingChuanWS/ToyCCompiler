@@ -132,8 +132,8 @@ Node* Node::Declaration(Token** rest, Token* tok) {
       tok = tok->SkipToken(",");
     }
 
-    Type* ty  = Declarator(&tok, tok, ty_base);
-    Object*  var = new Object(OB_LOCAL, ty->name_->GetIdent(), &locals, ty);
+    Type*   ty  = Declarator(&tok, tok, ty_base);
+    Object* var = new Object(OB_LOCAL, ty, &locals);
 
     if (!tok->Equal("=")) {
       continue;
@@ -456,11 +456,13 @@ Node* Node::Primary(Token** rest, Token* tok) {
     if (tok->next_->Equal("(")) {
       return Call(rest, tok);
     }
-    Object* var = locals->Find(tok);
-    if (var == nullptr) {
+    Object* local_var  = Object::LocalVarFind(tok);
+    Object* globla_var = Object::GlobalVarFind(tok);
+    if (local_var == nullptr && globla_var == nullptr) {
       tok->ErrorTok("undefined variable.");
     }
-    *rest = tok->next_;
+    Object* var = local_var != nullptr ? local_var : globla_var;
+    *rest       = tok->next_;
     return new Node(var, tok);
   }
 

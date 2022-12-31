@@ -51,6 +51,10 @@ bool Type::IsInteger() {
   return this->kind_ == TY_INT;
 }
 
+bool Type::IsFunction() {
+  return this->kind_ == TY_FUNC;
+}
+
 bool Type::IsPointer() {
   return base_ != nullptr;
 }

@@ -1,6 +1,16 @@
 /*
  * This project is exclusively owned by QingChuanWS and shall not be used for
  * commercial and profitting purpose without QingChuanWS's permission.
+ * 
+ * @Author: bingshan45@163.com
+ * Github: https://github.com/QingChuanWS
+ * @Description: 
+ * 
+ * Copyright (c) 2022 by QingChuanWS, All Rights Reserved. 
+ */
+/*
+ * This project is exclusively owned by QingChuanWS and shall not be used for
+ * commercial and profitting purpose without QingChuanWS's permission.
  *
  * @Author: bingshan45@163.com
  * Github: https://github.com/QingChuanWS
@@ -43,6 +53,7 @@ class Type {
 
   bool IsInteger();
   bool IsPointer();
+  bool IsFunction();
 
   static void TypeFree(Type* ty);
 

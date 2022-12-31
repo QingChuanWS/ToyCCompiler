@@ -8,7 +8,7 @@
  *
  * Copyright (c) 2022 by QingChuanWS, All Rights Reserved.
  */
- 
+
 #include "codegen.h"
 
 #include "node.h"
@@ -43,7 +43,13 @@ static void AsmPrint(const T first_arg, const Types... args) {
 
 void CodeGenerator::GetVarAddr(Node* node) {
   switch (node->kind_) {
-  case ND_VAR: ASM_GEN("  lea rax, [rbp - ", node->var_->offset_, "]"); return;
+  case ND_VAR:
+    if (node->var_->IsLocal()) {
+      ASM_GEN("  lea rax, [rbp - ", node->var_->offset_, "]");
+    } else {
+      ASM_GEN("  lea rax, [rip + ", node->var_->name_, "]");
+    }
+    return;
   case ND_DEREF: ExprGen(node->lhs_); return;
   default: break;
   }
@@ -81,12 +87,33 @@ void CodeGenerator::Store() {
 
 void CodeGenerator::CodeGen(Object* prog) {
   prog->OffsetCal();
+  EmitData(prog);
+  EmitText(prog);
+}
 
+void CodeGenerator::EmitData(Object* prog) {
+  for (Object* var = prog; var != nullptr; var = var->next_) {
+    if (var->IsFunction()) {
+      continue;
+    }
+    ASM_GEN("  .data");
+    ASM_GEN("  .global ", var->name_);
+    ASM_GEN(var->name_, ":");
+    ASM_GEN("  .zero ", var->ty_->size_);
+  }
+}
+
+void CodeGenerator::EmitText(Object* prog) {
   // using intel syntax
   // e.g. op dst, src
   ASM_GEN(".intel_syntax noprefix");
   for (Object* fn = prog; fn != nullptr; fn = fn->next_) {
+    if (fn->IsGlobal()) {
+      continue;
+    }
+
     ASM_GEN("  .global ", fn->name_);
+    ASM_GEN(" .text");
     ASM_GEN(fn->name_, ":");
     cur_fn = fn;
 

@@ -21,6 +21,8 @@ class CodeGenerator {
   void CodeGen(Object* prog);
 
  private:
+  static void EmitData(Object* prog);
+  static void EmitText(Object* prog);
   static void GetVarAddr(Node* node);
   static void Push(void);
   static void Pop(const char* arg);
@@ -29,9 +31,8 @@ class CodeGenerator {
   static void Load(Type* ty);
   static void Store();
 
-  static int depth;
+  static int         depth;
   static const char* argreg[6];
-  
 };
 
 #endif   // !CODEGEN_GRUAD

@@ -11,6 +11,7 @@
 #ifndef OBJECT_GRUAD
 #define OBJECT_GRUAD
 
+#include "token.h"
 #include "type.h"
 
 class Node;
@@ -31,15 +32,12 @@ class Object {
       , body_(nullptr)
       , ty_(nullptr) {}
 
-  Object(Objectkind kind, char* name, Object** next, Type* ty)
-      : kind_(kind)
-      , name_(name)
-      , ty_(ty)
-      , next_(*next) {
-    *next = this;
-  }
+  Object(Objectkind kind, Type* ty, Object** next);
+
   // create a function based on token list.
-  Object(Token** rest, Token* tok);
+  static Token* CreateFunction(Token* tok, Type* basety);
+  // create global variables based on token list.
+  static Token* CreateGlobal(Token* tok, Type* basety);
   // parsing token list and generate AST.
   static Object* Parse(Token* tok);
   // calculate the function local variable offset.
@@ -52,8 +50,15 @@ class Object {
   bool IsGlobal() { return kind_ == OB_GLOBAL; }
   // check whether is a global variable or function
   bool IsFunction() { return kind_ == OB_FUNCTION; }
+  // check whether is a global variable or function
+  // based on a token.
+  bool IsFunction(Token* tok);
   // free the object list.
   static void ObjectFree(Object* head);
+  // find a token name in local variable list.
+  static Object* LocalVarFind(Token* tok);
+  // find a token name in global variable list.
+  static Object* GlobalVarFind(Token* tok);
   // find a token name in object list.
   Object* Find(Token* tok);
 
@@ -84,5 +89,6 @@ class Object {
 };
 
 extern Object* locals;
+extern Object* globals;
 
 #endif   // OBJECT_GRUAD

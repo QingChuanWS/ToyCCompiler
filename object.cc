@@ -17,39 +17,84 @@
 #include <cstdlib>
 
 Object* locals;
+Object* globals;
 
-Object::Object(Token** rest, Token* tok)
-    : kind_(OB_FUNCTION) {
-  kind_ = OB_FUNCTION;
+Object::Object(Objectkind kind, Type* ty, Object** next)
+    : kind_(kind)
+    , ty_(ty)
+    , next_(*next) {
+  if (kind == OB_LOCAL && LocalVarFind(ty->name_) != nullptr) {
+    ty->name_->ErrorTok("redefined variable.");
+  }
+  if ((kind == OB_FUNCTION || kind == OB_GLOBAL) &&
+      GlobalVarFind(ty->name_) != nullptr) {
+    ty->name_->ErrorTok("redefined variable.");
+  }
+  name_ = ty->name_->GetIdent();
+  *next = this;
+}
 
-  ty_ = Node::Declspec(&tok, tok);
-  ty_      = Node::Declarator(&tok, tok, ty_);
+Token* Object::CreateFunction(Token* tok, Type* basety) {
+  locals   = nullptr;
+  Type* ty = Node::Declarator(&tok, tok, basety);
 
-  locals = nullptr;
-  name_  = ty_->name_->GetIdent();
-  CreateParamLVar(ty_->params_);
-  params_ = locals;
+  Object* fn = new Object(OB_FUNCTION, ty, &globals);
+  fn->CreateParamLVar(ty->params_);
+  fn->params_   = locals;
+  fn->body_     = Node::Program(&tok, tok);
+  fn->loc_list_ = locals;
+  fn->ty_       = ty;
+  return tok;
+}
 
-  body_     = Node::Program(rest, tok);
-  loc_list_ = locals;
+Token* Object::CreateGlobal(Token* tok, Type* basety) {
+  bool first = true;
+
+  while (!tok->Equal(";")) {
+    if (!first) {
+      tok = tok->SkipToken(",");
+    }
+    first = false;
+
+    Type*   ty = Node::Declarator(&tok, tok, basety);
+    Object* gv = new Object(OB_GLOBAL, ty, &globals);
+  }
+  return tok->SkipToken(";");
 }
 
 void Object::CreateParamLVar(Type* param) {
   if (param != nullptr) {
     CreateParamLVar(param->next_);
-    Object* v = new Object(OB_LOCAL, param->name_->GetIdent(), &locals, param);
+    Object* v = new Object(OB_LOCAL, param, &locals);
   }
 }
 
+bool Object::IsFunction(Token* tok) {
+  if (tok->Equal(";")) {
+    return false;
+  }
+
+  Type  dummy = Type();
+  Type* ty    = Node::Declarator(&tok, tok, &dummy);
+  bool ret = ty->kind_ == TY_FUNC;
+  delete ty;
+  return ret;
+}
+
 Object* Object::Parse(Token* tok) {
-  Object  head = Object();
-  Object* cur  = &head;
+  globals = nullptr;
 
   while (!tok->IsEof()) {
-    cur->next_ = new Object(&tok, tok);
-    cur        = cur->next_;
+    Type* basety = Node::Declspec(&tok, tok);
+
+    if (globals->IsFunction(tok)) {
+      tok = CreateFunction(tok, basety);
+      continue;
+    }
+
+    tok = CreateGlobal(tok, basety);
   }
-  return head.next_;
+  return globals;
 }
 
 void Object::OffsetCal() {
@@ -61,6 +106,14 @@ void Object::OffsetCal() {
     }
     fn->stack_size_ = AlignTo(offset, 16);
   }
+}
+
+Object* Object::LocalVarFind(Token* tok) {
+  return locals->Find(tok);
+}
+
+Object* Object::GlobalVarFind(Token* tok) {
+  return globals->Find(tok);
 }
 
 Object* Object::Find(Token* tok) {
