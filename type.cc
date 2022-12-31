@@ -10,7 +10,8 @@
  */
 #include "type.h"
 
-Type* ty_int = new Type(TY_INT, nullptr);
+Type* ty_int  = new Type(TY_INT, nullptr);
+Type* ty_char = new Type(TY_CHAR, nullptr);
 
 Type::Type(const Type* ty) {
   kind_      = ty->kind_;
@@ -33,6 +34,7 @@ Type::Type(TypeKind kind, Type* base, int len)
     , params_(nullptr)
     , next_(nullptr) {
   switch (kind_) {
+  case TY_CHAR: size_ = 1; return;
   case TY_INT: size_ = 8; return;
   case TY_PRT:
     base_ = base;
@@ -61,7 +63,7 @@ bool Type::IsPointer() {
 
 void Type::TypeFree(Type* head) {
   Type* cur = head;
-  while (head && cur != ty_int) {
+  while (cur && cur != ty_int && cur != ty_char) {
     head = head->base_;
     delete cur;
     cur = head;

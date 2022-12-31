@@ -176,7 +176,6 @@ class Node {
   static Node* Primary(Token** rest, Token* tok);
   // function = ident "(" (assign ("," assign)*)? ")"
   static Node* Call(Token** rest, Token* tok);
-
   // post-order for AST delete
   static void NodeFree(Node* node);
   // Report an error based on tok

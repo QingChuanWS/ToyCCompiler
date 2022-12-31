@@ -78,6 +78,8 @@ class Token {
   char* GetIdent();
   // Get tok value when kind == NUM
   long GetNumber();
+  // check whether the given token is a typename.
+  bool IsTypename();
   
  private:
   // matching reserved keyword based start.

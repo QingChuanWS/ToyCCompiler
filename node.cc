@@ -102,7 +102,7 @@ Node* Node::CompoundStmt(Token** rest, Token* tok) {
   Node* cur  = &head;
 
   while (!tok->Equal("}")) {
-    if (tok->Equal("int")) {
+    if (tok->IsTypename()) {
       cur->next_ = Declaration(&tok, tok);
     } else {
       cur->next_ = Node::Stmt(&tok, tok);
@@ -152,8 +152,13 @@ Node* Node::Declaration(Token** rest, Token* tok) {
   return node;
 }
 
-// declspec = "int"
+// declspec = "char" | "int"
 Type* Node::Declspec(Token** rest, Token* tok) {
+  if(tok->Equal("char")){
+    *rest = tok->SkipToken("char");
+    return ty_char;
+  }
+
   *rest = tok->SkipToken("int");
   return ty_int;
 }
@@ -176,7 +181,7 @@ Type* Node::Declarator(Token** rest, Token* tok, Type* ty) {
   return ty;
 }
 
-// type-suffix = "(" func-params | "[" num "]" type-suffix | ɛ
+// type-suffix = "(" func-params ")" | "[" num "]" type-suffix | ɛ
 Type* Node::TypeSuffix(Token** rest, Token* tok, Type* ty) {
   if (tok->Equal("(")) {
     return FunctionParam(rest, tok->next_, ty);

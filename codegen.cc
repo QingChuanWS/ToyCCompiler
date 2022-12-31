@@ -23,7 +23,8 @@ static int Count() {
 
 int CodeGenerator::depth = 0;
 
-const char* CodeGenerator::argreg[6] = {"rdi", "rsi", "rcx", "rdx", "r8", "r9"};
+const char* argreg8[6]  = {"dil", "sil", "cl", "dl", "r8b", "r9b"};
+const char* argreg64[6] = {"rdi", "rsi", "rcx", "rdx", "r8", "r9"};
 
 Object* cur_fn = nullptr;
 
@@ -77,12 +78,20 @@ void CodeGenerator::Load(Type* ty) {
     // element of the array in C" occur.
     return;
   }
-  ASM_GEN("  mov rax, [rax]");
+  if (ty->size_ == 1) {
+    ASM_GEN("  mov al, [rax]");
+  } else {
+    ASM_GEN("  mov rax, [rax]");
+  }
 }
 
-void CodeGenerator::Store() {
+void CodeGenerator::Store(Type* ty) {
   Pop("rdi");
-  ASM_GEN("  mov [rdi], rax");
+  if (ty->size_ == 1) {
+    ASM_GEN("  mov [rdi], al");
+  } else {
+    ASM_GEN("  mov [rdi], rax");
+  }
 }
 
 void CodeGenerator::CodeGen(Object* prog) {
@@ -124,7 +133,11 @@ void CodeGenerator::EmitText(Object* prog) {
 
     int i = 0;
     for (Object* var = fn->params_; var != nullptr; var = var->next_) {
-      ASM_GEN("  mov [rbp - ", var->offset_, "], ", argreg[i++]);
+      if (var->ty_->size_ == 1) {
+        ASM_GEN("  mov [rbp - ", var->offset_, "], ", argreg8[i++]);
+      } else {
+        ASM_GEN("  mov [rbp - ", var->offset_, "], ", argreg64[i++]);
+      }
     }
 
     // Emit code
@@ -208,7 +221,7 @@ void CodeGenerator::ExprGen(Node* node) {
     GetVarAddr(node->lhs_);
     Push();
     ExprGen(node->rhs_);
-    Store();
+    Store(node->ty_);
     return;
   case ND_CALL: {
     int nargs = 0;
@@ -219,7 +232,7 @@ void CodeGenerator::ExprGen(Node* node) {
     }
 
     for (int i = nargs - 1; i >= 0; i--) {
-      Pop(argreg[i]);
+      Pop(argreg64[i]);
     }
 
     ASM_GEN("  mov rax, 0");

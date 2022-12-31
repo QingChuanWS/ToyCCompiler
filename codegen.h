@@ -29,10 +29,9 @@ class CodeGenerator {
   static void ExprGen(Node* node);
   static void StmtGen(Node* node);
   static void Load(Type* ty);
-  static void Store();
+  static void Store(Type* ty);
 
   static int         depth;
-  static const char* argreg[6];
 };
 
 #endif   // !CODEGEN_GRUAD

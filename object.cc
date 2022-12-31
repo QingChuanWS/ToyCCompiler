@@ -74,10 +74,20 @@ bool Object::IsFunction(Token* tok) {
     return false;
   }
 
-  Type  dummy = Type();
-  Type* ty    = Node::Declarator(&tok, tok, &dummy);
-  bool ret = ty->kind_ == TY_FUNC;
-  delete ty;
+  Type* ty  = Node::Declarator(&tok, tok, ty_int);
+  bool  ret = (ty->kind_ == TY_FUNC);
+  // allocated.
+  if (ty != ty_int) {
+    if (ty->params_ != nullptr) {
+      Type* param_cur = ty->params_;
+      while (param_cur && param_cur != ty_int && param_cur != ty_char) {
+        ty->params_ = ty->params_->next_;
+        delete param_cur;
+        param_cur = ty->params_;
+      }
+    }
+    Type::TypeFree(ty);
+  }
   return ret;
 }
 

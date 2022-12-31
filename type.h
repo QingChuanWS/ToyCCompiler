@@ -26,9 +26,11 @@
 class Type;
 
 extern Type* ty_int;
+extern Type* ty_char;
 
 enum TypeKind {
   TY_INT,
+  TY_CHAR,
   TY_PRT,
   TY_FUNC,
   TY_ARRAY,

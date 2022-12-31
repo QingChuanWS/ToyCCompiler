@@ -50,8 +50,8 @@ class Object {
   bool IsGlobal() { return kind_ == OB_GLOBAL; }
   // check whether is a global variable or function
   bool IsFunction() { return kind_ == OB_FUNCTION; }
-  // check whether is a global variable or function
-  // based on a token.
+  // Lookahead tokens and returns true if a given token is a start
+  // of a function definition or declaration.
   bool IsFunction(Token* tok);
   // free the object list.
   static void ObjectFree(Object* head);
