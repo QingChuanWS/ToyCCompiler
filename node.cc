@@ -133,7 +133,7 @@ Node* Node::Declaration(Token** rest, Token* tok) {
     }
 
     Type*   ty  = Declarator(&tok, tok, ty_base);
-    Object* var = new Object(OB_LOCAL, ty, &locals);
+    Object* var = Object::CreateLocalVar(ty->name_->GetIdent(), ty, &locals);
 
     if (!tok->Equal("=")) {
       continue;
@@ -441,7 +441,7 @@ Node* Node::Postfix(Token** rest, Token* tok) {
   return node;
 }
 
-// primary = "(" expr ")" | "sizeof" unary | ident | num
+// primary = "(" expr ")" | "sizeof" unary | ident | str | num
 Node* Node::Primary(Token** rest, Token* tok) {
   if (tok->Equal("(")) {
     Node* node = Expr(&tok, tok->next_);
@@ -468,6 +468,12 @@ Node* Node::Primary(Token** rest, Token* tok) {
     }
     Object* var = local_var != nullptr ? local_var : globla_var;
     *rest       = tok->next_;
+    return new Node(var, tok);
+  }
+
+  if(tok->kind_ == TK_STR){
+    Object* var = Object::CreateStringVar(tok->str_literal_, tok->ty_);
+    *rest = tok->next_;
     return new Node(var, tok);
   }
 

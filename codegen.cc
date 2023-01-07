@@ -108,7 +108,13 @@ void CodeGenerator::EmitData(Object* prog) {
     ASM_GEN("  .data");
     ASM_GEN("  .global ", var->name_);
     ASM_GEN(var->name_, ":");
-    ASM_GEN("  .zero ", var->ty_->size_);
+    if (var->is_string) {
+      for (int i = 0; i < var->ty_->size_; i++) {
+        ASM_GEN("  .byte ", static_cast<int>(var->init_data[i]));
+      }
+    } else {
+      ASM_GEN("  .zero ", var->ty_->size_);
+    }
   }
 }
 

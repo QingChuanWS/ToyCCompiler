@@ -4,14 +4,13 @@
  *
  * @Author: bingshan45@163.com
  * Github: https://github.com/QingChuanWS
- * @Description:
+ * @Description: Object class defination.
  *
  * Copyright (c) 2022 by QingChuanWS, All Rights Reserved.
  */
 #ifndef OBJECT_GRUAD
 #define OBJECT_GRUAD
 
-#include "token.h"
 #include "type.h"
 
 class Node;
@@ -31,13 +30,19 @@ class Object {
       , name_(nullptr)
       , body_(nullptr)
       , ty_(nullptr) {}
-
-  Object(Objectkind kind, Type* ty, Object** next);
-
+  
+  // construct a Object object based on kind.
+  Object(Objectkind kind, char* name, Type* ty);
+  // create a string literal variable
+  static Object* CreateStringVar(char* p, Type* ty);
   // create a function based on token list.
-  static Token* CreateFunction(Token* tok, Type* basety);
-  // create global variables based on token list.
-  static Token* CreateGlobal(Token* tok, Type* basety);
+  static Token* CreateFunction(Token* tok, Type* basety, Object** next);
+  // create global variable list based on token list.
+  static Token* ParseGlobal(Token* tok, Type* basety);
+  // create global varibal
+  static Object* CreateGlobalVar(char* name, Type* ty, Object** next);
+  // create local varibal
+  static Object* CreateLocalVar(char* name, Type* ty, Object** next);
   // parsing token list and generate AST.
   static Object* Parse(Token* tok);
   // calculate the function local variable offset.
@@ -66,26 +71,33 @@ class Object {
   friend class CodeGenerator;
 
  private:
+  // free function
+  void FunctionFree();
   // label the object type
   Objectkind kind_;
   // for object list
-  Object* next_;
+  Object* next_=nullptr;
   // variable name
-  char* name_;
+  char* name_=nullptr;
   // Type
-  Type* ty_;
+  Type* ty_=nullptr;
 
   // local variable offset
-  int offset_;
+  int offset_=0;
+
+  // Global Variable
+  char* init_data=nullptr;
+  // whether is a stirng
+  bool is_string=false;
 
   // function parameter
-  Object* params_;
+  Object* params_=nullptr;
   // function body
-  Node* body_;
+  Node* body_=nullptr;
   // function variable list
-  Object* loc_list_;
+  Object* loc_list_=nullptr;
   // function variable's stack size
-  int stack_size_;
+  int stack_size_=0;
 };
 
 extern Object* locals;

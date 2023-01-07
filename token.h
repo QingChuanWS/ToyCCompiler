@@ -1,20 +1,10 @@
 /*
  * This project is exclusively owned by QingChuanWS and shall not be used for
  * commercial and profitting purpose without QingChuanWS's permission.
- * 
- * @Author: bingshan45@163.com
- * Github: https://github.com/QingChuanWS
- * @Description: 
- * 
- * Copyright (c) 2022 by QingChuanWS, All Rights Reserved. 
- */
-/*
- * This project is exclusively owned by QingChuanWS and shall not be used for
- * commercial and profitting purpose without QingChuanWS's permission.
  *
  * @Author: bingshan45@163.com
  * Github: https://github.com/QingChuanWS
- * @Description:
+ * @Description: Token class declaration.
  *
  * Copyright (c) 2022 by QingChuanWS, All Rights Reserved.
  */
@@ -27,28 +17,36 @@
 #include <cstring>
 
 enum Tokenkind {
-  TK_PUNCT,
-  TK_IDENT,
-  TK_KEYWORD,
-  TK_NUM,
-  TK_EOF,
+  TK_PUNCT,     // Punctuators,
+  TK_IDENT,     // Identifiers,
+  TK_KEYWORD,   // Keywords,
+  TK_NUM,       // Number literals,
+  TK_STR,       // String literals,
+  TK_EOF,       // End-of-file markers,
 };
 
+class Type;
 class Token {
  public:
   Token()
       : kind_(TK_EOF)
       , next_(nullptr)
       , val_(0)
-      , str_()
-      , strlen_(0) {}
+      , str_(nullptr)
+      , strlen_(0)
+      , ty_(nullptr)
+      , str_literal_(nullptr) {}
 
   Token(Tokenkind kind, char* str, int len)
       : kind_(kind)
+      , next_(nullptr)
       , str_(str)
       , strlen_(len)
       , val_(0)
-      , next_(nullptr) {}
+      , ty_(nullptr)
+      , str_literal_(nullptr) {}
+
+  Token(Tokenkind kind, char* start, char* end);
 
   Token(Tokenkind kind, Token* tok, char* str, int len)
       : kind_(kind)
@@ -63,7 +61,6 @@ class Token {
   static Token* TokenCreate(const Token& head, char* prg);
   // free token list.
   static void TokenFree(Token& head);
-
   // Check the current token->str is char op or not.
   // If the token's str is equal with op, return ture.
   Token* SkipToken(const char* op);
@@ -80,23 +77,36 @@ class Token {
   long GetNumber();
   // check whether the given token is a typename.
   bool IsTypename();
-  
+
  private:
   // matching reserved keyword based start.
-  static void ConvertToReserved(Token* tok);
-  // matching punction
-  static int ReadPunct(char* p);
+  void ConvertToReserved();
+  // matching punction.
+  int ReadPunct(char* p);
+  // read a string literal for source pargram char.
+  Token* ReadStringLiteral(char* p);
+  // free token kind = TK_STR
+  void StrTokenFree();
 
-  friend class Function;
   friend class Node;
-  friend class Var;
-  static char* prg_;
+  friend class Object;
 
+  // source code
+  static char* prg_;
+  // Token Kind
   Tokenkind kind_;
-  Token*    next_;
-  long      val_;
-  char*     str_;
-  int       strlen_;
+  // Next Token
+  Token* next_;
+  // If kind_ is TK_NUM, its values,
+  long val_;
+  // Token Location
+  char* str_;
+  // Token length
+  int strlen_;
+  // Use if kind_ is TK_STR
+  Type* ty_;
+  // String literal contents include terminating '\0'
+  char* str_literal_;
 };
 
 #endif   //  TOKEN_GRUAD

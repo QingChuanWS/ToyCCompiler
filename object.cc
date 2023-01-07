@@ -12,6 +12,7 @@
 #include "object.h"
 
 #include "node.h"
+#include "tools.h"
 #include "type.h"
 
 #include <cstdlib>
@@ -19,35 +20,48 @@
 Object* locals;
 Object* globals;
 
-Object::Object(Objectkind kind, Type* ty, Object** next)
+Object::Object(Objectkind kind, char* name, Type* ty)
     : kind_(kind)
     , ty_(ty)
-    , next_(*next) {
-  if (kind == OB_LOCAL && LocalVarFind(ty->name_) != nullptr) {
+    , name_(name) {}
+
+Object* Object::CreateLocalVar(char* name, Type* ty, Object** next) {
+  Object* obj = new Object(OB_LOCAL, name, ty);
+  if (ty->HasName() && LocalVarFind(ty->name_) != nullptr) {
     ty->name_->ErrorTok("redefined variable.");
   }
-  if ((kind == OB_FUNCTION || kind == OB_GLOBAL) &&
-      GlobalVarFind(ty->name_) != nullptr) {
-    ty->name_->ErrorTok("redefined variable.");
-  }
-  name_ = ty->name_->GetIdent();
-  *next = this;
+  obj->next_ = *next;
+  *next      = obj;
+  return obj;
 }
 
-Token* Object::CreateFunction(Token* tok, Type* basety) {
+Object* Object::CreateGlobalVar(char* name, Type* ty, Object** next) {
+  Object* obj = new Object(OB_GLOBAL, name, ty);
+  if (ty->HasName() && GlobalVarFind(ty->name_) != nullptr) {
+    ty->name_->ErrorTok("redefined variable.");
+  }
+  obj->next_ = *next;
+  *next      = obj;
+  return obj;
+}
+
+Token* Object::CreateFunction(Token* tok, Type* basety, Object** next) {
   locals   = nullptr;
   Type* ty = Node::Declarator(&tok, tok, basety);
 
-  Object* fn = new Object(OB_FUNCTION, ty, &globals);
+  Object* fn = new Object(OB_FUNCTION, ty->name_->GetIdent(), ty);
   fn->CreateParamLVar(ty->params_);
   fn->params_   = locals;
   fn->body_     = Node::Program(&tok, tok);
   fn->loc_list_ = locals;
   fn->ty_       = ty;
+
+  fn->next_ = *next;
+  *next     = fn;
   return tok;
 }
 
-Token* Object::CreateGlobal(Token* tok, Type* basety) {
+Token* Object::ParseGlobal(Token* tok, Type* basety) {
   bool first = true;
 
   while (!tok->Equal(";")) {
@@ -57,7 +71,7 @@ Token* Object::CreateGlobal(Token* tok, Type* basety) {
     first = false;
 
     Type*   ty = Node::Declarator(&tok, tok, basety);
-    Object* gv = new Object(OB_GLOBAL, ty, &globals);
+    Object* gv = CreateGlobalVar(ty->name_->GetIdent(), ty, &globals);
   }
   return tok->SkipToken(";");
 }
@@ -65,8 +79,15 @@ Token* Object::CreateGlobal(Token* tok, Type* basety) {
 void Object::CreateParamLVar(Type* param) {
   if (param != nullptr) {
     CreateParamLVar(param->next_);
-    Object* v = new Object(OB_LOCAL, param, &locals);
+    Object* v = CreateLocalVar(param->name_->GetIdent(), param, &locals);
   }
+}
+
+Object* Object::CreateStringVar(char* name, Type* ty) {
+  Object* obj    = CreateGlobalVar(CreateUniqueName(), ty, &globals);
+  obj->init_data = name;
+  obj->is_string = true;
+  return obj;
 }
 
 bool Object::IsFunction(Token* tok) {
@@ -74,21 +95,19 @@ bool Object::IsFunction(Token* tok) {
     return false;
   }
 
-  Type* ty  = Node::Declarator(&tok, tok, ty_int);
-  bool  ret = (ty->kind_ == TY_FUNC);
-  // allocated.
-  if (ty != ty_int) {
-    if (ty->params_ != nullptr) {
-      Type* param_cur = ty->params_;
-      while (param_cur && param_cur != ty_int && param_cur != ty_char) {
-        ty->params_ = ty->params_->next_;
-        delete param_cur;
-        param_cur = ty->params_;
-      }
-    }
-    Type::TypeFree(ty);
+  while (tok->Equal("*")) {
+    tok = tok->next_;
   }
-  return ret;
+
+  if (tok->kind_ != TK_IDENT) {
+    tok->ErrorTok("expected a variable name.");
+  }
+  tok = tok->next_;
+
+  if (tok->Equal("(")) {
+    return true;
+  }
+  return false;
 }
 
 Object* Object::Parse(Token* tok) {
@@ -98,11 +117,10 @@ Object* Object::Parse(Token* tok) {
     Type* basety = Node::Declspec(&tok, tok);
 
     if (globals->IsFunction(tok)) {
-      tok = CreateFunction(tok, basety);
+      tok = CreateFunction(tok, basety, &globals);
       continue;
     }
-
-    tok = CreateGlobal(tok, basety);
+    tok = ParseGlobal(tok, basety);
   }
   return globals;
 }
@@ -135,15 +153,19 @@ Object* Object::Find(Token* tok) {
   return nullptr;
 }
 
+void Object::FunctionFree() {
+  if (IsFunction()) {
+    ObjectFree(loc_list_);
+    Node::NodeListFree(body_);
+  }
+}
+
 void Object::ObjectFree(Object* head) {
   Object* cur = head;
   while (cur != nullptr) {
     head = head->next_;
     Type::TypeFree(cur->ty_);
-    if (cur->IsFunction()) {
-      ObjectFree(cur->loc_list_);
-      Node::NodeListFree(cur->body_);
-    }
+    cur->FunctionFree();
     free(cur->name_);
     delete cur;
     cur = head;

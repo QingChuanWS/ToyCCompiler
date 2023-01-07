@@ -35,5 +35,7 @@ bool IsAlpha(char c);
 bool IsAlnum(char c); 
 // round up `n` to the nearest multiple of `align`.
 int AlignTo(int n, int align);
+// create a unique name
+char* CreateUniqueName();
 
 #endif   // !TOOLS_GRUAD

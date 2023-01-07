@@ -61,6 +61,10 @@ bool Type::IsPointer() {
   return base_ != nullptr;
 }
 
+bool Type::HasName() {
+  return name_ != nullptr;
+}
+
 void Type::TypeFree(Type* head) {
   Type* cur = head;
   while (cur && cur != ty_int && cur != ty_char) {

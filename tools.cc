@@ -10,6 +10,9 @@
  */
 #include "tools.h"
 
+#include <cstdio>
+#include <cstdlib>
+
 void Error(const char* fmt, ...) {
   va_list ap;
   va_start(ap, fmt);
@@ -52,4 +55,11 @@ bool IsAlnum(char c) {
 
 int AlignTo(int n, int align) {
   return (n + align - 1) / align * align;
+}
+
+char* CreateUniqueName() {
+  static int id  = 0;
+  char*      buf = (char*)malloc(20 * sizeof(char));
+  sprintf(buf, ".L..%d", id++);
+  return buf;
 }

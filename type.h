@@ -56,6 +56,7 @@ class Type {
   bool IsInteger();
   bool IsPointer();
   bool IsFunction();
+  bool HasName();
 
   static void TypeFree(Type* ty);
 
