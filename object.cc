@@ -11,19 +11,16 @@
 
 #include "object.h"
 
+#include <cstdlib>
+
 #include "node.h"
 #include "tools.h"
 #include "type.h"
 
-#include <cstdlib>
-
 Object* locals;
 Object* globals;
 
-Object::Object(Objectkind kind, char* name, Type* ty)
-    : kind_(kind)
-    , ty_(ty)
-    , name_(name) {}
+Object::Object(Objectkind kind, char* name, Type* ty) : kind_(kind), ty_(ty), name_(name) {}
 
 Object* Object::CreateLocalVar(char* name, Type* ty, Object** next) {
   Object* obj = new Object(OB_LOCAL, name, ty);
@@ -31,7 +28,7 @@ Object* Object::CreateLocalVar(char* name, Type* ty, Object** next) {
     ty->name_->ErrorTok("redefined variable.");
   }
   obj->next_ = *next;
-  *next      = obj;
+  *next = obj;
   return obj;
 }
 
@@ -41,23 +38,23 @@ Object* Object::CreateGlobalVar(char* name, Type* ty, Object** next) {
     ty->name_->ErrorTok("redefined variable.");
   }
   obj->next_ = *next;
-  *next      = obj;
+  *next = obj;
   return obj;
 }
 
 Token* Object::CreateFunction(Token* tok, Type* basety, Object** next) {
-  locals   = nullptr;
+  locals = nullptr;
   Type* ty = Node::Declarator(&tok, tok, basety);
 
   Object* fn = new Object(OB_FUNCTION, ty->name_->GetIdent(), ty);
   fn->CreateParamLVar(ty->params_);
-  fn->params_   = locals;
-  fn->body_     = Node::Program(&tok, tok);
+  fn->params_ = locals;
+  fn->body_ = Node::Program(&tok, tok);
   fn->loc_list_ = locals;
-  fn->ty_       = ty;
+  fn->ty_ = ty;
 
   fn->next_ = *next;
-  *next     = fn;
+  *next = fn;
   return tok;
 }
 
@@ -70,7 +67,7 @@ Token* Object::ParseGlobal(Token* tok, Type* basety) {
     }
     first = false;
 
-    Type*   ty = Node::Declarator(&tok, tok, basety);
+    Type* ty = Node::Declarator(&tok, tok, basety);
     Object* gv = CreateGlobalVar(ty->name_->GetIdent(), ty, &globals);
   }
   return tok->SkipToken(";");
@@ -84,7 +81,7 @@ void Object::CreateParamLVar(Type* param) {
 }
 
 Object* Object::CreateStringVar(char* name, Type* ty) {
-  Object* obj    = CreateGlobalVar(CreateUniqueName(), ty, &globals);
+  Object* obj = CreateGlobalVar(CreateUniqueName(), ty, &globals);
   obj->init_data = name;
   obj->is_string = true;
   return obj;
@@ -136,13 +133,9 @@ void Object::OffsetCal() {
   }
 }
 
-Object* Object::LocalVarFind(Token* tok) {
-  return locals->Find(tok);
-}
+Object* Object::LocalVarFind(Token* tok) { return locals->Find(tok); }
 
-Object* Object::GlobalVarFind(Token* tok) {
-  return globals->Find(tok);
-}
+Object* Object::GlobalVarFind(Token* tok) { return globals->Find(tok); }
 
 Object* Object::Find(Token* tok) {
   for (Object* v = this; v != nullptr; v = v->next_) {

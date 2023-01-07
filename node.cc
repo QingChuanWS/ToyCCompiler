@@ -11,32 +11,32 @@
 
 #include "node.h"
 
+#include <cstring>
+
 #include "object.h"
 #include "token.h"
 #include "tools.h"
 #include "type.h"
 
-#include <cstring>
-
 extern Object* locals;
 
 Node::Node(NodeKind kind, Token* tok, Node* lhs, Node* rhs)
-    : kind_(kind)
-    , tok_(tok)
-    , next_(nullptr)
-    , lhs_(lhs)
-    , rhs_(rhs)
-    , cond_(nullptr)
-    , then_(nullptr)
-    , els_(nullptr)
-    , body_(nullptr)
-    , init_(nullptr)
-    , inc_(nullptr)
-    , call_(nullptr)
-    , args_(nullptr)
-    , val_(0)
-    , var_()
-    , ty_(nullptr) {
+    : kind_(kind),
+      tok_(tok),
+      next_(nullptr),
+      lhs_(lhs),
+      rhs_(rhs),
+      cond_(nullptr),
+      then_(nullptr),
+      els_(nullptr),
+      body_(nullptr),
+      init_(nullptr),
+      inc_(nullptr),
+      call_(nullptr),
+      args_(nullptr),
+      val_(0),
+      var_(),
+      ty_(nullptr) {
   if (!(kind_ == ND_ADD || kind_ == ND_SUB)) {
     return;
   }
@@ -56,13 +56,13 @@ Node::Node(NodeKind kind, Token* tok, Node* lhs, Node* rhs)
     // cononical 'num + ptr' to 'ptr + num'.
     if (!lhs_->ty_->IsPointer() && rhs_->ty_->IsPointer()) {
       Node* tmp = lhs_;
-      lhs_      = rhs_;
-      rhs_      = tmp;
+      lhs_ = rhs_;
+      rhs_ = tmp;
     }
 
     // ptr + num
     rhs_ = new Node(ND_MUL, tok, rhs_, new Node(lhs_->ty_->base_->size_, tok));
-    ty_  = lhs_->ty_;
+    ty_ = lhs_->ty_;
     return;
   }
 
@@ -74,16 +74,15 @@ Node::Node(NodeKind kind, Token* tok, Node* lhs, Node* rhs)
       Node* node = new Node(ND_SUB, tok);
       node->lhs_ = lhs_;
       node->rhs_ = rhs_;
-      node->ty_  = ty_int;
-      lhs_       = node;
-      rhs_       = new Node(lhs->ty_->base_->size_, tok);
+      node->ty_ = ty_int;
+      lhs_ = node;
+      rhs_ = new Node(lhs->ty_->base_->size_, tok);
       return;
     }
 
     // ptr - num
     if (lhs_->ty_->IsPointer() && rhs_->ty_->IsInteger()) {
-      rhs_ =
-          new Node(ND_MUL, tok, rhs_, new Node(lhs_->ty_->base_->size_, tok));
+      rhs_ = new Node(ND_MUL, tok, rhs_, new Node(lhs_->ty_->base_->size_, tok));
       rhs_->TypeInfer();
       ty_ = lhs_->ty_;
       return;
@@ -98,8 +97,8 @@ Node* Node::Program(Token** rest, Token* tok) {
 
 // compound-stmt  = (declaration | stmt)* "}"
 Node* Node::CompoundStmt(Token** rest, Token* tok) {
-  Node  head = Node(ND_END, tok);
-  Node* cur  = &head;
+  Node head = Node(ND_END, tok);
+  Node* cur = &head;
 
   while (!tok->Equal("}")) {
     if (tok->IsTypename()) {
@@ -110,7 +109,7 @@ Node* Node::CompoundStmt(Token** rest, Token* tok) {
     cur = cur->next_;
     cur->TypeInfer();
   }
-  Node* node  = new Node(ND_BLOCK, tok);
+  Node* node = new Node(ND_BLOCK, tok);
   node->body_ = head.next_;
 
   *rest = tok->next_;
@@ -123,38 +122,38 @@ Node* Node::CompoundStmt(Token** rest, Token* tok) {
 Node* Node::Declaration(Token** rest, Token* tok) {
   Type* ty_base = Declspec(&tok, tok);
 
-  Node  head = Node(ND_END, tok);
-  Node* cur  = &head;
-  int   i    = 0;
+  Node head = Node(ND_END, tok);
+  Node* cur = &head;
+  int i = 0;
 
   while (!tok->Equal(";")) {
     if (i++ > 0) {
       tok = tok->SkipToken(",");
     }
 
-    Type*   ty  = Declarator(&tok, tok, ty_base);
+    Type* ty = Declarator(&tok, tok, ty_base);
     Object* var = Object::CreateLocalVar(ty->name_->GetIdent(), ty, &locals);
 
     if (!tok->Equal("=")) {
       continue;
     }
 
-    Node* lhs  = new Node(var, tok);
-    Node* rhs  = Node::Assign(&tok, tok->next_);
+    Node* lhs = new Node(var, tok);
+    Node* rhs = Node::Assign(&tok, tok->next_);
     Node* node = new Node(ND_ASSIGN, tok, lhs, rhs);
     cur->next_ = new Node(ND_EXPR_STMT, tok, node);
-    cur        = cur->next_;
+    cur = cur->next_;
   }
 
-  Node* node  = new Node(ND_BLOCK, tok);
+  Node* node = new Node(ND_BLOCK, tok);
   node->body_ = head.next_;
-  *rest       = tok->next_;
+  *rest = tok->next_;
   return node;
 }
 
 // declspec = "char" | "int"
 Type* Node::Declspec(Token** rest, Token* tok) {
-  if(tok->Equal("char")){
+  if (tok->Equal("char")) {
     *rest = tok->SkipToken("char");
     return ty_char;
   }
@@ -166,7 +165,7 @@ Type* Node::Declspec(Token** rest, Token* tok) {
 // declarator = "*"* ident type-suffix
 Type* Node::Declarator(Token** rest, Token* tok, Type* ty) {
   while (tok->Equal("*")) {
-    ty  = new Type(TY_PRT, ty);
+    ty = new Type(TY_PRT, ty);
     tok = tok->next_;
   }
   *rest = tok;
@@ -188,8 +187,8 @@ Type* Node::TypeSuffix(Token** rest, Token* tok, Type* ty) {
   }
   if (tok->Equal("[")) {
     int len = tok->next_->GetNumber();
-    tok     = tok->next_->next_->SkipToken("]");
-    ty      = TypeSuffix(rest, tok, ty);
+    tok = tok->next_->next_->SkipToken("]");
+    ty = TypeSuffix(rest, tok, ty);
     return new Type(TY_ARRAY, ty, len);
   }
 
@@ -200,20 +199,20 @@ Type* Node::TypeSuffix(Token** rest, Token* tok, Type* ty) {
 // func-param = param ("," param) *
 // param = declspec declarator
 Type* Node::FunctionParam(Token** rest, Token* tok, Type* ty) {
-  Type  head = Type();
-  Type* cur  = &head;
+  Type head = Type();
+  Type* cur = &head;
 
   while (!tok->Equal(")")) {
     if (cur != &head) {
       tok = tok->SkipToken(",");
     }
     Type* base_ty = Declspec(&tok, tok);
-    Type* ty      = Declarator(&tok, tok, base_ty);
-    cur->next_    = new Type(ty);
-    cur           = cur->next_;
+    Type* ty = Declarator(&tok, tok, base_ty);
+    cur->next_ = new Type(ty);
+    cur = cur->next_;
   }
 
-  ty          = new Type(TY_FUNC, ty);
+  ty = new Type(TY_FUNC, ty);
   ty->params_ = head.next_;
 
   *rest = tok->next_;
@@ -228,13 +227,13 @@ Type* Node::FunctionParam(Token** rest, Token* tok, Type* ty) {
 Node* Node::Stmt(Token** rest, Token* tok) {
   if (tok->Equal("return")) {
     Node* node = new Node(ND_RETURN, tok, Expr(&tok, tok->next_));
-    *rest      = tok->SkipToken(";");
+    *rest = tok->SkipToken(";");
     return node;
   }
 
   if (tok->Equal("if")) {
-    Node* node  = new Node(ND_IF, tok);
-    tok         = tok->next_;
+    Node* node = new Node(ND_IF, tok);
+    tok = tok->next_;
     node->cond_ = Expr(&tok, tok->SkipToken("("));
     node->then_ = Stmt(&tok, tok->SkipToken(")"));
     if (tok->Equal("else")) {
@@ -246,8 +245,8 @@ Node* Node::Stmt(Token** rest, Token* tok) {
 
   if (tok->Equal("for")) {
     Node* node = new Node(ND_FOR, tok);
-    tok        = tok->next_;
-    tok        = tok->SkipToken("(");
+    tok = tok->next_;
+    tok = tok->SkipToken("(");
 
     node->init_ = ExprStmt(&tok, tok);
 
@@ -268,11 +267,11 @@ Node* Node::Stmt(Token** rest, Token* tok) {
 
   if (tok->Equal("while")) {
     Node* node = new Node(ND_FOR, tok);
-    tok        = tok->next_;
-    tok        = tok->SkipToken("(");
+    tok = tok->next_;
+    tok = tok->SkipToken("(");
 
     node->cond_ = Expr(&tok, tok);
-    tok         = tok->SkipToken(")");
+    tok = tok->SkipToken(")");
 
     node->then_ = Stmt(rest, tok);
 
@@ -294,14 +293,12 @@ Node* Node::ExprStmt(Token** rest, Token* tok) {
   }
 
   Node* node = new Node(ND_EXPR_STMT, tok, Expr(&tok, tok));
-  *rest      = tok->SkipToken(";");
+  *rest = tok->SkipToken(";");
   return node;
 }
 
 // expr = assign
-Node* Node::Expr(Token** rest, Token* tok) {
-  return Assign(rest, tok);
-}
+Node* Node::Expr(Token** rest, Token* tok) { return Assign(rest, tok); }
 
 // assign = equality ("=" assign)?
 Node* Node::Assign(Token** rest, Token* tok) {
@@ -433,8 +430,8 @@ Node* Node::Postfix(Token** rest, Token* tok) {
   while (tok->Equal("[")) {
     // x[y] is short for *(x + y)
     Token* start = tok;
-    Node*  idx   = Expr(&tok, tok->next_);
-    tok          = tok->SkipToken("]");
+    Node* idx = Expr(&tok, tok->next_);
+    tok = tok->SkipToken("]");
     node = new Node(ND_DEREF, start, new Node(ND_ADD, start, node, idx));
   }
   *rest = tok;
@@ -445,7 +442,7 @@ Node* Node::Postfix(Token** rest, Token* tok) {
 Node* Node::Primary(Token** rest, Token* tok) {
   if (tok->Equal("(")) {
     Node* node = Expr(&tok, tok->next_);
-    *rest      = tok->SkipToken(")");
+    *rest = tok->SkipToken(")");
     return node;
   }
 
@@ -461,17 +458,17 @@ Node* Node::Primary(Token** rest, Token* tok) {
     if (tok->next_->Equal("(")) {
       return Call(rest, tok);
     }
-    Object* local_var  = Object::LocalVarFind(tok);
+    Object* local_var = Object::LocalVarFind(tok);
     Object* globla_var = Object::GlobalVarFind(tok);
     if (local_var == nullptr && globla_var == nullptr) {
       tok->ErrorTok("undefined variable.");
     }
     Object* var = local_var != nullptr ? local_var : globla_var;
-    *rest       = tok->next_;
+    *rest = tok->next_;
     return new Node(var, tok);
   }
 
-  if(tok->kind_ == TK_STR){
+  if (tok->kind_ == TK_STR) {
     Object* var = Object::CreateStringVar(tok->str_literal_, tok->ty_);
     *rest = tok->next_;
     return new Node(var, tok);
@@ -479,7 +476,7 @@ Node* Node::Primary(Token** rest, Token* tok) {
 
   if (tok->kind_ == TK_NUM) {
     Node* node = new Node(tok->val_, tok);
-    *rest      = tok->next_;
+    *rest = tok->next_;
     return node;
   }
 
@@ -490,22 +487,22 @@ Node* Node::Primary(Token** rest, Token* tok) {
 // function = ident "(" (assign ("," assign)*)? ")"
 Node* Node::Call(Token** rest, Token* tok) {
   Token* start = tok;
-  tok          = tok->next_->next_;
+  tok = tok->next_->next_;
 
-  Node  head = Node(ND_END, tok);
-  Node* cur  = &head;
+  Node head = Node(ND_END, tok);
+  Node* cur = &head;
 
   while (!tok->Equal(")")) {
     if (cur != &head) {
       tok = tok->SkipToken(",");
     }
     cur->next_ = Assign(&tok, tok);
-    cur        = cur->next_;
+    cur = cur->next_;
   }
 
   *rest = tok->SkipToken(")");
 
-  Node* node  = new Node(ND_CALL, start);
+  Node* node = new Node(ND_CALL, start);
   node->call_ = start->GetIdent();
   node->args_ = head.next_;
   return node;
@@ -536,8 +533,7 @@ void Node::NodeListFree(Node* node) {
 
 // post-order for node delete
 void Node::NodeFree(Node* node) {
-  if (node == nullptr)
-    return;
+  if (node == nullptr) return;
 
   if (node->lhs_ != nullptr) {
     NodeFree(node->lhs_);
@@ -594,38 +590,45 @@ void Node::TypeInfer() {
   }
 
   switch (kind_) {
-  case ND_ADD:
-  case ND_SUB:
-  case ND_MUL:
-  case ND_DIV:
-  case ND_NEG: ty_ = lhs_->ty_; return;
-  case ND_ASSIGN:
-    if (lhs_->ty_->kind_ == TY_ARRAY) {
-      lhs_->tok_->ErrorTok("not an lvalue");
-    }
-    ty_ = lhs_->ty_;
-    return;
-  case ND_EQ:
-  case ND_NE:
-  case ND_LE:
-  case ND_LT:
-  case ND_NUM:
-  case ND_CALL: ty_ = ty_int; return;
-  case ND_VAR: ty_ = var_->ty_; return;
-  case ND_ADDR:
-    if (lhs_->ty_->kind_ == TY_ARRAY) {
-      ty_ = new Type(TY_PRT, lhs_->ty_->base_);
-    } else {
-      ty_ = new Type(TY_PRT, lhs_->ty_);
-    }
-    return;
-  case ND_DEREF:
-    if (lhs_->ty_->base_ == nullptr) {
-      ErrorTok("invalid pointer reference!");
-    }
-    ty_ = lhs_->ty_->base_;
-    return;
-  default: return;
+    case ND_ADD:
+    case ND_SUB:
+    case ND_MUL:
+    case ND_DIV:
+    case ND_NEG:
+      ty_ = lhs_->ty_;
+      return;
+    case ND_ASSIGN:
+      if (lhs_->ty_->kind_ == TY_ARRAY) {
+        lhs_->tok_->ErrorTok("not an lvalue");
+      }
+      ty_ = lhs_->ty_;
+      return;
+    case ND_EQ:
+    case ND_NE:
+    case ND_LE:
+    case ND_LT:
+    case ND_NUM:
+    case ND_CALL:
+      ty_ = ty_int;
+      return;
+    case ND_VAR:
+      ty_ = var_->ty_;
+      return;
+    case ND_ADDR:
+      if (lhs_->ty_->kind_ == TY_ARRAY) {
+        ty_ = new Type(TY_PRT, lhs_->ty_->base_);
+      } else {
+        ty_ = new Type(TY_PRT, lhs_->ty_);
+      }
+      return;
+    case ND_DEREF:
+      if (lhs_->ty_->base_ == nullptr) {
+        ErrorTok("invalid pointer reference!");
+      }
+      ty_ = lhs_->ty_->base_;
+      return;
+    default:
+      return;
   }
 }
 

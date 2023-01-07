@@ -23,7 +23,7 @@ static int Count() {
 
 int CodeGenerator::depth = 0;
 
-const char* argreg8[6]  = {"dil", "sil", "cl", "dl", "r8b", "r9b"};
+const char* argreg8[6] = {"dil", "sil", "cl", "dl", "r8b", "r9b"};
 const char* argreg64[6] = {"rdi", "rsi", "rcx", "rdx", "r8", "r9"};
 
 Object* cur_fn = nullptr;
@@ -31,12 +31,12 @@ Object* cur_fn = nullptr;
 #define ASM_GEN(...) AsmPrint(__VA_ARGS__)
 
 // recursive over state.
-template<typename T>
+template <typename T>
 static void AsmPrint(const T arg) {
   std::cout << arg << std::endl;
 }
 
-template<typename T, typename... Types>
+template <typename T, typename... Types>
 static void AsmPrint(const T first_arg, const Types... args) {
   std::cout << first_arg;
   AsmPrint(args...);
@@ -44,15 +44,18 @@ static void AsmPrint(const T first_arg, const Types... args) {
 
 void CodeGenerator::GetVarAddr(Node* node) {
   switch (node->kind_) {
-  case ND_VAR:
-    if (node->var_->IsLocal()) {
-      ASM_GEN("  lea rax, [rbp - ", node->var_->offset_, "]");
-    } else {
-      ASM_GEN("  lea rax, [rip + ", node->var_->name_, "]");
-    }
-    return;
-  case ND_DEREF: ExprGen(node->lhs_); return;
-  default: break;
+    case ND_VAR:
+      if (node->var_->IsLocal()) {
+        ASM_GEN("  lea rax, [rbp - ", node->var_->offset_, "]");
+      } else {
+        ASM_GEN("  lea rax, [rip + ", node->var_->name_, "]");
+      }
+      return;
+    case ND_DEREF:
+      ExprGen(node->lhs_);
+      return;
+    default:
+      break;
   }
 
   node->tok_->ErrorTok("not an lvalue");
@@ -160,92 +163,99 @@ void CodeGenerator::EmitText(Object* prog) {
 
 void CodeGenerator::StmtGen(Node* node) {
   switch (node->kind_) {
-  case ND_EXPR_STMT: ExprGen(node->lhs_); return;
-  case ND_BLOCK:
-    for (Node* n = node->body_; n != nullptr; n = n->next_) {
-      StmtGen(n);
-    }
-    return;
-  case ND_RETURN:
-    ExprGen(node->lhs_);
-    ASM_GEN("  jmp .L.return.", cur_fn->name_);
-    return;
-  case ND_IF: {
-    int seq = Count();
-    ExprGen(node->cond_);
-    ASM_GEN("  cmp rax, 0");
-    ASM_GEN("  je .L.else.", seq);
-    StmtGen(node->then_);
-    ASM_GEN("  jmp .L.end.", seq);
-    ASM_GEN(".L.else.", seq, ":");
-    if (node->els_ != nullptr) {
-      StmtGen(node->els_);
-    }
-    ASM_GEN(".L.end.", seq, ":");
-    return;
-  }
-  case ND_FOR: {
-    int seq = Count();
-    if (node->init_ != nullptr)
-      StmtGen(node->init_);
-    ASM_GEN(".L.begin.", seq, ":");
-    if (node->cond_ != nullptr) {
+    case ND_EXPR_STMT:
+      ExprGen(node->lhs_);
+      return;
+    case ND_BLOCK:
+      for (Node* n = node->body_; n != nullptr; n = n->next_) {
+        StmtGen(n);
+      }
+      return;
+    case ND_RETURN:
+      ExprGen(node->lhs_);
+      ASM_GEN("  jmp .L.return.", cur_fn->name_);
+      return;
+    case ND_IF: {
+      int seq = Count();
       ExprGen(node->cond_);
       ASM_GEN("  cmp rax, 0");
-      ASM_GEN("  je .L.end.", seq);
+      ASM_GEN("  je .L.else.", seq);
+      StmtGen(node->then_);
+      ASM_GEN("  jmp .L.end.", seq);
+      ASM_GEN(".L.else.", seq, ":");
+      if (node->els_ != nullptr) {
+        StmtGen(node->els_);
+      }
+      ASM_GEN(".L.end.", seq, ":");
+      return;
     }
-    StmtGen(node->then_);
-    if (node->inc_ != nullptr) {
-      ExprGen(node->inc_);
+    case ND_FOR: {
+      int seq = Count();
+      if (node->init_ != nullptr) StmtGen(node->init_);
+      ASM_GEN(".L.begin.", seq, ":");
+      if (node->cond_ != nullptr) {
+        ExprGen(node->cond_);
+        ASM_GEN("  cmp rax, 0");
+        ASM_GEN("  je .L.end.", seq);
+      }
+      StmtGen(node->then_);
+      if (node->inc_ != nullptr) {
+        ExprGen(node->inc_);
+      }
+      ASM_GEN("  jmp .L.begin.", seq);
+      ASM_GEN(".L.end.", seq, ":");
+      return;
     }
-    ASM_GEN("  jmp .L.begin.", seq);
-    ASM_GEN(".L.end.", seq, ":");
-    return;
-  }
-  default: node->tok_->ErrorTok("invalid statement");
+    default:
+      node->tok_->ErrorTok("invalid statement");
   }
 }
 
 // post-order for code-gen
 void CodeGenerator::ExprGen(Node* node) {
   switch (node->kind_) {
-  case ND_NUM: ASM_GEN("  mov rax, ", node->val_); return;
-  case ND_NEG:
-    ExprGen(node->lhs_);
-    ASM_GEN("  neg rax");
-    return;
-  case ND_VAR:
-    GetVarAddr(node);
-    Load(node->ty_);
-    return;
-  case ND_DEREF:
-    ExprGen(node->lhs_);
-    Load(node->ty_);
-    return;
-  case ND_ADDR: GetVarAddr(node->lhs_); return;
-  case ND_ASSIGN:
-    GetVarAddr(node->lhs_);
-    Push();
-    ExprGen(node->rhs_);
-    Store(node->ty_);
-    return;
-  case ND_CALL: {
-    int nargs = 0;
-    for (Node* arg = node->args_; arg != nullptr; arg = arg->next_) {
-      ExprGen(arg);
+    case ND_NUM:
+      ASM_GEN("  mov rax, ", node->val_);
+      return;
+    case ND_NEG:
+      ExprGen(node->lhs_);
+      ASM_GEN("  neg rax");
+      return;
+    case ND_VAR:
+      GetVarAddr(node);
+      Load(node->ty_);
+      return;
+    case ND_DEREF:
+      ExprGen(node->lhs_);
+      Load(node->ty_);
+      return;
+    case ND_ADDR:
+      GetVarAddr(node->lhs_);
+      return;
+    case ND_ASSIGN:
+      GetVarAddr(node->lhs_);
       Push();
-      nargs++;
-    }
+      ExprGen(node->rhs_);
+      Store(node->ty_);
+      return;
+    case ND_CALL: {
+      int nargs = 0;
+      for (Node* arg = node->args_; arg != nullptr; arg = arg->next_) {
+        ExprGen(arg);
+        Push();
+        nargs++;
+      }
 
-    for (int i = nargs - 1; i >= 0; i--) {
-      Pop(argreg64[i]);
-    }
+      for (int i = nargs - 1; i >= 0; i--) {
+        Pop(argreg64[i]);
+      }
 
-    ASM_GEN("  mov rax, 0");
-    ASM_GEN("  call ", node->call_);
-    return;
-  }
-  default: break;
+      ASM_GEN("  mov rax, 0");
+      ASM_GEN("  call ", node->call_);
+      return;
+    }
+    default:
+      break;
   }
 
   ExprGen(node->rhs_);
@@ -254,33 +264,40 @@ void CodeGenerator::ExprGen(Node* node) {
   Pop("rdi");
 
   switch (node->kind_) {
-  case ND_ADD: ASM_GEN("  add rax, rdi"); return;
-  case ND_SUB: ASM_GEN("  sub rax, rdi"); return;
-  case ND_MUL: ASM_GEN("  imul rax, rdi"); return;
-  case ND_DIV:
-    ASM_GEN("  cqo");
-    ASM_GEN("  idiv rdi");
-    return;
-  case ND_EQ:
-    ASM_GEN("  cmp rax, rdi");
-    ASM_GEN("  sete al");
-    ASM_GEN("  movzb rax, al");
-    return;
-  case ND_NE:
-    ASM_GEN("  cmp rax, rdi");
-    ASM_GEN("  setne al");
-    ASM_GEN("  movzb rax, al");
-    return;
-  case ND_LT:
-    ASM_GEN("  cmp rax, rdi");
-    ASM_GEN("  setl al");
-    ASM_GEN("  movzb rax, al");
-    return;
-  case ND_LE:
-    ASM_GEN("  cmp rax, rdi");
-    ASM_GEN("  setle al");
-    ASM_GEN("  movzb rax, al");
-    return;
-  default: node->tok_->ErrorTok("invalid expression.");
+    case ND_ADD:
+      ASM_GEN("  add rax, rdi");
+      return;
+    case ND_SUB:
+      ASM_GEN("  sub rax, rdi");
+      return;
+    case ND_MUL:
+      ASM_GEN("  imul rax, rdi");
+      return;
+    case ND_DIV:
+      ASM_GEN("  cqo");
+      ASM_GEN("  idiv rdi");
+      return;
+    case ND_EQ:
+      ASM_GEN("  cmp rax, rdi");
+      ASM_GEN("  sete al");
+      ASM_GEN("  movzb rax, al");
+      return;
+    case ND_NE:
+      ASM_GEN("  cmp rax, rdi");
+      ASM_GEN("  setne al");
+      ASM_GEN("  movzb rax, al");
+      return;
+    case ND_LT:
+      ASM_GEN("  cmp rax, rdi");
+      ASM_GEN("  setl al");
+      ASM_GEN("  movzb rax, al");
+      return;
+    case ND_LE:
+      ASM_GEN("  cmp rax, rdi");
+      ASM_GEN("  setle al");
+      ASM_GEN("  movzb rax, al");
+      return;
+    default:
+      node->tok_->ErrorTok("invalid expression.");
   }
 }

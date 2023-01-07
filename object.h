@@ -24,13 +24,8 @@ enum Objectkind {
 
 class Object {
  public:
-  explicit Object()
-      : kind_(OB_END)
-      , next_(nullptr)
-      , name_(nullptr)
-      , body_(nullptr)
-      , ty_(nullptr) {}
-  
+  explicit Object() : kind_(OB_END), next_(nullptr), name_(nullptr), body_(nullptr), ty_(nullptr) {}
+
   // construct a Object object based on kind.
   Object(Objectkind kind, char* name, Type* ty);
   // create a string literal variable
@@ -76,31 +71,31 @@ class Object {
   // label the object type
   Objectkind kind_;
   // for object list
-  Object* next_=nullptr;
+  Object* next_ = nullptr;
   // variable name
-  char* name_=nullptr;
+  char* name_ = nullptr;
   // Type
-  Type* ty_=nullptr;
+  Type* ty_ = nullptr;
 
   // local variable offset
-  int offset_=0;
+  int offset_ = 0;
 
   // Global Variable
-  char* init_data=nullptr;
+  char* init_data = nullptr;
   // whether is a stirng
-  bool is_string=false;
+  bool is_string = false;
 
   // function parameter
-  Object* params_=nullptr;
+  Object* params_ = nullptr;
   // function body
-  Node* body_=nullptr;
+  Node* body_ = nullptr;
   // function variable list
-  Object* loc_list_=nullptr;
+  Object* loc_list_ = nullptr;
   // function variable's stack size
-  int stack_size_=0;
+  int stack_size_ = 0;
 };
 
 extern Object* locals;
 extern Object* globals;
 
-#endif   // OBJECT_GRUAD
+#endif  // OBJECT_GRUAD

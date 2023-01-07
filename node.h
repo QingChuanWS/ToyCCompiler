@@ -12,74 +12,74 @@
 #ifndef NODE_GRUAD
 #define NODE_GRUAD
 
+#include <string>
+
 #include "object.h"
 #include "token.h"
 #include "tools.h"
 #include "type.h"
 
-#include <string>
-
 enum NodeKind {
-  ND_ADD,         // +
-  ND_SUB,         // -
-  ND_MUL,         // *
-  ND_DIV,         // /
-  ND_NEG,         // unary -
-  ND_EQ,          // ==
-  ND_NE,          // !=
-  ND_LT,          // <
-  ND_LE,          // <=
-  ND_NUM,         // number
-  ND_ASSIGN,      // =
-  ND_ADDR,        // unary &
-  ND_DEREF,       // *
-  ND_EXPR_STMT,   // expression statement
-  ND_RETURN,      // return
-  ND_BLOCK,       // { ... }
-  ND_CALL,    // Function call
-  ND_IF,          // if
-  ND_FOR,         // for and while
-  ND_VAR,         // variable
+  ND_ADD,        // +
+  ND_SUB,        // -
+  ND_MUL,        // *
+  ND_DIV,        // /
+  ND_NEG,        // unary -
+  ND_EQ,         // ==
+  ND_NE,         // !=
+  ND_LT,         // <
+  ND_LE,         // <=
+  ND_NUM,        // number
+  ND_ASSIGN,     // =
+  ND_ADDR,       // unary &
+  ND_DEREF,      // *
+  ND_EXPR_STMT,  // expression statement
+  ND_RETURN,     // return
+  ND_BLOCK,      // { ... }
+  ND_CALL,       // Function call
+  ND_IF,         // if
+  ND_FOR,        // for and while
+  ND_VAR,        // variable
   ND_END,
 };
 
 class Node {
  public:
   explicit Node(NodeKind kind, Token* tok)
-      : kind_(kind)
-      , tok_(tok)
-      , next_(nullptr)
-      , lhs_(nullptr)
-      , rhs_(nullptr)
-      , cond_(nullptr)
-      , then_(nullptr)
-      , els_(nullptr)
-      , body_(nullptr)
-      , init_(nullptr)
-      , inc_(nullptr)
-      , call_(nullptr)
-      , args_(nullptr)
-      , val_(0)
-      , var_()
-      , ty_(nullptr) {}
+      : kind_(kind),
+        tok_(tok),
+        next_(nullptr),
+        lhs_(nullptr),
+        rhs_(nullptr),
+        cond_(nullptr),
+        then_(nullptr),
+        els_(nullptr),
+        body_(nullptr),
+        init_(nullptr),
+        inc_(nullptr),
+        call_(nullptr),
+        args_(nullptr),
+        val_(0),
+        var_(),
+        ty_(nullptr) {}
 
   explicit Node(NodeKind kind, Token* tok, Node* b_one)
-      : kind_(kind)
-      , tok_(tok)
-      , next_(nullptr)
-      , lhs_(nullptr)
-      , rhs_(nullptr)
-      , cond_(nullptr)
-      , then_(nullptr)
-      , els_(nullptr)
-      , body_(nullptr)
-      , init_(nullptr)
-      , inc_(nullptr)
-      , call_(nullptr)
-      , args_(nullptr)
-      , val_(0)
-      , var_()
-      , ty_(nullptr) {
+      : kind_(kind),
+        tok_(tok),
+        next_(nullptr),
+        lhs_(nullptr),
+        rhs_(nullptr),
+        cond_(nullptr),
+        then_(nullptr),
+        els_(nullptr),
+        body_(nullptr),
+        init_(nullptr),
+        inc_(nullptr),
+        call_(nullptr),
+        args_(nullptr),
+        val_(0),
+        var_(),
+        ty_(nullptr) {
     if (kind == ND_BLOCK) {
       body_ = b_one;
       return;
@@ -90,40 +90,40 @@ class Node {
   explicit Node(NodeKind kind, Token* tok, Node* lhs, Node* rhs);
 
   explicit Node(long val, Token* tok)
-      : kind_(ND_NUM)
-      , tok_(tok)
-      , next_(nullptr)
-      , lhs_(nullptr)
-      , rhs_(nullptr)
-      , cond_(nullptr)
-      , then_(nullptr)
-      , els_(nullptr)
-      , body_(nullptr)
-      , init_(nullptr)
-      , inc_(nullptr)
-      , call_(nullptr)
-      , args_(nullptr)
-      , val_(val)
-      , var_()
-      , ty_(nullptr) {}
+      : kind_(ND_NUM),
+        tok_(tok),
+        next_(nullptr),
+        lhs_(nullptr),
+        rhs_(nullptr),
+        cond_(nullptr),
+        then_(nullptr),
+        els_(nullptr),
+        body_(nullptr),
+        init_(nullptr),
+        inc_(nullptr),
+        call_(nullptr),
+        args_(nullptr),
+        val_(val),
+        var_(),
+        ty_(nullptr) {}
 
   explicit Node(Object* var, Token* tok)
-      : kind_(ND_VAR)
-      , tok_(tok)
-      , next_(nullptr)
-      , lhs_(nullptr)
-      , rhs_(nullptr)
-      , cond_(nullptr)
-      , then_(nullptr)
-      , els_(nullptr)
-      , body_(nullptr)
-      , init_(nullptr)
-      , inc_(nullptr)
-      , call_(nullptr)
-      , args_(nullptr)
-      , val_(0)
-      , var_(var)
-      , ty_(nullptr) {}
+      : kind_(ND_VAR),
+        tok_(tok),
+        next_(nullptr),
+        lhs_(nullptr),
+        rhs_(nullptr),
+        cond_(nullptr),
+        then_(nullptr),
+        els_(nullptr),
+        body_(nullptr),
+        init_(nullptr),
+        inc_(nullptr),
+        call_(nullptr),
+        args_(nullptr),
+        val_(0),
+        var_(var),
+        ty_(nullptr) {}
 
   static void NodeListFree(Node* node);
 
@@ -186,16 +186,16 @@ class Node {
   friend class CodeGenerator;
   friend class Object;
 
-  NodeKind kind_;   // Node kind
-  Token*   tok_;    // Representative node
-  Type*    ty_;
+  NodeKind kind_;  // Node kind
+  Token* tok_;     // Representative node
+  Type* ty_;
 
   // for compound-stmt
   Node* next_;
 
   // for operation +-/*
-  Node* lhs_;   // left-head side
-  Node* rhs_;   // right-head side
+  Node* lhs_;  // left-head side
+  Node* rhs_;  // right-head side
 
   // for block
   Node* body_;
@@ -219,4 +219,4 @@ class Node {
   long val_;
 };
 
-#endif   // !NODE_GRUAD
+#endif  // !NODE_GRUAD

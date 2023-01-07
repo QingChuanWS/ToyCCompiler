@@ -1,12 +1,12 @@
 /*
  * This project is exclusively owned by QingChuanWS and shall not be used for
  * commercial and profitting purpose without QingChuanWS's permission.
- * 
+ *
  * @Author: bingshan45@163.com
  * Github: https://github.com/QingChuanWS
- * @Description: 
- * 
- * Copyright (c) 2022 by QingChuanWS, All Rights Reserved. 
+ * @Description:
+ *
+ * Copyright (c) 2022 by QingChuanWS, All Rights Reserved.
  */
 /*
  * This project is exclusively owned by QingChuanWS and shall not be used for
@@ -40,14 +40,14 @@ enum TypeKind {
 class Type {
  public:
   Type()
-      : kind_(TY_END)
-      , name_(nullptr)
-      , size_(0)
-      , base_(nullptr)
-      , array_len_(0)
-      , return_ty_(nullptr)
-      , params_(nullptr)
-      , next_(nullptr) {}
+      : kind_(TY_END),
+        name_(nullptr),
+        size_(0),
+        base_(nullptr),
+        array_len_(0),
+        return_ty_(nullptr),
+        params_(nullptr),
+        next_(nullptr) {}
   // copy construct.
   Type(const Type* ty);
   // create a pointer.
@@ -78,7 +78,7 @@ class Type {
   // Function type
   Type* return_ty_;
   Type* params_;
-  Type* next_;   // for params type list.
+  Type* next_;  // for params type list.
 };
 
-#endif   // !TYPE_GRUAD
+#endif  // !TYPE_GRUAD

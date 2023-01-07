@@ -12,11 +12,11 @@
 #ifndef TOOLS_GRUAD
 #define TOOLS_GRUAD
 
+#include <cassert>
 #include <cstdarg>
 #include <cstdio>
 #include <cstring>
 #include <iostream>
-#include <cassert>
 
 #define DEBUG(expr) assert(expr)
 #define DLOG(expr) Log(expr)
@@ -32,10 +32,10 @@ bool StrEqual(const char* src, const char* dst, int src_len);
 // check whether current character is alpha
 bool IsAlpha(char c);
 // check whether current character is alpha or number
-bool IsAlnum(char c); 
+bool IsAlnum(char c);
 // round up `n` to the nearest multiple of `align`.
 int AlignTo(int n, int align);
 // create a unique name
 char* CreateUniqueName();
 
-#endif   // !TOOLS_GRUAD
+#endif  // !TOOLS_GRUAD

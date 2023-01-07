@@ -11,33 +11,33 @@
 
 #include "token.h"
 
-#include "tools.h"
-#include "type.h"
-
 #include <cctype>
 #include <cstring>
+
+#include "tools.h"
+#include "type.h"
 
 char* Token::prg_ = nullptr;
 
 Token::Token(Tokenkind kind, char* start, char* end)
-    : kind_(kind)
-    , str_(start)
-    , strlen_(end - start)
-    , val_(0)
-    , next_(nullptr)
-    , ty_(nullptr)
-    , str_literal_(nullptr) {
+    : kind_(kind),
+      str_(start),
+      strlen_(end - start),
+      val_(0),
+      next_(nullptr),
+      ty_(nullptr),
+      str_literal_(nullptr) {
   if (kind_ == TK_STR) {
-    strlen_      = end - start + 1;
-    ty_          = new Type(TY_ARRAY, ty_char, end - start);
+    strlen_ = end - start + 1;
+    ty_ = new Type(TY_ARRAY, ty_char, end - start);
     str_literal_ = strndup(start + 1, end - start - 1);
   }
 }
 
 Token* Token::TokenCreate(const Token& head, char* prg) {
-  prg_       = prg;
+  prg_ = prg;
   Token* cur = const_cast<Token*>(&head);
-  char*  p   = prg_;
+  char* p = prg_;
   while (*p != '\0') {
     if (std::isspace(*p)) {
       p++;
@@ -45,10 +45,10 @@ Token* Token::TokenCreate(const Token& head, char* prg) {
     }
 
     if (std::isdigit(*p)) {
-      cur->next_   = new Token(TK_NUM, p, 0);
-      cur          = cur->next_;
-      char* q      = p;
-      cur->val_    = strtol(p, &p, 10);
+      cur->next_ = new Token(TK_NUM, p, 0);
+      cur = cur->next_;
+      char* q = p;
+      cur->val_ = strtol(p, &p, 10);
       cur->strlen_ = static_cast<int>(p - q);
       continue;
     }
@@ -106,8 +106,7 @@ int Token::ReadPunct(char* p) {
 }
 
 void Token::ConvertToReserved() {
-  static const char* kw[] = {
-      "return", "if", "else", "for", "while", "int", "sizeof", "char"};
+  static const char* kw[] = {"return", "if", "else", "for", "while", "int", "sizeof", "char"};
   for (Token* t = this; t != nullptr; t = t->next_) {
     for (int i = 0; i < sizeof(kw) / sizeof(*kw); i++) {
       if (StrEqual(t->str_, kw[i], t->strlen_)) {
@@ -117,9 +116,7 @@ void Token::ConvertToReserved() {
   }
 }
 
-bool Token::Equal(const char* op) {
-  return StrEqual(this->str_, op, this->strlen_);
-}
+bool Token::Equal(const char* op) { return StrEqual(this->str_, op, this->strlen_); }
 
 void Token::StrTokenFree() {
   if (this->kind_ == TK_STR) {
@@ -151,7 +148,7 @@ void Token::ErrorTok(const char* fmt, ...) {
 
   int pos = this->str_ - prg_;
   fprintf(stderr, "%s\n", prg_);
-  fprintf(stderr, "%*s", pos, "");   // print pos spaces.
+  fprintf(stderr, "%*s", pos, "");  // print pos spaces.
   fprintf(stderr, "^ ");
   vfprintf(stderr, fmt, ap);
   fprintf(stderr, "\n");
@@ -172,6 +169,4 @@ long Token::GetNumber() {
   return val_;
 }
 
-bool Token::IsTypename() {
-  return Equal("int") || Equal("char");
-}
+bool Token::IsTypename() { return Equal("int") || Equal("char"); }

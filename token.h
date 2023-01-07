@@ -11,49 +11,45 @@
 #ifndef TOKEN_GRUAD
 #define TOKEN_GRUAD
 
-#include "tools.h"
-
 #include <cctype>
 #include <cstring>
 
+#include "tools.h"
+
 enum Tokenkind {
-  TK_PUNCT,     // Punctuators,
-  TK_IDENT,     // Identifiers,
-  TK_KEYWORD,   // Keywords,
-  TK_NUM,       // Number literals,
-  TK_STR,       // String literals,
-  TK_EOF,       // End-of-file markers,
+  TK_PUNCT,    // Punctuators,
+  TK_IDENT,    // Identifiers,
+  TK_KEYWORD,  // Keywords,
+  TK_NUM,      // Number literals,
+  TK_STR,      // String literals,
+  TK_EOF,      // End-of-file markers,
 };
 
 class Type;
 class Token {
  public:
   Token()
-      : kind_(TK_EOF)
-      , next_(nullptr)
-      , val_(0)
-      , str_(nullptr)
-      , strlen_(0)
-      , ty_(nullptr)
-      , str_literal_(nullptr) {}
+      : kind_(TK_EOF),
+        next_(nullptr),
+        val_(0),
+        str_(nullptr),
+        strlen_(0),
+        ty_(nullptr),
+        str_literal_(nullptr) {}
 
   Token(Tokenkind kind, char* str, int len)
-      : kind_(kind)
-      , next_(nullptr)
-      , str_(str)
-      , strlen_(len)
-      , val_(0)
-      , ty_(nullptr)
-      , str_literal_(nullptr) {}
+      : kind_(kind),
+        next_(nullptr),
+        str_(str),
+        strlen_(len),
+        val_(0),
+        ty_(nullptr),
+        str_literal_(nullptr) {}
 
   Token(Tokenkind kind, char* start, char* end);
 
   Token(Tokenkind kind, Token* tok, char* str, int len)
-      : kind_(kind)
-      , str_(str)
-      , strlen_(len)
-      , val_(0)
-      , next_(nullptr) {
+      : kind_(kind), str_(str), strlen_(len), val_(0), next_(nullptr) {
     tok->next_ = this;
   }
 
@@ -109,4 +105,4 @@ class Token {
   char* str_literal_;
 };
 
-#endif   //  TOKEN_GRUAD
+#endif  //  TOKEN_GRUAD
