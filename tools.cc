@@ -1,15 +1,18 @@
 /*
  * This project is exclusively owned by QingChuanWS and shall not be used for
  * commercial and profitting purpose without QingChuanWS's permission.
- *
- * @Author: git config user.email
+ * 
+ * @Author: bingshan45@163.com
  * Github: https://github.com/QingChuanWS
- * @Description:
- *
- * Copyright (c) 2022 by ${git_name}, All Rights Reserved.
+ * @Description: 
+ * 
+ * Copyright (c) 2023 by QingChuanWS, All Rights Reserved. 
  */
-#include "tools.h"
 
+#include "tools.h"
+#include <bits/types/FILE.h>
+
+#include <cstdarg>
 #include <cstdio>
 #include <cstdlib>
 
@@ -53,7 +56,19 @@ int AlignTo(int n, int align) { return (n + align - 1) / align * align; }
 
 char* CreateUniqueName() {
   static int id = 0;
-  char* buf = (char*)malloc(20 * sizeof(char));
-  sprintf(buf, ".L..%d", id++);
+  char* buf = StringFormat(".L..%d", id++);
+  return buf;
+}
+
+char* StringFormat(const char* fmt, ...){
+  char* buf;
+  size_t  buf_len;
+  FILE* out = open_memstream(&buf, &buf_len);
+
+  va_list ap;
+  va_start(ap, fmt);
+  vfprintf(out, fmt, ap);
+  va_end(ap);
+  fclose(out);
   return buf;
 }
