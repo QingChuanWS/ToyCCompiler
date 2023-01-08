@@ -30,8 +30,5 @@ int main(int argc, char** argv) {
 
   Token::TokenFree(head);
   Object::ObjectFree(prog);
-  delete ty_int;
-  delete ty_char;
-
   return 0;
 }

@@ -6,54 +6,32 @@
  * Github: https://github.com/QingChuanWS
  * @Description:
  *
- * Copyright (c) 2022 by QingChuanWS, All Rights Reserved.
+ * Copyright (c) 2023 by QingChuanWS, All Rights Reserved.
  */
 #include "type.h"
 
-Type* ty_int = new Type(TY_INT, nullptr);
-Type* ty_char = new Type(TY_CHAR, nullptr);
+#include <memory>
 
-Type::Type(const Type* ty) {
-  kind_ = ty->kind_;
-  name_ = ty->name_;
-  size_ = ty->size_;
-  base_ = ty->base_;
-  array_len_ = ty->array_len_;
-  return_ty_ = ty->return_ty_;
-  params_ = ty->params_;
-  next_ = ty->next_;
+std::shared_ptr<Type> ty_int = std::make_shared<Type>(TY_INT, 8);
+std::shared_ptr<Type> ty_char = std::make_shared<Type>(TY_CHAR, 1);
+
+Type* Type::CreatePointerType(Type* base) {
+  Type* ty = new Type(TY_PRT, base->size_);
+  ty->base_ = base;
+  return ty;
 }
 
-Type::Type(TypeKind kind, Type* base, int len)
-    : kind_(kind),
-      name_(nullptr),
-      size_(0),
-      base_(nullptr),
-      array_len_(len),
-      return_ty_(nullptr),
-      params_(nullptr),
-      next_(nullptr) {
-  switch (kind_) {
-    case TY_CHAR:
-      size_ = 1;
-      return;
-    case TY_INT:
-      size_ = 8;
-      return;
-    case TY_PRT:
-      base_ = base;
-      size_ = 8;
-      return;
-    case TY_FUNC:
-      return_ty_ = base;
-      return;
-    case TY_ARRAY:
-      size_ = base->size_ * len;
-      base_ = base;
-      return;
-    default:
-      return;
-  }
+Type* Type::CreateFunctionType(Type* ret_type, Type* params) {
+  Type* ty = new Type(TY_FUNC, ret_type->size_);
+  ty->return_ty_ = ret_type;
+  ty->params_ = params;
+  return ty;
+}
+
+Type* Type::CreateArrayType(Type* base, int array_len) {
+  Type* ty = new Type(TY_ARRAY, base->size_ * array_len);
+  ty->base_ = base;
+  return ty;
 }
 
 bool Type::IsInteger() { return this->kind_ == TY_INT; }
@@ -66,7 +44,7 @@ bool Type::HasName() { return name_ != nullptr; }
 
 void Type::TypeFree(Type* head) {
   Type* cur = head;
-  while (cur && cur != ty_int && cur != ty_char) {
+  while (cur && cur != ty_int.get() && cur != ty_char.get()) {
     head = head->base_;
     delete cur;
     cur = head;

@@ -20,74 +20,124 @@
 
 extern Object* locals;
 
-Node::Node(NodeKind kind, Token* tok, Node* lhs, Node* rhs)
-    : kind_(kind),
-      tok_(tok),
-      next_(nullptr),
-      lhs_(lhs),
-      rhs_(rhs),
-      cond_(nullptr),
-      then_(nullptr),
-      els_(nullptr),
-      body_(nullptr),
-      init_(nullptr),
-      inc_(nullptr),
-      call_(nullptr),
-      args_(nullptr),
-      val_(0),
-      var_(),
-      ty_(nullptr) {
-  if (!(kind_ == ND_ADD || kind_ == ND_SUB)) {
-    return;
+Node* Node::CreateConstNode(long val, Token* tok) {
+  Node* node = new Node(ND_NUM, tok);
+  node->val_ = val;
+  return node;
+}
+
+Node* Node::CreateVarNode(Object* var, Token* tok) {
+  Node* node = new Node(ND_VAR, tok);
+  node->var_ = var;
+  return node;
+}
+
+Node* Node::CreateIdentNode(Token* tok) {
+  Object* local_var = tok->FindLocalVar();
+  Object* global_var = tok->FindGlobalVar();
+  if (global_var == nullptr && local_var == nullptr) {
+    tok->ErrorTok("undefined variable.");
   }
-
-  lhs_->TypeInfer();
-  rhs_->TypeInfer();
-
-  if (lhs_->ty_->IsInteger() && rhs_->ty_->IsInteger()) {
-    ty_ = ty_int;
-    return;
+  if (local_var) {
+    return CreateVarNode(local_var, tok);
   }
+  return CreateVarNode(global_var, tok);
+}
 
-  if (kind_ == ND_ADD) {
-    if (lhs_->ty_->IsPointer() && rhs_->ty_->IsPointer()) {
-      ErrorTok("Invalid Operands.");
-    }
-    // cononical 'num + ptr' to 'ptr + num'.
-    if (!lhs_->ty_->IsPointer() && rhs_->ty_->IsPointer()) {
-      Node* tmp = lhs_;
-      lhs_ = rhs_;
-      rhs_ = tmp;
-    }
+Node* Node::CreateCallNode(Token* call_name, Node* args) {
+  Node* call_node = new Node(ND_CALL, call_name);
+  call_node->call_ = call_name->GetIdent();
+  call_node->args_ = args;
+  return call_node;
+}
 
-    // ptr + num
-    rhs_ = new Node(ND_MUL, tok, rhs_, new Node(lhs_->ty_->base_->size_, tok));
-    ty_ = lhs_->ty_;
-    return;
+Node* Node::CreateUnaryNode(NodeKind kind, Token* node_name, Node* op) {
+  Node* res = new Node(kind, node_name);
+  res->lhs_ = op;
+  return res;
+}
+
+Node* Node::CreateAddNode(Token* node_name, Node* op_left, Node* op_right) {
+  op_left->TypeInfer();
+  op_right->TypeInfer();
+  if (!op_left->IsPointerNode() && !op_right->IsPointerNode()) {
+    Node* res = CreateBinaryNode(ND_ADD, node_name, op_left, op_right);
+    res->ty_ = ty_int.get();
+    return res;
   }
-
-  if (kind_ == ND_SUB) {
-    // ptr - ptr
-    if (lhs_->ty_->IsPointer() && rhs_->ty_->IsPointer()) {
-      kind_ = ND_DIV;
-      // careful curisive call.
-      Node* node = new Node(ND_SUB, tok);
-      node->lhs_ = lhs_;
-      node->rhs_ = rhs_;
-      node->ty_ = ty_int;
-      lhs_ = node;
-      rhs_ = new Node(lhs->ty_->base_->size_, tok);
-      return;
-    }
-
-    // ptr - num
-    if (lhs_->ty_->IsPointer() && rhs_->ty_->IsInteger()) {
-      rhs_ = new Node(ND_MUL, tok, rhs_, new Node(lhs_->ty_->base_->size_, tok));
-      rhs_->TypeInfer();
-      ty_ = lhs_->ty_;
-      return;
-    }
+  // ptr + ptr
+  if (op_left->IsPointerNode() && op_right->IsPointerNode()) {
+    node_name->ErrorTok("Invalid Operands.");
   }
+  // cononical 'num + ptr' to 'ptr + num'.
+  if (!op_left->IsPointerNode() && op_right->IsPointerNode()) {
+    Node* tmp = op_left;
+    op_left = op_right;
+    op_right = tmp;
+  }
+  // ptr + num
+  Node* factor = CreateConstNode(op_left->ty_->base_->size_, node_name);
+  Node* real_num = CreateBinaryNode(ND_MUL, node_name, op_right, factor);
+  Node* res = CreateBinaryNode(ND_ADD, node_name, op_left, real_num);
+  return res;
+}
+
+Node* Node::CreateSubNode(Token* node_name, Node* op_left, Node* op_right) {
+  op_left->TypeInfer();
+  op_right->TypeInfer();
+  // num - num
+  if (!op_left->IsPointerNode() && !op_right->IsPointerNode()) {
+    Node* res = CreateBinaryNode(ND_SUB, node_name, op_left, op_right);
+    res->ty_ = ty_int.get();
+    return res;
+  }
+  // ptr - ptr
+  if (op_left->IsPointerNode() && op_right->IsPointerNode()) {
+    // careful curisive call.
+    Node* sub = CreateBinaryNode(ND_SUB, node_name, op_left, op_right);
+    Node* factor = CreateConstNode(op_left->ty_->base_->size_, node_name);
+    Node* res = CreateBinaryNode(ND_DIV, node_name, sub, factor);
+    res->ty_ = ty_int.get();
+    return res;
+  }
+  if (!op_left->IsPointerNode() && op_right->IsPointerNode()) {
+    node_name->ErrorTok("Invalid Operands.");
+  }
+  // ptr - num
+  Node* factor = CreateConstNode(op_left->ty_->base_->size_, node_name);
+  Node* real_num = CreateBinaryNode(ND_MUL, node_name, op_right, factor);
+  Node* res = CreateBinaryNode(ND_SUB, node_name, op_left, real_num);
+  return res;
+}
+
+Node* Node::CreateBinaryNode(NodeKind kind, Token* node_name, Node* op_left, Node* op_right) {
+  Node* res = new Node(kind, node_name);
+  res->lhs_ = op_left;
+  res->rhs_ = op_right;
+  return res;
+}
+
+Node* Node::CreateIFNode(Token* node_name, Node* cond, Node* then, Node* els) {
+  Node* res = new Node(ND_IF, node_name);
+  res->cond_ = cond;
+  res->then_ = then;
+  res->els_ = els;
+  return res;
+}
+
+Node* Node::CreateForNode(Token* node_name, Node* init, Node* cond, Node* inc, Node* then) {
+  Node* res = new Node(ND_FOR, node_name);
+  res->init_ = init;
+  res->cond_ = cond;
+  res->inc_ = inc;
+  res->then_ = then;
+  return res;
+}
+
+Node* Node::CreateBlockNode(Token* node_name, Node* body) {
+  Node* res = new Node(ND_BLOCK, node_name);
+  res->body_ = body;
+  return res;
 }
 
 Node* Node::Program(Token** rest, Token* tok) {
@@ -97,8 +147,8 @@ Node* Node::Program(Token** rest, Token* tok) {
 
 // compound-stmt  = (declaration | stmt)* "}"
 Node* Node::CompoundStmt(Token** rest, Token* tok) {
-  Node head = Node(ND_END, tok);
-  Node* cur = &head;
+  Node sub_expr;
+  Node* cur = &sub_expr;
 
   while (!tok->Equal("}")) {
     if (tok->IsTypename()) {
@@ -109,11 +159,10 @@ Node* Node::CompoundStmt(Token** rest, Token* tok) {
     cur = cur->next_;
     cur->TypeInfer();
   }
-  Node* node = new Node(ND_BLOCK, tok);
-  node->body_ = head.next_;
 
   *rest = tok->next_;
-  return node;
+  return CreateBlockNode(tok, sub_expr.next_);
+  ;
 }
 
 // declaration = declspec (
@@ -122,50 +171,45 @@ Node* Node::CompoundStmt(Token** rest, Token* tok) {
 Node* Node::Declaration(Token** rest, Token* tok) {
   Type* ty_base = Declspec(&tok, tok);
 
-  Node head = Node(ND_END, tok);
-  Node* cur = &head;
+  Node decl_expr = Node();
+  Node* cur = &decl_expr;
   int i = 0;
 
   while (!tok->Equal(";")) {
     if (i++ > 0) {
       tok = tok->SkipToken(",");
     }
-
     Type* ty = Declarator(&tok, tok, ty_base);
     Object* var = Object::CreateLocalVar(ty->name_->GetIdent(), ty, &locals);
-
     if (!tok->Equal("=")) {
       continue;
     }
-
-    Node* lhs = new Node(var, tok);
-    Node* rhs = Node::Assign(&tok, tok->next_);
-    Node* node = new Node(ND_ASSIGN, tok, lhs, rhs);
-    cur->next_ = new Node(ND_EXPR_STMT, tok, node);
-    cur = cur->next_;
+    Node* lhs = CreateVarNode(var, tok);
+    Node* rhs = Assign(&tok, tok->next_);
+    Node* assgin_node = CreateBinaryNode(ND_ASSIGN, tok, lhs, rhs);
+    cur = cur->next_ = CreateUnaryNode(ND_EXPR_STMT, tok, assgin_node);
   }
 
-  Node* node = new Node(ND_BLOCK, tok);
-  node->body_ = head.next_;
   *rest = tok->next_;
-  return node;
+  return CreateBlockNode(tok, decl_expr.next_);
+  ;
 }
 
 // declspec = "char" | "int"
 Type* Node::Declspec(Token** rest, Token* tok) {
   if (tok->Equal("char")) {
     *rest = tok->SkipToken("char");
-    return ty_char;
+    return ty_char.get();
   }
 
   *rest = tok->SkipToken("int");
-  return ty_int;
+  return ty_int.get();
 }
 
 // declarator = "*"* ident type-suffix
 Type* Node::Declarator(Token** rest, Token* tok, Type* ty) {
   while (tok->Equal("*")) {
-    ty = new Type(TY_PRT, ty);
+    ty = Type::CreatePointerType(ty);
     tok = tok->next_;
   }
   *rest = tok;
@@ -173,9 +217,7 @@ Type* Node::Declarator(Token** rest, Token* tok, Type* ty) {
   if (tok->kind_ != TK_IDENT) {
     tok->ErrorTok("expected a variable name.");
   }
-
   ty = TypeSuffix(rest, tok->next_, ty);
-
   ty->name_ = tok;
   return ty;
 }
@@ -189,7 +231,7 @@ Type* Node::TypeSuffix(Token** rest, Token* tok, Type* ty) {
     int len = tok->next_->GetNumber();
     tok = tok->next_->next_->SkipToken("]");
     ty = TypeSuffix(rest, tok, ty);
-    return new Type(TY_ARRAY, ty, len);
+    return Type::CreateArrayType(ty, len);
   }
 
   *rest = tok;
@@ -199,21 +241,19 @@ Type* Node::TypeSuffix(Token** rest, Token* tok, Type* ty) {
 // func-param = param ("," param) *
 // param = declspec declarator
 Type* Node::FunctionParam(Token** rest, Token* tok, Type* ty) {
-  Type head = Type();
-  Type* cur = &head;
+  Type params;
+  Type* cur = &params;
 
   while (!tok->Equal(")")) {
-    if (cur != &head) {
+    if (cur != &params) {
       tok = tok->SkipToken(",");
     }
     Type* base_ty = Declspec(&tok, tok);
     Type* ty = Declarator(&tok, tok, base_ty);
-    cur->next_ = new Type(ty);
+    cur->next_ = new Type(*ty);
     cur = cur->next_;
   }
-
-  ty = new Type(TY_FUNC, ty);
-  ty->params_ = head.next_;
+  ty = Type::CreateFunctionType(ty, params.next_);
 
   *rest = tok->next_;
   return ty;
@@ -226,56 +266,51 @@ Type* Node::FunctionParam(Token** rest, Token* tok, Type* ty) {
 // expr-stmt
 Node* Node::Stmt(Token** rest, Token* tok) {
   if (tok->Equal("return")) {
-    Node* node = new Node(ND_RETURN, tok, Expr(&tok, tok->next_));
+    Node* node = CreateUnaryNode(ND_RETURN, tok, Expr(&tok, tok->next_));
     *rest = tok->SkipToken(";");
     return node;
   }
 
   if (tok->Equal("if")) {
-    Node* node = new Node(ND_IF, tok);
+    Token* node_name = tok;
     tok = tok->next_;
-    node->cond_ = Expr(&tok, tok->SkipToken("("));
-    node->then_ = Stmt(&tok, tok->SkipToken(")"));
+    Node* cond = Expr(&tok, tok->SkipToken("("));
+    Node* then = Stmt(&tok, tok->SkipToken(")"));
+    Node* els = nullptr;
     if (tok->Equal("else")) {
-      node->els_ = Stmt(&tok, tok->next_);
+      els = Stmt(&tok, tok->next_);
     }
     *rest = tok;
-    return node;
+    return CreateIFNode(node_name, cond, then, els);
   }
 
   if (tok->Equal("for")) {
-    Node* node = new Node(ND_FOR, tok);
-    tok = tok->next_;
-    tok = tok->SkipToken("(");
+    Token* node_name = tok;
+    tok = tok->next_->SkipToken("(");
 
-    node->init_ = ExprStmt(&tok, tok);
+    Node* init = ExprStmt(&tok, tok);
+    Node* cond = nullptr;
+    Node* inc = nullptr;
 
     if (!tok->Equal(";")) {
-      node->cond_ = Expr(&tok, tok);
+      cond = Expr(&tok, tok);
     }
     tok = tok->SkipToken(";");
-
     if (!tok->Equal(")")) {
-      node->inc_ = Expr(&tok, tok);
+      inc = Expr(&tok, tok);
     }
     tok = tok->SkipToken(")");
-    // then branch, not support {...}
-    node->then_ = Stmt(rest, tok);
-
-    return node;
+    return CreateForNode(node_name, init, cond, inc, Stmt(rest, tok));
   }
 
   if (tok->Equal("while")) {
-    Node* node = new Node(ND_FOR, tok);
-    tok = tok->next_;
-    tok = tok->SkipToken("(");
+    Token* node_name = tok;
+    tok = tok->next_->SkipToken("(");
 
-    node->cond_ = Expr(&tok, tok);
+    Node* cond = Expr(&tok, tok);
     tok = tok->SkipToken(")");
-
-    node->then_ = Stmt(rest, tok);
-
-    return node;
+    Node* then = Stmt(rest, tok);
+    return CreateForNode(node_name, nullptr, cond, nullptr, then);
   }
 
   if (tok->Equal("{")) {
@@ -289,10 +324,9 @@ Node* Node::Stmt(Token** rest, Token* tok) {
 Node* Node::ExprStmt(Token** rest, Token* tok) {
   if (tok->Equal(";")) {
     *rest = tok->next_;
-    return new Node(ND_BLOCK, tok);
+    return CreateBlockNode(tok, nullptr);
   }
-
-  Node* node = new Node(ND_EXPR_STMT, tok, Expr(&tok, tok));
+  Node* node = CreateUnaryNode(ND_EXPR_STMT, tok, Expr(&tok, tok));
   *rest = tok->SkipToken(";");
   return node;
 }
@@ -303,9 +337,8 @@ Node* Node::Expr(Token** rest, Token* tok) { return Assign(rest, tok); }
 // assign = equality ("=" assign)?
 Node* Node::Assign(Token** rest, Token* tok) {
   Node* node = Equality(&tok, tok);
-
   if (tok->Equal("=")) {
-    return new Node(ND_ASSIGN, tok, node, Assign(rest, tok->next_));
+    return CreateBinaryNode(ND_ASSIGN, tok, node, Assign(rest, tok->next_));
   }
   *rest = tok;
   return node;
@@ -316,13 +349,13 @@ Node* Node::Equality(Token** rest, Token* tok) {
   Node* node = Relational(&tok, tok);
 
   for (;;) {
-    Token* start = tok;
+    Token* node_name = tok;
     if (tok->Equal("==")) {
-      node = new Node(ND_EQ, start, node, Relational(&tok, tok->next_));
+      node = CreateBinaryNode(ND_EQ, node_name, node, Relational(&tok, tok->next_));
       continue;
     }
     if (tok->Equal("!=")) {
-      node = new Node(ND_NE, start, node, Relational(&tok, tok->next_));
+      node = CreateBinaryNode(ND_NE, node_name, node, Relational(&tok, tok->next_));
       continue;
     }
 
@@ -336,27 +369,23 @@ Node* Node::Relational(Token** rest, Token* tok) {
   Node* node = Add(&tok, tok);
 
   for (;;) {
-    Token* start = tok;
+    Token* node_name = tok;
     if (tok->Equal("<")) {
-      node = new Node(ND_LT, start, node, Add(&tok, tok->next_));
+      node = CreateBinaryNode(ND_LT, node_name, node, Add(&tok, tok->next_));
       continue;
     }
-
     if (tok->Equal("<=")) {
-      node = new Node(ND_LE, start, node, Add(&tok, tok->next_));
+      node = CreateBinaryNode(ND_LE, node_name, node, Add(&tok, tok->next_));
       continue;
     }
-
     if (tok->Equal(">")) {
-      node = new Node(ND_LT, start, Add(&tok, tok->next_), node);
+      node = CreateBinaryNode(ND_LT, node_name, Add(&tok, tok->next_), node);
       continue;
     }
-
     if (tok->Equal(">=")) {
-      node = new Node(ND_LE, start, Add(&tok, tok->next_), node);
+      node = CreateBinaryNode(ND_LE, node_name, Add(&tok, tok->next_), node);
       continue;
     }
-
     *rest = tok;
     return node;
   }
@@ -367,17 +396,15 @@ Node* Node::Add(Token** rest, Token* tok) {
   Node* node = Mul(&tok, tok);
 
   for (;;) {
-    Token* start = tok;
+    Token* node_name = tok;
     if (tok->Equal("+")) {
-      node = new Node(ND_ADD, start, node, Mul(&tok, tok->next_));
+      node = CreateAddNode(node_name, node, Mul(&tok, tok->next_));
       continue;
     }
-
     if (tok->Equal("-")) {
-      node = new Node(ND_SUB, start, node, Mul(&tok, tok->next_));
+      node = CreateSubNode(node_name, node, Mul(&tok, tok->next_));
       continue;
     }
-
     *rest = tok;
     return node;
   }
@@ -387,17 +414,15 @@ Node* Node::Mul(Token** rest, Token* tok) {
   Node* node = Unary(&tok, tok);
 
   for (;;) {
-    Token* start = tok;
+    Token* node_name = tok;
     if (tok->Equal("*")) {
-      node = new Node(ND_MUL, start, node, Primary(&tok, tok->next_));
+      node = CreateBinaryNode(ND_MUL, node_name, node, Primary(&tok, tok->next_));
       continue;
     }
-
     if (tok->Equal("/")) {
-      node = new Node(ND_DIV, start, node, Primary(&tok, tok->next_));
+      node = CreateBinaryNode(ND_DIV, node_name, node, Primary(&tok, tok->next_));
       continue;
     }
-
     *rest = tok;
     return node;
   }
@@ -408,19 +433,15 @@ Node* Node::Unary(Token** rest, Token* tok) {
   if (tok->Equal("+")) {
     return Unary(rest, tok->next_);
   }
-
   if (tok->Equal("-")) {
-    return new Node(ND_NEG, tok, Unary(rest, tok->next_));
+    return CreateUnaryNode(ND_NEG, tok, Unary(rest, tok->next_));
   }
-
   if (tok->Equal("&")) {
-    return new Node(ND_ADDR, tok, Unary(rest, tok->next_));
+    return CreateUnaryNode(ND_ADDR, tok, Unary(rest, tok->next_));
   }
-
   if (tok->Equal("*")) {
-    return new Node(ND_DEREF, tok, Unary(rest, tok->next_));
+    return CreateUnaryNode(ND_DEREF, tok, Unary(rest, tok->next_));
   }
-
   return Postfix(rest, tok);
 }
 
@@ -429,10 +450,11 @@ Node* Node::Postfix(Token** rest, Token* tok) {
 
   while (tok->Equal("[")) {
     // x[y] is short for *(x + y)
-    Token* start = tok;
+    Token* node_name = tok;
     Node* idx = Expr(&tok, tok->next_);
     tok = tok->SkipToken("]");
-    node = new Node(ND_DEREF, start, new Node(ND_ADD, start, node, idx));
+    Node* op = CreateAddNode(node_name, node, idx);
+    node = CreateUnaryNode(ND_DEREF, node_name, op);
   }
   *rest = tok;
   return node;
@@ -451,31 +473,25 @@ Node* Node::Primary(Token** rest, Token* tok) {
     node->TypeInfer();
     long size = node->ty_->size_;
     NodeFree(node);
-    return new Node(size, tok);
+    return CreateConstNode(size, tok);
   }
 
   if (tok->kind_ == TK_IDENT) {
     if (tok->next_->Equal("(")) {
       return Call(rest, tok);
     }
-    Object* local_var = Object::LocalVarFind(tok);
-    Object* globla_var = Object::GlobalVarFind(tok);
-    if (local_var == nullptr && globla_var == nullptr) {
-      tok->ErrorTok("undefined variable.");
-    }
-    Object* var = local_var != nullptr ? local_var : globla_var;
     *rest = tok->next_;
-    return new Node(var, tok);
+    return CreateIdentNode(tok);
   }
 
   if (tok->kind_ == TK_STR) {
-    Object* var = Object::CreateStringVar(tok->str_literal_, tok->ty_);
+    Object* var = Object::CreateStringVar(tok->str_literal_);
     *rest = tok->next_;
-    return new Node(var, tok);
+    return CreateVarNode(var, tok);
   }
 
   if (tok->kind_ == TK_NUM) {
-    Node* node = new Node(tok->val_, tok);
+    Node* node = CreateConstNode(tok->val_, tok);
     *rest = tok->next_;
     return node;
   }
@@ -489,11 +505,11 @@ Node* Node::Call(Token** rest, Token* tok) {
   Token* start = tok;
   tok = tok->next_->next_;
 
-  Node head = Node(ND_END, tok);
-  Node* cur = &head;
+  Node args;
+  Node* cur = &args;
 
   while (!tok->Equal(")")) {
-    if (cur != &head) {
+    if (cur != &args) {
       tok = tok->SkipToken(",");
     }
     cur->next_ = Assign(&tok, tok);
@@ -501,11 +517,7 @@ Node* Node::Call(Token** rest, Token* tok) {
   }
 
   *rest = tok->SkipToken(")");
-
-  Node* node = new Node(ND_CALL, start);
-  node->call_ = start->GetIdent();
-  node->args_ = head.next_;
-  return node;
+  return CreateCallNode(start, args.next_);
 }
 
 void Node::NodeListFree(Node* node) {
@@ -609,16 +621,16 @@ void Node::TypeInfer() {
     case ND_LT:
     case ND_NUM:
     case ND_CALL:
-      ty_ = ty_int;
+      ty_ = ty_int.get();
       return;
     case ND_VAR:
       ty_ = var_->ty_;
       return;
     case ND_ADDR:
       if (lhs_->ty_->kind_ == TY_ARRAY) {
-        ty_ = new Type(TY_PRT, lhs_->ty_->base_);
+        ty_ = Type::CreatePointerType(lhs_->ty_->base_);
       } else {
-        ty_ = new Type(TY_PRT, lhs_->ty_);
+        ty_ = Type::CreatePointerType(lhs_->ty_);
       }
       return;
     case ND_DEREF:
@@ -631,6 +643,8 @@ void Node::TypeInfer() {
       return;
   }
 }
+
+bool Node::IsPointerNode() { return ty_->IsPointer(); }
 
 // Report an error based on tok
 void Node::ErrorTok(const char* fmt, ...) {

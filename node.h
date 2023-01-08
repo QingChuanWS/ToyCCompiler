@@ -45,93 +45,46 @@ enum NodeKind {
 
 class Node {
  public:
-  explicit Node(NodeKind kind, Token* tok)
-      : kind_(kind),
-        tok_(tok),
-        next_(nullptr),
-        lhs_(nullptr),
-        rhs_(nullptr),
-        cond_(nullptr),
-        then_(nullptr),
-        els_(nullptr),
-        body_(nullptr),
-        init_(nullptr),
-        inc_(nullptr),
-        call_(nullptr),
-        args_(nullptr),
-        val_(0),
-        var_(),
-        ty_(nullptr) {}
+  explicit Node() = default;
+  explicit Node(NodeKind kind, Token* tok) : kind_(kind), tok_(tok) {}
+  // whether the node is point.
+  bool IsPointerNode();
+  // inference the node type.
+  void TypeInfer();
+    // Report an error based on tok.
+  void ErrorTok(const char* fmt, ...);
 
-  explicit Node(NodeKind kind, Token* tok, Node* b_one)
-      : kind_(kind),
-        tok_(tok),
-        next_(nullptr),
-        lhs_(nullptr),
-        rhs_(nullptr),
-        cond_(nullptr),
-        then_(nullptr),
-        els_(nullptr),
-        body_(nullptr),
-        init_(nullptr),
-        inc_(nullptr),
-        call_(nullptr),
-        args_(nullptr),
-        val_(0),
-        var_(),
-        ty_(nullptr) {
-    if (kind == ND_BLOCK) {
-      body_ = b_one;
-      return;
-    }
-    lhs_ = b_one;
-  }
-
-  explicit Node(NodeKind kind, Token* tok, Node* lhs, Node* rhs);
-
-  explicit Node(long val, Token* tok)
-      : kind_(ND_NUM),
-        tok_(tok),
-        next_(nullptr),
-        lhs_(nullptr),
-        rhs_(nullptr),
-        cond_(nullptr),
-        then_(nullptr),
-        els_(nullptr),
-        body_(nullptr),
-        init_(nullptr),
-        inc_(nullptr),
-        call_(nullptr),
-        args_(nullptr),
-        val_(val),
-        var_(),
-        ty_(nullptr) {}
-
-  explicit Node(Object* var, Token* tok)
-      : kind_(ND_VAR),
-        tok_(tok),
-        next_(nullptr),
-        lhs_(nullptr),
-        rhs_(nullptr),
-        cond_(nullptr),
-        then_(nullptr),
-        els_(nullptr),
-        body_(nullptr),
-        init_(nullptr),
-        inc_(nullptr),
-        call_(nullptr),
-        args_(nullptr),
-        val_(0),
-        var_(var),
-        ty_(nullptr) {}
-
+ public:
+  // create const node.
+  static Node* CreateConstNode(long val, Token* node_name);
+  // create var node.
+  static Node* CreateVarNode(Object* var, Token* node_name);
+  // create identify node.
+  static Node* CreateIdentNode(Token* node_name);
+  // create call node
+  static Node* CreateCallNode(Token* call_name, Node* args);
+  // create unary expration node.
+  static Node* CreateUnaryNode(NodeKind kind, Token* node_name, Node* op);
+  // create binary expration node.
+  static Node* CreateBinaryNode(NodeKind kind, Token* node_name, Node* op_left, Node* op_right);
+  // create add expration(contain point arithmatic calculation) node.
+  static Node* CreateAddNode(Token* node_name, Node* op_left, Node* op_right);
+  // create subtract expration(contain point arithmatic calculation) node.
+  static Node* CreateSubNode(Token* node_name, Node* op_left, Node* op_right);
+  // create IF expration node.
+  static Node* CreateIFNode(Token* node_name, Node* cond, Node* then, Node* els);
+  // create for expration node.
+  static Node* CreateForNode(Token* node_name, Node* init, Node* cond, Node* inc, Node* then);
+  // create block expration node.
+  static Node* CreateBlockNode(Token* node_name, Node* body);
+  // free the node list.
   static void NodeListFree(Node* node);
-
   // parsing token list and generate AST.
   // program = stmt*
   static Node* Program(Token** rest, Token* tok);
 
  private:
+  // ----------------Parse Function------------------
   // compound-stmt = (declaration | stmt)* "}"
   static Node* CompoundStmt(Token** rest, Token* tok);
   // declaration = declspec (
@@ -176,47 +129,44 @@ class Node {
   static Node* Primary(Token** rest, Token* tok);
   // function = ident "(" (assign ("," assign)*)? ")"
   static Node* Call(Token** rest, Token* tok);
-  // post-order for AST delete
+  // post-order for AST delete.
   static void NodeFree(Node* node);
-  // Report an error based on tok
-  void ErrorTok(const char* fmt, ...);
-
-  void TypeInfer();
 
   friend class CodeGenerator;
   friend class Object;
 
-  NodeKind kind_;  // Node kind
-  Token* tok_;     // Representative node
-  Type* ty_;
+  // Node kind
+  NodeKind kind_ = ND_END;
+  // Representative node, node name
+  Token* tok_ = nullptr;
+  // node type
+  Type* ty_ = nullptr;
 
   // for compound-stmt
-  Node* next_;
+  Node* next_ = nullptr;
 
   // for operation +-/*
-  Node* lhs_;  // left-head side
-  Node* rhs_;  // right-head side
+  Node* lhs_ = nullptr;  // left-head side
+  Node* rhs_ = nullptr;  // right-head side
 
   // for block
-  Node* body_;
+  Node* body_ = nullptr;
 
   // for "if" statement
-  Node* cond_;
-  Node* then_;
-  Node* els_;
+  Node* cond_ = nullptr;
+  Node* then_ = nullptr;
+  Node* els_ = nullptr;
 
   // for "for" statement
-  Node* init_;
-  Node* inc_;
-
-  // function;
-  char* call_;
-  Node* args_;
-
-  // for Var
-  Object* var_;
-  // for const
-  long val_;
+  Node* init_ = nullptr;
+  Node* inc_ = nullptr;
+  // ------ function ------;
+  char* call_ = nullptr;
+  Node* args_ = nullptr;
+  //  ------ for Var ------;
+  Object* var_ = nullptr;
+  //  ------ for const ------;
+  long val_ = 0;
 };
 
 #endif  // !NODE_GRUAD

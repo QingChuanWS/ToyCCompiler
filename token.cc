@@ -14,24 +14,16 @@
 #include <cctype>
 #include <cstring>
 
+#include "object.h"
 #include "tools.h"
 #include "type.h"
 
 char* Token::prg_ = nullptr;
 
-Token::Token(Tokenkind kind, char* start, char* end)
-    : kind_(kind),
-      str_(start),
-      strlen_(end - start),
-      val_(0),
-      next_(nullptr),
-      ty_(nullptr),
-      str_literal_(nullptr) {
-  if (kind_ == TK_STR) {
-    strlen_ = end - start + 1;
-    ty_ = new Type(TY_ARRAY, ty_char, end - start);
-    str_literal_ = strndup(start + 1, end - start - 1);
-  }
+Token* Token::CreateStringToken(char* start, char* end){
+  Token* res = new Token(TK_STR, start, end - start + 1);
+  res->str_literal_ = strndup(start + 1, end - start - 1);
+  return res;
 }
 
 Token* Token::TokenCreate(const Token& head, char* prg) {
@@ -65,17 +57,16 @@ Token* Token::TokenCreate(const Token& head, char* prg) {
       while (IsAlnum(*p)) {
         p++;
       }
-      cur = cur->next_ = new Token(TK_IDENT, cur, q, p - q);
+      cur = cur->next_ = new Token(TK_IDENT, q, p - q);
       continue;
     }
 
     int punct_len = cur->ReadPunct(p);
     if (punct_len) {
-      cur = cur->next_ = new Token(TK_PUNCT, cur, p, punct_len);
+      cur = cur->next_ = new Token(TK_PUNCT, p, punct_len);
       p += punct_len;
       continue;
     }
-
     ErrorAt(prg, p, "expect a number.");
   }
 
@@ -124,9 +115,13 @@ void Token::StrTokenFree() {
   }
 }
 
-Token* Token::SkipToken(const char* op) {
+Token* Token::SkipToken(const char* op, bool enable_error) {
   if (!this->Equal(op)) {
-    ErrorTok(prg_, this, "Expect \'%s\'", op);
+    if (enable_error) {
+      ErrorAt(prg_, this->str_, "Expect \'%s\'", op);
+    } else {
+      return nullptr;
+    }
   }
   return this->next_;
 }
@@ -138,7 +133,7 @@ Token* Token::ReadStringLiteral(char* start) {
       ErrorAt(Token::prg_, start, "unclosed string literal!");
     }
   }
-  Token* tok = new Token(TK_STR, start, p);
+  Token* tok = CreateStringToken(start, p);
   return tok;
 }
 
@@ -168,5 +163,9 @@ long Token::GetNumber() {
   }
   return val_;
 }
+
+Object* Token::FindLocalVar() { return locals->Find(this->str_); }
+
+Object* Token::FindGlobalVar() { return globals->Find(this->str_); }
 
 bool Token::IsTypename() { return Equal("int") || Equal("char"); }

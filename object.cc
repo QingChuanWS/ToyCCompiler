@@ -12,6 +12,7 @@
 #include "object.h"
 
 #include <cstdlib>
+#include <cstring>
 
 #include "node.h"
 #include "tools.h"
@@ -20,11 +21,10 @@
 Object* locals;
 Object* globals;
 
-Object::Object(Objectkind kind, char* name, Type* ty) : kind_(kind), ty_(ty), name_(name) {}
-
 Object* Object::CreateLocalVar(char* name, Type* ty, Object** next) {
   Object* obj = new Object(OB_LOCAL, name, ty);
-  if (ty->HasName() && LocalVarFind(ty->name_) != nullptr) {
+  obj->name_len_ = strlen(name);
+  if (ty->HasName() && ty->name_->FindLocalVar() != nullptr) {
     ty->name_->ErrorTok("redefined variable.");
   }
   obj->next_ = *next;
@@ -34,7 +34,8 @@ Object* Object::CreateLocalVar(char* name, Type* ty, Object** next) {
 
 Object* Object::CreateGlobalVar(char* name, Type* ty, Object** next) {
   Object* obj = new Object(OB_GLOBAL, name, ty);
-  if (ty->HasName() && GlobalVarFind(ty->name_) != nullptr) {
+  obj->name_len_ = strlen(name);
+  if (ty->HasName() && ty->name_->FindGlobalVar() != nullptr) {
     ty->name_->ErrorTok("redefined variable.");
   }
   obj->next_ = *next;
@@ -42,12 +43,20 @@ Object* Object::CreateGlobalVar(char* name, Type* ty, Object** next) {
   return obj;
 }
 
+Object* Object::CreateStringVar(char* name) {
+  Type * ty = Type::CreateArrayType(ty_char.get(), strlen(name) + 1);
+  Object* obj = CreateGlobalVar(CreateUniqueName(), ty, &globals);
+  obj->init_data = name;
+  obj->is_string = true;
+  return obj;
+}
+
 Token* Object::CreateFunction(Token* tok, Type* basety, Object** next) {
   locals = nullptr;
   Type* ty = Node::Declarator(&tok, tok, basety);
+  CreateParamVar(ty->params_);
 
   Object* fn = new Object(OB_FUNCTION, ty->name_->GetIdent(), ty);
-  fn->CreateParamLVar(ty->params_);
   fn->params_ = locals;
   fn->body_ = Node::Program(&tok, tok);
   fn->loc_list_ = locals;
@@ -58,49 +67,24 @@ Token* Object::CreateFunction(Token* tok, Type* basety, Object** next) {
   return tok;
 }
 
-Token* Object::ParseGlobal(Token* tok, Type* basety) {
-  bool first = true;
-
-  while (!tok->Equal(";")) {
-    if (!first) {
-      tok = tok->SkipToken(",");
-    }
-    first = false;
-
-    Type* ty = Node::Declarator(&tok, tok, basety);
-    Object* gv = CreateGlobalVar(ty->name_->GetIdent(), ty, &globals);
-  }
-  return tok->SkipToken(";");
-}
-
-void Object::CreateParamLVar(Type* param) {
+void Object::CreateParamVar(Type* param) {
   if (param != nullptr) {
-    CreateParamLVar(param->next_);
+    CreateParamVar(param->next_);
     Object* v = CreateLocalVar(param->name_->GetIdent(), param, &locals);
   }
-}
-
-Object* Object::CreateStringVar(char* name, Type* ty) {
-  Object* obj = CreateGlobalVar(CreateUniqueName(), ty, &globals);
-  obj->init_data = name;
-  obj->is_string = true;
-  return obj;
 }
 
 bool Object::IsFunction(Token* tok) {
   if (tok->Equal(";")) {
     return false;
   }
-
   while (tok->Equal("*")) {
     tok = tok->next_;
   }
-
   if (tok->kind_ != TK_IDENT) {
     tok->ErrorTok("expected a variable name.");
   }
   tok = tok->next_;
-
   if (tok->Equal("(")) {
     return true;
   }
@@ -109,17 +93,29 @@ bool Object::IsFunction(Token* tok) {
 
 Object* Object::Parse(Token* tok) {
   globals = nullptr;
-
   while (!tok->IsEof()) {
     Type* basety = Node::Declspec(&tok, tok);
-
-    if (globals->IsFunction(tok)) {
+    if (IsFunction(tok)) {
       tok = CreateFunction(tok, basety, &globals);
       continue;
     }
-    tok = ParseGlobal(tok, basety);
+    tok = ParseGlobalVar(tok, basety);
   }
   return globals;
+}
+
+Token* Object::ParseGlobalVar(Token* tok, Type* basety) {
+  bool first = true;
+
+  while (!tok->Equal(";")) {
+    if (!first) {
+      tok = tok->SkipToken(",");
+    }
+    first = false;
+    Type* ty = Node::Declarator(&tok, tok, basety);
+    Object* gv = CreateGlobalVar(ty->name_->GetIdent(), ty, &globals);
+  }
+  return tok->SkipToken(";");
 }
 
 void Object::OffsetCal() {
@@ -133,13 +129,9 @@ void Object::OffsetCal() {
   }
 }
 
-Object* Object::LocalVarFind(Token* tok) { return locals->Find(tok); }
-
-Object* Object::GlobalVarFind(Token* tok) { return globals->Find(tok); }
-
-Object* Object::Find(Token* tok) {
+Object* Object::Find(char* p) {
   for (Object* v = this; v != nullptr; v = v->next_) {
-    if (tok->Equal(v->name_)) {
+    if (memcmp(v->name_, p, v->name_len_) == 0) {
       return v;
     }
   }

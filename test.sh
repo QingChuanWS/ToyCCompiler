@@ -20,6 +20,7 @@ memory_check(){
   ret=$?
   if [ $ret != 0 ]; then
     echo $ret
+    echo "$input"
     read -p "Check complier memory" char
   fi
 }
