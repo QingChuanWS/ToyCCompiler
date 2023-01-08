@@ -11,30 +11,32 @@
 
 #include "node.h"
 
+#include <cstddef>
 #include <cstring>
+#include <memory>
 
 #include "object.h"
 #include "token.h"
 #include "tools.h"
 #include "type.h"
 
-extern Object* locals;
+extern ObjectPtr locals;
 
-Node* Node::CreateConstNode(long val, Token* tok) {
+Node* Node::CreateConstNode(long val, TokenPtr tok) {
   Node* node = new Node(ND_NUM, tok);
   node->val_ = val;
   return node;
 }
 
-Node* Node::CreateVarNode(Object* var, Token* tok) {
+Node* Node::CreateVarNode(ObjectPtr var, TokenPtr tok) {
   Node* node = new Node(ND_VAR, tok);
   node->var_ = var;
   return node;
 }
 
-Node* Node::CreateIdentNode(Token* tok) {
-  Object* local_var = tok->FindLocalVar();
-  Object* global_var = tok->FindGlobalVar();
+Node* Node::CreateIdentNode(TokenPtr tok) {
+  ObjectPtr local_var = tok->FindLocalVar();
+  ObjectPtr global_var = tok->FindGlobalVar();
   if (global_var == nullptr && local_var == nullptr) {
     tok->ErrorTok("undefined variable.");
   }
@@ -44,25 +46,25 @@ Node* Node::CreateIdentNode(Token* tok) {
   return CreateVarNode(global_var, tok);
 }
 
-Node* Node::CreateCallNode(Token* call_name, Node* args) {
+Node* Node::CreateCallNode(TokenPtr call_name, Node* args) {
   Node* call_node = new Node(ND_CALL, call_name);
   call_node->call_ = call_name->GetIdent();
   call_node->args_ = args;
   return call_node;
 }
 
-Node* Node::CreateUnaryNode(NodeKind kind, Token* node_name, Node* op) {
+Node* Node::CreateUnaryNode(NodeKind kind, TokenPtr node_name, Node* op) {
   Node* res = new Node(kind, node_name);
   res->lhs_ = op;
   return res;
 }
 
-Node* Node::CreateAddNode(Token* node_name, Node* op_left, Node* op_right) {
+Node* Node::CreateAddNode(TokenPtr node_name, Node* op_left, Node* op_right) {
   op_left->TypeInfer();
   op_right->TypeInfer();
   if (!op_left->IsPointerNode() && !op_right->IsPointerNode()) {
     Node* res = CreateBinaryNode(ND_ADD, node_name, op_left, op_right);
-    res->ty_ = ty_int.get();
+    res->ty_ = ty_int;
     return res;
   }
   // ptr + ptr
@@ -82,13 +84,13 @@ Node* Node::CreateAddNode(Token* node_name, Node* op_left, Node* op_right) {
   return res;
 }
 
-Node* Node::CreateSubNode(Token* node_name, Node* op_left, Node* op_right) {
+Node* Node::CreateSubNode(TokenPtr node_name, Node* op_left, Node* op_right) {
   op_left->TypeInfer();
   op_right->TypeInfer();
   // num - num
   if (!op_left->IsPointerNode() && !op_right->IsPointerNode()) {
     Node* res = CreateBinaryNode(ND_SUB, node_name, op_left, op_right);
-    res->ty_ = ty_int.get();
+    res->ty_ = ty_int;
     return res;
   }
   // ptr - ptr
@@ -97,7 +99,7 @@ Node* Node::CreateSubNode(Token* node_name, Node* op_left, Node* op_right) {
     Node* sub = CreateBinaryNode(ND_SUB, node_name, op_left, op_right);
     Node* factor = CreateConstNode(op_left->ty_->base_->size_, node_name);
     Node* res = CreateBinaryNode(ND_DIV, node_name, sub, factor);
-    res->ty_ = ty_int.get();
+    res->ty_ = ty_int;
     return res;
   }
   if (!op_left->IsPointerNode() && op_right->IsPointerNode()) {
@@ -110,14 +112,14 @@ Node* Node::CreateSubNode(Token* node_name, Node* op_left, Node* op_right) {
   return res;
 }
 
-Node* Node::CreateBinaryNode(NodeKind kind, Token* node_name, Node* op_left, Node* op_right) {
+Node* Node::CreateBinaryNode(NodeKind kind, TokenPtr node_name, Node* op_left, Node* op_right) {
   Node* res = new Node(kind, node_name);
   res->lhs_ = op_left;
   res->rhs_ = op_right;
   return res;
 }
 
-Node* Node::CreateIFNode(Token* node_name, Node* cond, Node* then, Node* els) {
+Node* Node::CreateIFNode(TokenPtr node_name, Node* cond, Node* then, Node* els) {
   Node* res = new Node(ND_IF, node_name);
   res->cond_ = cond;
   res->then_ = then;
@@ -125,7 +127,7 @@ Node* Node::CreateIFNode(Token* node_name, Node* cond, Node* then, Node* els) {
   return res;
 }
 
-Node* Node::CreateForNode(Token* node_name, Node* init, Node* cond, Node* inc, Node* then) {
+Node* Node::CreateForNode(TokenPtr node_name, Node* init, Node* cond, Node* inc, Node* then) {
   Node* res = new Node(ND_FOR, node_name);
   res->init_ = init;
   res->cond_ = cond;
@@ -134,19 +136,19 @@ Node* Node::CreateForNode(Token* node_name, Node* init, Node* cond, Node* inc, N
   return res;
 }
 
-Node* Node::CreateBlockNode(Token* node_name, Node* body) {
+Node* Node::CreateBlockNode(TokenPtr node_name, Node* body) {
   Node* res = new Node(ND_BLOCK, node_name);
   res->body_ = body;
   return res;
 }
 
-Node* Node::Program(Token** rest, Token* tok) {
+Node* Node::Program(TokenPtr* rest, TokenPtr tok) {
   tok = tok->SkipToken("{");
   return CompoundStmt(rest, tok);
 }
 
 // compound-stmt  = (declaration | stmt)* "}"
-Node* Node::CompoundStmt(Token** rest, Token* tok) {
+Node* Node::CompoundStmt(TokenPtr* rest, TokenPtr tok) {
   Node sub_expr;
   Node* cur = &sub_expr;
 
@@ -168,8 +170,8 @@ Node* Node::CompoundStmt(Token** rest, Token* tok) {
 // declaration = declspec (
 //                 declarator ( "=" expr)?
 //                 ("," declarator ("=" expr)? ) * )? ";"
-Node* Node::Declaration(Token** rest, Token* tok) {
-  Type* ty_base = Declspec(&tok, tok);
+Node* Node::Declaration(TokenPtr* rest, TokenPtr tok) {
+  TypePtr ty_base = Declspec(&tok, tok);
 
   Node decl_expr = Node();
   Node* cur = &decl_expr;
@@ -179,8 +181,8 @@ Node* Node::Declaration(Token** rest, Token* tok) {
     if (i++ > 0) {
       tok = tok->SkipToken(",");
     }
-    Type* ty = Declarator(&tok, tok, ty_base);
-    Object* var = Object::CreateLocalVar(ty->name_->GetIdent(), ty, &locals);
+    TypePtr ty = Declarator(&tok, tok, ty_base);
+    ObjectPtr var = Object::CreateLocalVar(ty->name_->GetIdent(), ty, &locals);
     if (!tok->Equal("=")) {
       continue;
     }
@@ -196,18 +198,18 @@ Node* Node::Declaration(Token** rest, Token* tok) {
 }
 
 // declspec = "char" | "int"
-Type* Node::Declspec(Token** rest, Token* tok) {
+TypePtr Node::Declspec(TokenPtr* rest, TokenPtr tok) {
   if (tok->Equal("char")) {
     *rest = tok->SkipToken("char");
-    return ty_char.get();
+    return ty_char;
   }
 
   *rest = tok->SkipToken("int");
-  return ty_int.get();
+  return ty_int;
 }
 
 // declarator = "*"* ident type-suffix
-Type* Node::Declarator(Token** rest, Token* tok, Type* ty) {
+TypePtr Node::Declarator(TokenPtr* rest, TokenPtr tok, TypePtr ty) {
   while (tok->Equal("*")) {
     ty = Type::CreatePointerType(ty);
     tok = tok->next_;
@@ -223,7 +225,7 @@ Type* Node::Declarator(Token** rest, Token* tok, Type* ty) {
 }
 
 // type-suffix = "(" func-params ")" | "[" num "]" type-suffix | ɛ
-Type* Node::TypeSuffix(Token** rest, Token* tok, Type* ty) {
+TypePtr Node::TypeSuffix(TokenPtr* rest, TokenPtr tok, TypePtr ty) {
   if (tok->Equal("(")) {
     return FunctionParam(rest, tok->next_, ty);
   }
@@ -240,20 +242,20 @@ Type* Node::TypeSuffix(Token** rest, Token* tok, Type* ty) {
 
 // func-param = param ("," param) *
 // param = declspec declarator
-Type* Node::FunctionParam(Token** rest, Token* tok, Type* ty) {
-  Type params;
-  Type* cur = &params;
+TypePtr Node::FunctionParam(TokenPtr* rest, TokenPtr tok, TypePtr ty) {
+  TypePtr params = std::make_shared<Type>(TY_END, 0);
+  TypePtr cur = params;
 
   while (!tok->Equal(")")) {
-    if (cur != &params) {
+    if (cur != params) {
       tok = tok->SkipToken(",");
     }
-    Type* base_ty = Declspec(&tok, tok);
-    Type* ty = Declarator(&tok, tok, base_ty);
-    cur->next_ = new Type(*ty);
+    TypePtr base_ty = Declspec(&tok, tok);
+    TypePtr var_type = Declarator(&tok, tok, base_ty);
+    cur->next_ = std::make_shared<Type>(*var_type);
     cur = cur->next_;
   }
-  ty = Type::CreateFunctionType(ty, params.next_);
+  ty = Type::CreateFunctionType(ty, params->next_);
 
   *rest = tok->next_;
   return ty;
@@ -264,7 +266,7 @@ Type* Node::FunctionParam(Token** rest, Token* tok, Type* ty) {
 // "for" "(" expr-stmt expr? ";" expr? ")" stmt |
 // "{" compuound-stmt |
 // expr-stmt
-Node* Node::Stmt(Token** rest, Token* tok) {
+Node* Node::Stmt(TokenPtr* rest, TokenPtr tok) {
   if (tok->Equal("return")) {
     Node* node = CreateUnaryNode(ND_RETURN, tok, Expr(&tok, tok->next_));
     *rest = tok->SkipToken(";");
@@ -272,7 +274,7 @@ Node* Node::Stmt(Token** rest, Token* tok) {
   }
 
   if (tok->Equal("if")) {
-    Token* node_name = tok;
+    TokenPtr node_name = tok;
     tok = tok->next_;
     Node* cond = Expr(&tok, tok->SkipToken("("));
     Node* then = Stmt(&tok, tok->SkipToken(")"));
@@ -285,7 +287,7 @@ Node* Node::Stmt(Token** rest, Token* tok) {
   }
 
   if (tok->Equal("for")) {
-    Token* node_name = tok;
+    TokenPtr node_name = tok;
     tok = tok->next_->SkipToken("(");
 
     Node* init = ExprStmt(&tok, tok);
@@ -304,7 +306,7 @@ Node* Node::Stmt(Token** rest, Token* tok) {
   }
 
   if (tok->Equal("while")) {
-    Token* node_name = tok;
+    TokenPtr node_name = tok;
     tok = tok->next_->SkipToken("(");
 
     Node* cond = Expr(&tok, tok);
@@ -321,7 +323,7 @@ Node* Node::Stmt(Token** rest, Token* tok) {
 }
 
 // expr-stmt = expr ";"
-Node* Node::ExprStmt(Token** rest, Token* tok) {
+Node* Node::ExprStmt(TokenPtr* rest, TokenPtr tok) {
   if (tok->Equal(";")) {
     *rest = tok->next_;
     return CreateBlockNode(tok, nullptr);
@@ -332,10 +334,10 @@ Node* Node::ExprStmt(Token** rest, Token* tok) {
 }
 
 // expr = assign
-Node* Node::Expr(Token** rest, Token* tok) { return Assign(rest, tok); }
+Node* Node::Expr(TokenPtr* rest, TokenPtr tok) { return Assign(rest, tok); }
 
 // assign = equality ("=" assign)?
-Node* Node::Assign(Token** rest, Token* tok) {
+Node* Node::Assign(TokenPtr* rest, TokenPtr tok) {
   Node* node = Equality(&tok, tok);
   if (tok->Equal("=")) {
     return CreateBinaryNode(ND_ASSIGN, tok, node, Assign(rest, tok->next_));
@@ -345,11 +347,11 @@ Node* Node::Assign(Token** rest, Token* tok) {
 }
 
 // equality = relational ("==" relational | "!=" relational)
-Node* Node::Equality(Token** rest, Token* tok) {
+Node* Node::Equality(TokenPtr* rest, TokenPtr tok) {
   Node* node = Relational(&tok, tok);
 
   for (;;) {
-    Token* node_name = tok;
+    TokenPtr node_name = tok;
     if (tok->Equal("==")) {
       node = CreateBinaryNode(ND_EQ, node_name, node, Relational(&tok, tok->next_));
       continue;
@@ -365,11 +367,11 @@ Node* Node::Equality(Token** rest, Token* tok) {
 }
 
 // relational = add ("<" add | "<=" add | ">" add | ">=" add)
-Node* Node::Relational(Token** rest, Token* tok) {
+Node* Node::Relational(TokenPtr* rest, TokenPtr tok) {
   Node* node = Add(&tok, tok);
 
   for (;;) {
-    Token* node_name = tok;
+    TokenPtr node_name = tok;
     if (tok->Equal("<")) {
       node = CreateBinaryNode(ND_LT, node_name, node, Add(&tok, tok->next_));
       continue;
@@ -392,11 +394,11 @@ Node* Node::Relational(Token** rest, Token* tok) {
 }
 
 // add = mul ("+"mul | "-" mul)
-Node* Node::Add(Token** rest, Token* tok) {
+Node* Node::Add(TokenPtr* rest, TokenPtr tok) {
   Node* node = Mul(&tok, tok);
 
   for (;;) {
-    Token* node_name = tok;
+    TokenPtr node_name = tok;
     if (tok->Equal("+")) {
       node = CreateAddNode(node_name, node, Mul(&tok, tok->next_));
       continue;
@@ -410,11 +412,11 @@ Node* Node::Add(Token** rest, Token* tok) {
   }
 }
 
-Node* Node::Mul(Token** rest, Token* tok) {
+Node* Node::Mul(TokenPtr* rest, TokenPtr tok) {
   Node* node = Unary(&tok, tok);
 
   for (;;) {
-    Token* node_name = tok;
+    TokenPtr node_name = tok;
     if (tok->Equal("*")) {
       node = CreateBinaryNode(ND_MUL, node_name, node, Primary(&tok, tok->next_));
       continue;
@@ -429,7 +431,7 @@ Node* Node::Mul(Token** rest, Token* tok) {
 }
 
 // unary = ("+" | "-" | "*" | "&") ? unary | primary
-Node* Node::Unary(Token** rest, Token* tok) {
+Node* Node::Unary(TokenPtr* rest, TokenPtr tok) {
   if (tok->Equal("+")) {
     return Unary(rest, tok->next_);
   }
@@ -445,12 +447,12 @@ Node* Node::Unary(Token** rest, Token* tok) {
   return Postfix(rest, tok);
 }
 
-Node* Node::Postfix(Token** rest, Token* tok) {
+Node* Node::Postfix(TokenPtr* rest, TokenPtr tok) {
   Node* node = Primary(&tok, tok);
 
   while (tok->Equal("[")) {
     // x[y] is short for *(x + y)
-    Token* node_name = tok;
+    TokenPtr node_name = tok;
     Node* idx = Expr(&tok, tok->next_);
     tok = tok->SkipToken("]");
     Node* op = CreateAddNode(node_name, node, idx);
@@ -461,7 +463,7 @@ Node* Node::Postfix(Token** rest, Token* tok) {
 }
 
 // primary = "(" expr ")" | "sizeof" unary | ident | str | num
-Node* Node::Primary(Token** rest, Token* tok) {
+Node* Node::Primary(TokenPtr* rest, TokenPtr tok) {
   if (tok->Equal("(")) {
     Node* node = Expr(&tok, tok->next_);
     *rest = tok->SkipToken(")");
@@ -485,7 +487,7 @@ Node* Node::Primary(Token** rest, Token* tok) {
   }
 
   if (tok->kind_ == TK_STR) {
-    Object* var = Object::CreateStringVar(tok->str_literal_);
+    ObjectPtr var = Object::CreateStringVar(tok->str_literal_);
     *rest = tok->next_;
     return CreateVarNode(var, tok);
   }
@@ -501,8 +503,8 @@ Node* Node::Primary(Token** rest, Token* tok) {
 }
 
 // function = ident "(" (assign ("," assign)*)? ")"
-Node* Node::Call(Token** rest, Token* tok) {
-  Token* start = tok;
+Node* Node::Call(TokenPtr* rest, TokenPtr tok) {
+  TokenPtr start = tok;
   tok = tok->next_->next_;
 
   Node args;
@@ -555,9 +557,9 @@ void Node::NodeFree(Node* node) {
     NodeFree(node->rhs_);
     node->rhs_ = nullptr;
   }
-  if (node->kind_ == ND_ADDR) {
-    delete node->ty_;
-  }
+  // if (node->kind_ == ND_ADDR) {
+  //   delete node->ty_;
+  // }
   if (node->kind_ == ND_VAR) {
     // all of var will create a list and is freed in Funciton class.
     ;
@@ -621,7 +623,7 @@ void Node::TypeInfer() {
     case ND_LT:
     case ND_NUM:
     case ND_CALL:
-      ty_ = ty_int.get();
+      ty_ = ty_int;
       return;
     case ND_VAR:
       ty_ = var_->ty_;

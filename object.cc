@@ -13,16 +13,17 @@
 
 #include <cstdlib>
 #include <cstring>
+#include <memory>
 
 #include "node.h"
 #include "tools.h"
 #include "type.h"
 
-Object* locals;
-Object* globals;
+ObjectPtr locals;
+ObjectPtr globals;
 
-Object* Object::CreateLocalVar(char* name, Type* ty, Object** next) {
-  Object* obj = new Object(OB_LOCAL, name, ty);
+ObjectPtr Object::CreateLocalVar(char* name, TypePtr ty, ObjectPtr* next) {
+  ObjectPtr obj = std::make_shared<Object>(OB_LOCAL, name, ty);
   obj->name_len_ = strlen(name);
   if (ty->HasName() && ty->name_->FindLocalVar() != nullptr) {
     ty->name_->ErrorTok("redefined variable.");
@@ -32,8 +33,8 @@ Object* Object::CreateLocalVar(char* name, Type* ty, Object** next) {
   return obj;
 }
 
-Object* Object::CreateGlobalVar(char* name, Type* ty, Object** next) {
-  Object* obj = new Object(OB_GLOBAL, name, ty);
+ObjectPtr Object::CreateGlobalVar(char* name, TypePtr ty, ObjectPtr* next) {
+  ObjectPtr obj =  std::make_shared<Object>(OB_GLOBAL, name, ty);
   obj->name_len_ = strlen(name);
   if (ty->HasName() && ty->name_->FindGlobalVar() != nullptr) {
     ty->name_->ErrorTok("redefined variable.");
@@ -43,20 +44,20 @@ Object* Object::CreateGlobalVar(char* name, Type* ty, Object** next) {
   return obj;
 }
 
-Object* Object::CreateStringVar(char* name) {
-  Type * ty = Type::CreateArrayType(ty_char.get(), strlen(name) + 1);
-  Object* obj = CreateGlobalVar(CreateUniqueName(), ty, &globals);
+ObjectPtr Object::CreateStringVar(char* name) {
+  TypePtr ty = Type::CreateArrayType(ty_char, strlen(name) + 1);
+  ObjectPtr obj = CreateGlobalVar(CreateUniqueName(), ty, &globals);
   obj->init_data = name;
   obj->is_string = true;
   return obj;
 }
 
-Token* Object::CreateFunction(Token* tok, Type* basety, Object** next) {
+TokenPtr Object::CreateFunction(TokenPtr tok, TypePtr basety, ObjectPtr* next) {
   locals = nullptr;
-  Type* ty = Node::Declarator(&tok, tok, basety);
+  TypePtr ty = Node::Declarator(&tok, tok, basety);
   CreateParamVar(ty->params_);
 
-  Object* fn = new Object(OB_FUNCTION, ty->name_->GetIdent(), ty);
+  ObjectPtr fn =  std::make_shared<Object>(OB_FUNCTION, ty->name_->GetIdent(), ty);
   fn->params_ = locals;
   fn->body_ = Node::Program(&tok, tok);
   fn->loc_list_ = locals;
@@ -67,14 +68,14 @@ Token* Object::CreateFunction(Token* tok, Type* basety, Object** next) {
   return tok;
 }
 
-void Object::CreateParamVar(Type* param) {
+void Object::CreateParamVar(TypePtr param) {
   if (param != nullptr) {
     CreateParamVar(param->next_);
-    Object* v = CreateLocalVar(param->name_->GetIdent(), param, &locals);
+    ObjectPtr v = CreateLocalVar(param->name_->GetIdent(), param, &locals);
   }
 }
 
-bool Object::IsFunction(Token* tok) {
+bool Object::IsFunction(TokenPtr tok) {
   if (tok->Equal(";")) {
     return false;
   }
@@ -91,10 +92,10 @@ bool Object::IsFunction(Token* tok) {
   return false;
 }
 
-Object* Object::Parse(Token* tok) {
+ObjectPtr Object::Parse(TokenPtr tok) {
   globals = nullptr;
   while (!tok->IsEof()) {
-    Type* basety = Node::Declspec(&tok, tok);
+    TypePtr basety = Node::Declspec(&tok, tok);
     if (IsFunction(tok)) {
       tok = CreateFunction(tok, basety, &globals);
       continue;
@@ -104,7 +105,7 @@ Object* Object::Parse(Token* tok) {
   return globals;
 }
 
-Token* Object::ParseGlobalVar(Token* tok, Type* basety) {
+TokenPtr Object::ParseGlobalVar(TokenPtr tok, TypePtr basety) {
   bool first = true;
 
   while (!tok->Equal(";")) {
@@ -112,16 +113,16 @@ Token* Object::ParseGlobalVar(Token* tok, Type* basety) {
       tok = tok->SkipToken(",");
     }
     first = false;
-    Type* ty = Node::Declarator(&tok, tok, basety);
-    Object* gv = CreateGlobalVar(ty->name_->GetIdent(), ty, &globals);
+    TypePtr ty = Node::Declarator(&tok, tok, basety);
+    ObjectPtr gv = CreateGlobalVar(ty->name_->GetIdent(), ty, &globals);
   }
   return tok->SkipToken(";");
 }
 
 void Object::OffsetCal() {
-  for (Object* fn = this; fn != nullptr; fn = fn->next_) {
+  for (Object* fn = this; fn != nullptr; fn = fn->next_.get()) {
     int offset = 0;
-    for (Object* cur = fn->loc_list_; cur != nullptr; cur = cur->next_) {
+    for (ObjectPtr cur = fn->loc_list_; cur != nullptr; cur = cur->next_) {
       offset += cur->ty_->size_;
       cur->offset_ = offset;
     }
@@ -129,8 +130,8 @@ void Object::OffsetCal() {
   }
 }
 
-Object* Object::Find(char* p) {
-  for (Object* v = this; v != nullptr; v = v->next_) {
+ObjectPtr Object::Find(ObjectPtr root, char* p) {
+  for (ObjectPtr v = root; v != nullptr; v = v->next_) {
     if (memcmp(v->name_, p, v->name_len_) == 0) {
       return v;
     }
@@ -138,21 +139,9 @@ Object* Object::Find(char* p) {
   return nullptr;
 }
 
-void Object::FunctionFree() {
+Object::~Object(){
   if (IsFunction()) {
-    ObjectFree(loc_list_);
     Node::NodeListFree(body_);
   }
-}
-
-void Object::ObjectFree(Object* head) {
-  Object* cur = head;
-  while (cur != nullptr) {
-    head = head->next_;
-    Type::TypeFree(cur->ty_);
-    cur->FunctionFree();
-    free(cur->name_);
-    delete cur;
-    cur = head;
-  }
+  free(this->name_);
 }

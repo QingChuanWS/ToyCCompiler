@@ -12,9 +12,10 @@
 #ifndef OBJECT_GRUAD
 #define OBJECT_GRUAD
 
-#include "type.h"
+#include <memory>
 
-class Node;
+#include "token.h"
+#include "type.h"
 
 enum Objectkind {
   OB_LOCAL,
@@ -23,11 +24,23 @@ enum Objectkind {
   OB_END,
 };
 
+class Node;
+class Type;
+class Object;
+
+using TypePtr = std::shared_ptr<Type>;
+using ObjectPtr = std::shared_ptr<Object>;
+
+extern ObjectPtr locals;
+extern ObjectPtr globals;
+
 class Object {
  public:
   explicit Object() = default;
   // construct a Object object based on kind.
-  Object(Objectkind kind, char* name, Type* ty) : kind_(kind), ty_(ty), name_(name) {}
+  Object(Objectkind kind, char* name, TypePtr ty) : kind_(kind), ty_(ty), name_(name) {}
+  // deconstructor.
+  ~Object();
   // calculate the function local variable offset.
   void OffsetCal();
   // check whether is a local variable
@@ -37,45 +50,41 @@ class Object {
   // check whether is a global variable or function
   bool IsFunction() { return kind_ == OB_FUNCTION; }
   // find a token name in object list.
-  Object* Find(char* p);
+  static ObjectPtr Find(ObjectPtr root, char* p);
 
  public:
   // create global varibal
-  static Object* CreateGlobalVar(char* name, Type* ty, Object** next);
+  static ObjectPtr CreateGlobalVar(char* name, TypePtr ty, ObjectPtr* next);
   // create local varibal
-  static Object* CreateLocalVar(char* name, Type* ty, Object** next);
+  static ObjectPtr CreateLocalVar(char* name, TypePtr ty, ObjectPtr* next);
   // create a function based on token list.
-  static Token* CreateFunction(Token* tok, Type* basety, Object** next);
+  static TokenPtr CreateFunction(TokenPtr tok, TypePtr basety, ObjectPtr* next);
   // create a string literal variable
-  static Object* CreateStringVar(char* p);
+  static ObjectPtr CreateStringVar(char* p);
   // create function parameter list.
-  static void CreateParamVar(Type* param);
+  static void CreateParamVar(TypePtr param);
   // parsing token list and generate AST.
-  static Object* Parse(Token* tok);
+  static ObjectPtr Parse(TokenPtr tok);
   // Lookahead tokens and returns true if a given token is a start
   // of a function definition or declaration.
-  static bool IsFunction(Token* tok);
+  static bool IsFunction(TokenPtr tok);
   // create global variable list based on token list.
-  static Token* ParseGlobalVar(Token* tok, Type* basety);
-  // free the object list.
-  static void ObjectFree(Object* head);
+  static TokenPtr ParseGlobalVar(TokenPtr tok, TypePtr basety);
 
   friend class Node;
   friend class CodeGenerator;
 
  private:
-  // free function
-  void FunctionFree();
   // label the object type
   Objectkind kind_ = OB_END;
   // for object list
-  Object* next_ = nullptr;
+  ObjectPtr next_ = nullptr;
   // variable name
   char* name_ = nullptr;
   // variable name len
   int name_len_ = 0;
   // Type
-  Type* ty_ = nullptr;
+  TypePtr ty_ = nullptr;
 
   // local variable offset
   int offset_ = 0;
@@ -86,16 +95,13 @@ class Object {
   bool is_string = false;
 
   // function parameter
-  Object* params_ = nullptr;
+  ObjectPtr params_ = nullptr;
   // function body
   Node* body_ = nullptr;
   // function variable list
-  Object* loc_list_ = nullptr;
+  ObjectPtr loc_list_ = nullptr;
   // function variable's stack size
   int stack_size_ = 0;
 };
-
-extern Object* locals;
-extern Object* globals;
 
 #endif  // OBJECT_GRUAD

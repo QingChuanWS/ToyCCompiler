@@ -1,12 +1,12 @@
 /*
  * This project is exclusively owned by QingChuanWS and shall not be used for
  * commercial and profitting purpose without QingChuanWS's permission.
- * 
+ *
  * @Author: bingshan45@163.com
  * Github: https://github.com/QingChuanWS
- * @Description: 
- * 
- * Copyright (c) 2023 by QingChuanWS, All Rights Reserved. 
+ * @Description:
+ *
+ * Copyright (c) 2023 by QingChuanWS, All Rights Reserved.
  */
 
 #ifndef CODEGEN_GRUAD
@@ -18,18 +18,18 @@
 
 class CodeGenerator {
  public:
-  void CodeGen(Object* prog);
+  void CodeGen(ObjectPtr prog);
 
  private:
-  static void EmitData(Object* prog);
-  static void EmitText(Object* prog);
+  static void EmitData(ObjectPtr prog);
+  static void EmitText(ObjectPtr prog);
   static void GetVarAddr(Node* node);
   static void Push(void);
   static void Pop(const char* arg);
   static void ExprGen(Node* node);
   static void StmtGen(Node* node);
-  static void Load(Type* ty);
-  static void Store(Type* ty);
+  static void Load(TypePtr ty);
+  static void Store(TypePtr ty);
 
   static int depth;
 };

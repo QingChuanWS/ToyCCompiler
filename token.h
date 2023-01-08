@@ -14,10 +14,9 @@
 
 #include <cctype>
 #include <cstring>
+#include <memory>
 
 #include "tools.h"
-
-class Object;
 
 enum Tokenkind {
   TK_PUNCT,    // Punctuators,
@@ -28,20 +27,24 @@ enum Tokenkind {
   TK_EOF,      // End-of-file markers,
 };
 
-class Type;
+class Token;
+class Object;
+
+using TokenPtr = std::shared_ptr<Token>;
+using ObjectPtr = std::shared_ptr<Object>;
+
 class Token {
  public:
   explicit Token() = default;
   Token(Tokenkind kind, char* str, int len) : kind_(kind), str_(str), strlen_(len) {}
+  ~Token();
   // create string token.
-  Token* CreateStringToken(char* start, char* end);
+  TokenPtr CreateStringToken(char* start, char* end);
   // Creating token list from the source program.
-  static Token* TokenCreate(const Token& head, char* prg);
-  // free token list.
-  static void TokenFree(Token& head);
+  static TokenPtr TokenCreate(TokenPtr tok_list, char* prg);
   // Check the current token->str is char op or not.
   // If the token's str is equal with op, return ture.
-  Token* SkipToken(const char* op, bool enable_error = true);
+  TokenPtr SkipToken(const char* op, bool enable_error = true);
   // Check whether the current token's kind is EOF,
   // otherwise return false.
   bool IsEof() { return this->kind_ == TK_EOF; }
@@ -53,22 +56,22 @@ class Token {
   char* GetIdent();
   // Get tok value when kind == NUM
   long GetNumber();
-  // check whether the given token is a typename.
+  // Check whether the given token is a typename.
   bool IsTypename();
-  // find a tok name whether is in locals variable list.
-  Object* FindLocalVar();
-  // find a tok name whether is in locals variable list.
-  Object* FindGlobalVar();
-  // consume a token if the given string is same the token string.
-  Token* Consume(const char* op);
+  // Find a tok name whether is in locals variable list.
+  ObjectPtr FindLocalVar();
+  // Find a tok name whether is in locals variable list.
+  ObjectPtr FindGlobalVar();
 
  private:
+  // find a closing double-quote.
+  static char* StringLiteralEnd(char* p);
   // matching reserved keyword based start.
-  void ConvertToReserved();
+  static void ConvertToReserved(TokenPtr tok);
   // matching punction.
   int ReadPunct(char* p);
   // read a string literal for source pargram char.
-  Token* ReadStringLiteral(char* p);
+  TokenPtr ReadStringLiteral(char* p);
   // free token kind = TK_STR
   void StrTokenFree();
 
@@ -80,7 +83,7 @@ class Token {
   // Token Kind
   Tokenkind kind_ = TK_EOF;
   // Next Token
-  Token* next_ = nullptr;
+  TokenPtr next_ = nullptr;
   // If kind_ is TK_NUM, its values,
   long val_ = 0;
   // Token Location

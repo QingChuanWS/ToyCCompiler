@@ -26,7 +26,7 @@ int CodeGenerator::depth = 0;
 const char* argreg8[6] = {"dil", "sil", "cl", "dl", "r8b", "r9b"};
 const char* argreg64[6] = {"rdi", "rsi", "rcx", "rdx", "r8", "r9"};
 
-Object* cur_fn = nullptr;
+ ObjectPtr cur_fn = nullptr;
 
 #define ASM_GEN(...) AsmPrint(__VA_ARGS__)
 
@@ -71,7 +71,7 @@ void CodeGenerator::Pop(const char* arg) {
   depth--;
 }
 
-void CodeGenerator::Load(Type* ty) {
+void CodeGenerator::Load(TypePtr ty) {
   if (ty->kind_ == TY_ARRAY) {
     // If it is a array, do not attempt to load a value to
     // the register because we can't load entire array to
@@ -88,7 +88,7 @@ void CodeGenerator::Load(Type* ty) {
   }
 }
 
-void CodeGenerator::Store(Type* ty) {
+void CodeGenerator::Store(TypePtr ty) {
   Pop("rdi");
   if (ty->size_ == 1) {
     ASM_GEN("  mov [rdi], al");
@@ -97,14 +97,14 @@ void CodeGenerator::Store(Type* ty) {
   }
 }
 
-void CodeGenerator::CodeGen(Object* prog) {
+void CodeGenerator::CodeGen( ObjectPtr prog) {
   prog->OffsetCal();
   EmitData(prog);
   EmitText(prog);
 }
 
-void CodeGenerator::EmitData(Object* prog) {
-  for (Object* var = prog; var != nullptr; var = var->next_) {
+void CodeGenerator::EmitData( ObjectPtr prog) {
+  for ( ObjectPtr var = prog; var != nullptr; var = var->next_) {
     if (var->IsFunction()) {
       continue;
     }
@@ -121,11 +121,11 @@ void CodeGenerator::EmitData(Object* prog) {
   }
 }
 
-void CodeGenerator::EmitText(Object* prog) {
+void CodeGenerator::EmitText( ObjectPtr prog) {
   // using intel syntax
   // e.g. op dst, src
   ASM_GEN(".intel_syntax noprefix");
-  for (Object* fn = prog; fn != nullptr; fn = fn->next_) {
+  for ( ObjectPtr fn = prog; fn != nullptr; fn = fn->next_) {
     if (fn->IsGlobal()) {
       continue;
     }
@@ -141,7 +141,7 @@ void CodeGenerator::EmitText(Object* prog) {
     ASM_GEN("  sub rsp, ", fn->stack_size_);
 
     int i = 0;
-    for (Object* var = fn->params_; var != nullptr; var = var->next_) {
+    for ( ObjectPtr var = fn->params_; var != nullptr; var = var->next_) {
       if (var->ty_->size_ == 1) {
         ASM_GEN("  mov [rbp - ", var->offset_, "], ", argreg8[i++]);
       } else {

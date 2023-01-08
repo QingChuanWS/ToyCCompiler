@@ -1,13 +1,16 @@
 /*
  * This project is exclusively owned by QingChuanWS and shall not be used for
  * commercial and profitting purpose without QingChuanWS's permission.
- * 
+ *
  * @Author: bingshan45@163.com
  * Github: https://github.com/QingChuanWS
- * @Description: 
- * 
- * Copyright (c) 2023 by QingChuanWS, All Rights Reserved. 
+ * @Description:
+ *
+ * Copyright (c) 2023 by QingChuanWS, All Rights Reserved.
  */
+
+#include <cstddef>
+#include <memory>
 
 #include "codegen.h"
 #include "node.h"
@@ -21,14 +24,12 @@ int main(int argc, char** argv) {
     return 1;
   }
 
-  Token head = Token();
-  Token* cur = Token::TokenCreate(head, argv[1]);
-  Object* prog = Object::Parse(cur);
+  TokenPtr tok_list = std::make_shared<Token>(TK_EOF, nullptr, 0);
+  TokenPtr cur = Token::TokenCreate(tok_list, argv[1]);
+  ObjectPtr prog = Object::Parse(cur);
 
   CodeGenerator gene;
   gene.CodeGen(prog);
-
-  Token::TokenFree(head);
-  Object::ObjectFree(prog);
+  
   return 0;
 }

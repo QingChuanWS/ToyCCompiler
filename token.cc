@@ -13,22 +13,24 @@
 
 #include <cctype>
 #include <cstring>
+#include <memory>
 
-#include "object.h"
 #include "tools.h"
-#include "type.h"
+#include "object.h"
 
 char* Token::prg_ = nullptr;
 
-Token* Token::CreateStringToken(char* start, char* end){
-  Token* res = new Token(TK_STR, start, end - start + 1);
+using TokenPtr = std::shared_ptr<Token>;
+
+TokenPtr Token::CreateStringToken(char* start, char* end) {
+  TokenPtr res = std::make_shared<Token>(TK_STR, start, end - start + 1);
   res->str_literal_ = strndup(start + 1, end - start - 1);
   return res;
 }
 
-Token* Token::TokenCreate(const Token& head, char* prg) {
+TokenPtr Token::TokenCreate(TokenPtr tok_list, char* prg) {
   prg_ = prg;
-  Token* cur = const_cast<Token*>(&head);
+  TokenPtr cur = tok_list;
   char* p = prg_;
   while (*p != '\0') {
     if (std::isspace(*p)) {
@@ -37,8 +39,7 @@ Token* Token::TokenCreate(const Token& head, char* prg) {
     }
 
     if (std::isdigit(*p)) {
-      cur->next_ = new Token(TK_NUM, p, 0);
-      cur = cur->next_;
+      cur = cur->next_ = std::make_shared<Token>(TK_NUM, p, 0);
       char* q = p;
       cur->val_ = strtol(p, &p, 10);
       cur->strlen_ = static_cast<int>(p - q);
@@ -57,31 +58,27 @@ Token* Token::TokenCreate(const Token& head, char* prg) {
       while (IsAlnum(*p)) {
         p++;
       }
-      cur = cur->next_ = new Token(TK_IDENT, q, p - q);
+      cur = cur->next_ = std::make_shared<Token>(TK_IDENT, q, p - q);
       continue;
     }
 
     int punct_len = cur->ReadPunct(p);
     if (punct_len) {
-      cur = cur->next_ = new Token(TK_PUNCT, p, punct_len);
+      cur = cur->next_ = std::make_shared<Token>(TK_PUNCT, p, punct_len);
       p += punct_len;
       continue;
     }
     ErrorAt(prg, p, "expect a number.");
   }
 
-  cur->next_ = new Token(TK_EOF, p, 0);
-  head.next_->ConvertToReserved();
-  return head.next_;
+  cur->next_ = std::make_shared<Token>(TK_EOF, p, 0);
+  ConvertToReserved(tok_list->next_);
+  return tok_list->next_;
 }
 
-void Token::TokenFree(Token& head) {
-  Token* cur = head.next_;
-  while (cur != nullptr) {
-    head.next_ = cur->next_;
-    cur->StrTokenFree();
-    delete cur;
-    cur = head.next_;
+Token::~Token() {
+  if (this->kind_ == TK_STR) {
+    free(this->str_literal_);
   }
 }
 
@@ -96,9 +93,9 @@ int Token::ReadPunct(char* p) {
   return std::strchr("+-*/()<>;=,{}[]&", *p) != 0 ? 1 : 0;
 }
 
-void Token::ConvertToReserved() {
+void Token::ConvertToReserved(TokenPtr tok) {
   static const char* kw[] = {"return", "if", "else", "for", "while", "int", "sizeof", "char"};
-  for (Token* t = this; t != nullptr; t = t->next_) {
+  for (TokenPtr t = tok; t != nullptr; t = t->next_) {
     for (int i = 0; i < sizeof(kw) / sizeof(*kw); i++) {
       if (StrEqual(t->str_, kw[i], t->strlen_)) {
         t->kind_ = TK_KEYWORD;
@@ -109,13 +106,7 @@ void Token::ConvertToReserved() {
 
 bool Token::Equal(const char* op) { return StrEqual(this->str_, op, this->strlen_); }
 
-void Token::StrTokenFree() {
-  if (this->kind_ == TK_STR) {
-    free(this->str_literal_);
-  }
-}
-
-Token* Token::SkipToken(const char* op, bool enable_error) {
+TokenPtr Token::SkipToken(const char* op, bool enable_error) {
   if (!this->Equal(op)) {
     if (enable_error) {
       ErrorAt(prg_, this->str_, "Expect \'%s\'", op);
@@ -126,14 +117,14 @@ Token* Token::SkipToken(const char* op, bool enable_error) {
   return this->next_;
 }
 
-Token* Token::ReadStringLiteral(char* start) {
+TokenPtr Token::ReadStringLiteral(char* start) {
   char* p = start + 1;
   for (; *p != '"'; p++) {
     if (*p == '\n' || *p == '\0') {
       ErrorAt(Token::prg_, start, "unclosed string literal!");
     }
   }
-  Token* tok = CreateStringToken(start, p);
+  TokenPtr tok = CreateStringToken(start, p);
   return tok;
 }
 
@@ -164,8 +155,8 @@ long Token::GetNumber() {
   return val_;
 }
 
-Object* Token::FindLocalVar() { return locals->Find(this->str_); }
+ObjectPtr Token::FindLocalVar() { return Object::Find(locals, this->str_); }
 
-Object* Token::FindGlobalVar() { return globals->Find(this->str_); }
+ObjectPtr Token::FindGlobalVar() { return Object::Find(globals, this->str_); }
 
 bool Token::IsTypename() { return Equal("int") || Equal("char"); }

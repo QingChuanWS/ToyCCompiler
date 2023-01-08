@@ -15,11 +15,6 @@
 
 #include "token.h"
 
-class Type;
-
-extern std::shared_ptr<Type> ty_int;
-extern std::shared_ptr<Type> ty_char;
-
 enum TypeKind {
   TY_INT,
   TY_CHAR,
@@ -29,9 +24,13 @@ enum TypeKind {
   TY_END,
 };
 
+class Type;
+class Token;
+using TokenPtr = std::shared_ptr<Token>;
+using TypePtr = std::shared_ptr<Type>;
+
 class Type {
  public:
-  explicit Type() = default;
   explicit Type(TypeKind kind, int size) : kind_(kind), size_(size) {}
   // copy construct.
   explicit Type(const Type& ty) = default;
@@ -46,13 +45,11 @@ class Type {
 
  public:
   // create pointer type.
-  static Type* CreatePointerType(Type* base);
+  static TypePtr CreatePointerType(TypePtr base);
   // create function type.
-  static Type* CreateFunctionType(Type* ret_type, Type* params);
+  static TypePtr CreateFunctionType(TypePtr ret_type, TypePtr params);
   // create array type
-  static Type* CreateArrayType(Type* base, int array_len);
-  // free type list.
-  static void TypeFree(Type* ty);
+  static TypePtr CreateArrayType(TypePtr base, int array_len);
 
  private:
   friend class Node;
@@ -61,20 +58,23 @@ class Type {
   // type kind
   TypeKind kind_ = TY_END;
   // Declaration.
-  Token* name_ = nullptr;
+  TokenPtr name_ = nullptr;
   // sizeof() value.
   int size_ = 0;
   // Pointer-to or array type. Using a same member to
   // represent pointer/array duality in C.
-  Type* base_ = nullptr;
+  TypePtr base_ = nullptr;
   // Array
   int array_len_ = 0;
   // Function type.
-  Type* return_ty_ = nullptr;
+  TypePtr return_ty_ = nullptr;
   // function params type list.
-  Type* params_ = nullptr;
+  TypePtr params_ = nullptr;
   // for params type list.
-  Type* next_ = nullptr;
+  TypePtr next_ = nullptr;
 };
+
+extern std::shared_ptr<Type> ty_int;
+extern std::shared_ptr<Type> ty_char;
 
 #endif  // !TYPE_GRUAD
