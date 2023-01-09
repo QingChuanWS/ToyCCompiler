@@ -141,7 +141,7 @@ ObjectPtr Object::Find(ObjectPtr root, char* p) {
 
 Object::~Object(){
   if (IsFunction()) {
-    Node::NodeListFree(body_);
+    // Node::NodeListFree(body_);
   }
   free(this->name_);
 }

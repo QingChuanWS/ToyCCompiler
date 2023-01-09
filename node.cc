@@ -22,19 +22,19 @@
 
 extern ObjectPtr locals;
 
-Node* Node::CreateConstNode(long val, TokenPtr tok) {
-  Node* node = new Node(ND_NUM, tok);
+NodePtr Node::CreateConstNode(long val, TokenPtr tok) {
+  NodePtr node = std::make_shared<Node>(ND_NUM, tok);
   node->val_ = val;
   return node;
 }
 
-Node* Node::CreateVarNode(ObjectPtr var, TokenPtr tok) {
-  Node* node = new Node(ND_VAR, tok);
+NodePtr Node::CreateVarNode(ObjectPtr var, TokenPtr tok) {
+  NodePtr node = std::make_shared<Node>(ND_VAR, tok);
   node->var_ = var;
   return node;
 }
 
-Node* Node::CreateIdentNode(TokenPtr tok) {
+NodePtr Node::CreateIdentNode(TokenPtr tok) {
   ObjectPtr local_var = tok->FindLocalVar();
   ObjectPtr global_var = tok->FindGlobalVar();
   if (global_var == nullptr && local_var == nullptr) {
@@ -46,24 +46,24 @@ Node* Node::CreateIdentNode(TokenPtr tok) {
   return CreateVarNode(global_var, tok);
 }
 
-Node* Node::CreateCallNode(TokenPtr call_name, Node* args) {
-  Node* call_node = new Node(ND_CALL, call_name);
+NodePtr Node::CreateCallNode(TokenPtr call_name, NodePtr args) {
+  NodePtr call_node = std::make_shared<Node>(ND_CALL, call_name);
   call_node->call_ = call_name->GetIdent();
   call_node->args_ = args;
   return call_node;
 }
 
-Node* Node::CreateUnaryNode(NodeKind kind, TokenPtr node_name, Node* op) {
-  Node* res = new Node(kind, node_name);
+NodePtr Node::CreateUnaryNode(NodeKind kind, TokenPtr node_name, NodePtr op) {
+  NodePtr res = std::make_shared<Node>(kind, node_name);
   res->lhs_ = op;
   return res;
 }
 
-Node* Node::CreateAddNode(TokenPtr node_name, Node* op_left, Node* op_right) {
+NodePtr Node::CreateAddNode(TokenPtr node_name, NodePtr op_left, NodePtr op_right) {
   op_left->TypeInfer();
   op_right->TypeInfer();
   if (!op_left->IsPointerNode() && !op_right->IsPointerNode()) {
-    Node* res = CreateBinaryNode(ND_ADD, node_name, op_left, op_right);
+    NodePtr res = CreateBinaryNode(ND_ADD, node_name, op_left, op_right);
     res->ty_ = ty_int;
     return res;
   }
@@ -73,32 +73,32 @@ Node* Node::CreateAddNode(TokenPtr node_name, Node* op_left, Node* op_right) {
   }
   // cononical 'num + ptr' to 'ptr + num'.
   if (!op_left->IsPointerNode() && op_right->IsPointerNode()) {
-    Node* tmp = op_left;
+    NodePtr tmp = op_left;
     op_left = op_right;
     op_right = tmp;
   }
   // ptr + num
-  Node* factor = CreateConstNode(op_left->ty_->base_->size_, node_name);
-  Node* real_num = CreateBinaryNode(ND_MUL, node_name, op_right, factor);
-  Node* res = CreateBinaryNode(ND_ADD, node_name, op_left, real_num);
+  NodePtr factor = CreateConstNode(op_left->ty_->base_->size_, node_name);
+  NodePtr real_num = CreateBinaryNode(ND_MUL, node_name, op_right, factor);
+  NodePtr res = CreateBinaryNode(ND_ADD, node_name, op_left, real_num);
   return res;
 }
 
-Node* Node::CreateSubNode(TokenPtr node_name, Node* op_left, Node* op_right) {
+NodePtr Node::CreateSubNode(TokenPtr node_name, NodePtr op_left, NodePtr op_right) {
   op_left->TypeInfer();
   op_right->TypeInfer();
   // num - num
   if (!op_left->IsPointerNode() && !op_right->IsPointerNode()) {
-    Node* res = CreateBinaryNode(ND_SUB, node_name, op_left, op_right);
+    NodePtr res = CreateBinaryNode(ND_SUB, node_name, op_left, op_right);
     res->ty_ = ty_int;
     return res;
   }
   // ptr - ptr
   if (op_left->IsPointerNode() && op_right->IsPointerNode()) {
     // careful curisive call.
-    Node* sub = CreateBinaryNode(ND_SUB, node_name, op_left, op_right);
-    Node* factor = CreateConstNode(op_left->ty_->base_->size_, node_name);
-    Node* res = CreateBinaryNode(ND_DIV, node_name, sub, factor);
+    NodePtr sub = CreateBinaryNode(ND_SUB, node_name, op_left, op_right);
+    NodePtr factor = CreateConstNode(op_left->ty_->base_->size_, node_name);
+    NodePtr res = CreateBinaryNode(ND_DIV, node_name, sub, factor);
     res->ty_ = ty_int;
     return res;
   }
@@ -106,29 +106,29 @@ Node* Node::CreateSubNode(TokenPtr node_name, Node* op_left, Node* op_right) {
     node_name->ErrorTok("Invalid Operands.");
   }
   // ptr - num
-  Node* factor = CreateConstNode(op_left->ty_->base_->size_, node_name);
-  Node* real_num = CreateBinaryNode(ND_MUL, node_name, op_right, factor);
-  Node* res = CreateBinaryNode(ND_SUB, node_name, op_left, real_num);
+  NodePtr factor = CreateConstNode(op_left->ty_->base_->size_, node_name);
+  NodePtr real_num = CreateBinaryNode(ND_MUL, node_name, op_right, factor);
+  NodePtr res = CreateBinaryNode(ND_SUB, node_name, op_left, real_num);
   return res;
 }
 
-Node* Node::CreateBinaryNode(NodeKind kind, TokenPtr node_name, Node* op_left, Node* op_right) {
-  Node* res = new Node(kind, node_name);
+NodePtr Node::CreateBinaryNode(NodeKind kind, TokenPtr node_name, NodePtr op_left, NodePtr op_right) {
+  NodePtr res = std::make_shared<Node>(kind, node_name);
   res->lhs_ = op_left;
   res->rhs_ = op_right;
   return res;
 }
 
-Node* Node::CreateIFNode(TokenPtr node_name, Node* cond, Node* then, Node* els) {
-  Node* res = new Node(ND_IF, node_name);
+NodePtr Node::CreateIFNode(TokenPtr node_name, NodePtr cond, NodePtr then, NodePtr els) {
+  NodePtr res = std::make_shared<Node>(ND_IF, node_name);
   res->cond_ = cond;
   res->then_ = then;
   res->els_ = els;
   return res;
 }
 
-Node* Node::CreateForNode(TokenPtr node_name, Node* init, Node* cond, Node* inc, Node* then) {
-  Node* res = new Node(ND_FOR, node_name);
+NodePtr Node::CreateForNode(TokenPtr node_name, NodePtr init, NodePtr cond, NodePtr inc, NodePtr then) {
+  NodePtr res = std::make_shared<Node>(ND_FOR, node_name);
   res->init_ = init;
   res->cond_ = cond;
   res->inc_ = inc;
@@ -136,21 +136,21 @@ Node* Node::CreateForNode(TokenPtr node_name, Node* init, Node* cond, Node* inc,
   return res;
 }
 
-Node* Node::CreateBlockNode(TokenPtr node_name, Node* body) {
-  Node* res = new Node(ND_BLOCK, node_name);
+NodePtr Node::CreateBlockNode(TokenPtr node_name, NodePtr body) {
+  NodePtr res = std::make_shared<Node>(ND_BLOCK, node_name);
   res->body_ = body;
   return res;
 }
 
-Node* Node::Program(TokenPtr* rest, TokenPtr tok) {
+NodePtr Node::Program(TokenPtr* rest, TokenPtr tok) {
   tok = tok->SkipToken("{");
   return CompoundStmt(rest, tok);
 }
 
 // compound-stmt  = (declaration | stmt)* "}"
-Node* Node::CompoundStmt(TokenPtr* rest, TokenPtr tok) {
-  Node sub_expr;
-  Node* cur = &sub_expr;
+NodePtr Node::CompoundStmt(TokenPtr* rest, TokenPtr tok) {
+  NodePtr sub_expr = std::make_shared<Node>(ND_END, tok);
+  NodePtr cur = sub_expr;
 
   while (!tok->Equal("}")) {
     if (tok->IsTypename()) {
@@ -163,18 +163,18 @@ Node* Node::CompoundStmt(TokenPtr* rest, TokenPtr tok) {
   }
 
   *rest = tok->next_;
-  return CreateBlockNode(tok, sub_expr.next_);
+  return CreateBlockNode(tok, sub_expr->next_);
   ;
 }
 
 // declaration = declspec (
 //                 declarator ( "=" expr)?
 //                 ("," declarator ("=" expr)? ) * )? ";"
-Node* Node::Declaration(TokenPtr* rest, TokenPtr tok) {
+NodePtr Node::Declaration(TokenPtr* rest, TokenPtr tok) {
   TypePtr ty_base = Declspec(&tok, tok);
 
-  Node decl_expr = Node();
-  Node* cur = &decl_expr;
+  NodePtr decl_expr = std::make_shared<Node>(ND_END, tok);
+  NodePtr cur = decl_expr;
   int i = 0;
 
   while (!tok->Equal(";")) {
@@ -186,14 +186,14 @@ Node* Node::Declaration(TokenPtr* rest, TokenPtr tok) {
     if (!tok->Equal("=")) {
       continue;
     }
-    Node* lhs = CreateVarNode(var, tok);
-    Node* rhs = Assign(&tok, tok->next_);
-    Node* assgin_node = CreateBinaryNode(ND_ASSIGN, tok, lhs, rhs);
+    NodePtr lhs = CreateVarNode(var, tok);
+    NodePtr rhs = Assign(&tok, tok->next_);
+    NodePtr assgin_node = CreateBinaryNode(ND_ASSIGN, tok, lhs, rhs);
     cur = cur->next_ = CreateUnaryNode(ND_EXPR_STMT, tok, assgin_node);
   }
 
   *rest = tok->next_;
-  return CreateBlockNode(tok, decl_expr.next_);
+  return CreateBlockNode(tok, decl_expr->next_);
   ;
 }
 
@@ -266,9 +266,9 @@ TypePtr Node::FunctionParam(TokenPtr* rest, TokenPtr tok, TypePtr ty) {
 // "for" "(" expr-stmt expr? ";" expr? ")" stmt |
 // "{" compuound-stmt |
 // expr-stmt
-Node* Node::Stmt(TokenPtr* rest, TokenPtr tok) {
+NodePtr Node::Stmt(TokenPtr* rest, TokenPtr tok) {
   if (tok->Equal("return")) {
-    Node* node = CreateUnaryNode(ND_RETURN, tok, Expr(&tok, tok->next_));
+    NodePtr node = CreateUnaryNode(ND_RETURN, tok, Expr(&tok, tok->next_));
     *rest = tok->SkipToken(";");
     return node;
   }
@@ -276,9 +276,9 @@ Node* Node::Stmt(TokenPtr* rest, TokenPtr tok) {
   if (tok->Equal("if")) {
     TokenPtr node_name = tok;
     tok = tok->next_;
-    Node* cond = Expr(&tok, tok->SkipToken("("));
-    Node* then = Stmt(&tok, tok->SkipToken(")"));
-    Node* els = nullptr;
+    NodePtr cond = Expr(&tok, tok->SkipToken("("));
+    NodePtr then = Stmt(&tok, tok->SkipToken(")"));
+    NodePtr els = nullptr;
     if (tok->Equal("else")) {
       els = Stmt(&tok, tok->next_);
     }
@@ -290,9 +290,9 @@ Node* Node::Stmt(TokenPtr* rest, TokenPtr tok) {
     TokenPtr node_name = tok;
     tok = tok->next_->SkipToken("(");
 
-    Node* init = ExprStmt(&tok, tok);
-    Node* cond = nullptr;
-    Node* inc = nullptr;
+    NodePtr init = ExprStmt(&tok, tok);
+    NodePtr cond = nullptr;
+    NodePtr inc = nullptr;
 
     if (!tok->Equal(";")) {
       cond = Expr(&tok, tok);
@@ -309,9 +309,9 @@ Node* Node::Stmt(TokenPtr* rest, TokenPtr tok) {
     TokenPtr node_name = tok;
     tok = tok->next_->SkipToken("(");
 
-    Node* cond = Expr(&tok, tok);
+    NodePtr cond = Expr(&tok, tok);
     tok = tok->SkipToken(")");
-    Node* then = Stmt(rest, tok);
+    NodePtr then = Stmt(rest, tok);
     return CreateForNode(node_name, nullptr, cond, nullptr, then);
   }
 
@@ -323,22 +323,22 @@ Node* Node::Stmt(TokenPtr* rest, TokenPtr tok) {
 }
 
 // expr-stmt = expr ";"
-Node* Node::ExprStmt(TokenPtr* rest, TokenPtr tok) {
+NodePtr Node::ExprStmt(TokenPtr* rest, TokenPtr tok) {
   if (tok->Equal(";")) {
     *rest = tok->next_;
     return CreateBlockNode(tok, nullptr);
   }
-  Node* node = CreateUnaryNode(ND_EXPR_STMT, tok, Expr(&tok, tok));
+  NodePtr node = CreateUnaryNode(ND_EXPR_STMT, tok, Expr(&tok, tok));
   *rest = tok->SkipToken(";");
   return node;
 }
 
 // expr = assign
-Node* Node::Expr(TokenPtr* rest, TokenPtr tok) { return Assign(rest, tok); }
+NodePtr Node::Expr(TokenPtr* rest, TokenPtr tok) { return Assign(rest, tok); }
 
 // assign = equality ("=" assign)?
-Node* Node::Assign(TokenPtr* rest, TokenPtr tok) {
-  Node* node = Equality(&tok, tok);
+NodePtr Node::Assign(TokenPtr* rest, TokenPtr tok) {
+  NodePtr node = Equality(&tok, tok);
   if (tok->Equal("=")) {
     return CreateBinaryNode(ND_ASSIGN, tok, node, Assign(rest, tok->next_));
   }
@@ -347,8 +347,8 @@ Node* Node::Assign(TokenPtr* rest, TokenPtr tok) {
 }
 
 // equality = relational ("==" relational | "!=" relational)
-Node* Node::Equality(TokenPtr* rest, TokenPtr tok) {
-  Node* node = Relational(&tok, tok);
+NodePtr Node::Equality(TokenPtr* rest, TokenPtr tok) {
+  NodePtr node = Relational(&tok, tok);
 
   for (;;) {
     TokenPtr node_name = tok;
@@ -367,8 +367,8 @@ Node* Node::Equality(TokenPtr* rest, TokenPtr tok) {
 }
 
 // relational = add ("<" add | "<=" add | ">" add | ">=" add)
-Node* Node::Relational(TokenPtr* rest, TokenPtr tok) {
-  Node* node = Add(&tok, tok);
+NodePtr Node::Relational(TokenPtr* rest, TokenPtr tok) {
+  NodePtr node = Add(&tok, tok);
 
   for (;;) {
     TokenPtr node_name = tok;
@@ -394,8 +394,8 @@ Node* Node::Relational(TokenPtr* rest, TokenPtr tok) {
 }
 
 // add = mul ("+"mul | "-" mul)
-Node* Node::Add(TokenPtr* rest, TokenPtr tok) {
-  Node* node = Mul(&tok, tok);
+NodePtr Node::Add(TokenPtr* rest, TokenPtr tok) {
+  NodePtr node = Mul(&tok, tok);
 
   for (;;) {
     TokenPtr node_name = tok;
@@ -412,8 +412,8 @@ Node* Node::Add(TokenPtr* rest, TokenPtr tok) {
   }
 }
 
-Node* Node::Mul(TokenPtr* rest, TokenPtr tok) {
-  Node* node = Unary(&tok, tok);
+NodePtr Node::Mul(TokenPtr* rest, TokenPtr tok) {
+  NodePtr node = Unary(&tok, tok);
 
   for (;;) {
     TokenPtr node_name = tok;
@@ -431,7 +431,7 @@ Node* Node::Mul(TokenPtr* rest, TokenPtr tok) {
 }
 
 // unary = ("+" | "-" | "*" | "&") ? unary | primary
-Node* Node::Unary(TokenPtr* rest, TokenPtr tok) {
+NodePtr Node::Unary(TokenPtr* rest, TokenPtr tok) {
   if (tok->Equal("+")) {
     return Unary(rest, tok->next_);
   }
@@ -447,15 +447,15 @@ Node* Node::Unary(TokenPtr* rest, TokenPtr tok) {
   return Postfix(rest, tok);
 }
 
-Node* Node::Postfix(TokenPtr* rest, TokenPtr tok) {
-  Node* node = Primary(&tok, tok);
+NodePtr Node::Postfix(TokenPtr* rest, TokenPtr tok) {
+  NodePtr node = Primary(&tok, tok);
 
   while (tok->Equal("[")) {
     // x[y] is short for *(x + y)
     TokenPtr node_name = tok;
-    Node* idx = Expr(&tok, tok->next_);
+    NodePtr idx = Expr(&tok, tok->next_);
     tok = tok->SkipToken("]");
-    Node* op = CreateAddNode(node_name, node, idx);
+    NodePtr op = CreateAddNode(node_name, node, idx);
     node = CreateUnaryNode(ND_DEREF, node_name, op);
   }
   *rest = tok;
@@ -463,18 +463,17 @@ Node* Node::Postfix(TokenPtr* rest, TokenPtr tok) {
 }
 
 // primary = "(" expr ")" | "sizeof" unary | ident | str | num
-Node* Node::Primary(TokenPtr* rest, TokenPtr tok) {
+NodePtr Node::Primary(TokenPtr* rest, TokenPtr tok) {
   if (tok->Equal("(")) {
-    Node* node = Expr(&tok, tok->next_);
+    NodePtr node = Expr(&tok, tok->next_);
     *rest = tok->SkipToken(")");
     return node;
   }
 
   if (tok->Equal("sizeof")) {
-    Node* node = Unary(rest, tok->next_);
+    NodePtr node = Unary(rest, tok->next_);
     node->TypeInfer();
     long size = node->ty_->size_;
-    NodeFree(node);
     return CreateConstNode(size, tok);
   }
 
@@ -493,7 +492,7 @@ Node* Node::Primary(TokenPtr* rest, TokenPtr tok) {
   }
 
   if (tok->kind_ == TK_NUM) {
-    Node* node = CreateConstNode(tok->val_, tok);
+    NodePtr node = CreateConstNode(tok->val_, tok);
     *rest = tok->next_;
     return node;
   }
@@ -503,15 +502,15 @@ Node* Node::Primary(TokenPtr* rest, TokenPtr tok) {
 }
 
 // function = ident "(" (assign ("," assign)*)? ")"
-Node* Node::Call(TokenPtr* rest, TokenPtr tok) {
+NodePtr Node::Call(TokenPtr* rest, TokenPtr tok) {
   TokenPtr start = tok;
   tok = tok->next_->next_;
 
-  Node args;
-  Node* cur = &args;
+  NodePtr args = std::make_shared<Node>(ND_END, tok);
+  NodePtr cur = args;
 
   while (!tok->Equal(")")) {
-    if (cur != &args) {
+    if (cur != args) {
       tok = tok->SkipToken(",");
     }
     cur->next_ = Assign(&tok, tok);
@@ -519,57 +518,13 @@ Node* Node::Call(TokenPtr* rest, TokenPtr tok) {
   }
 
   *rest = tok->SkipToken(")");
-  return CreateCallNode(start, args.next_);
+  return CreateCallNode(start, args->next_);
 }
 
-void Node::NodeListFree(Node* node) {
-  Node* cur = node;
-  while (cur != nullptr) {
-    node = node->next_;
-    if (cur->kind_ == ND_IF) {
-      NodeFree(cur->cond_);
-      NodeListFree(cur->then_);
-      NodeListFree(cur->els_);
-    }
-    if (cur->kind_ == ND_FOR) {
-      NodeFree(cur->init_);
-      NodeFree(cur->cond_);
-      NodeFree(cur->inc_);
-      NodeListFree(cur->then_);
-    }
-    if (cur->kind_ == ND_BLOCK) {
-      NodeListFree(cur->body_);
-    }
-    NodeFree(cur);
-    cur = node;
+Node::~Node(){
+  if (kind_ == ND_CALL) {
+    free(call_);
   }
-}
-
-// post-order for node delete
-void Node::NodeFree(Node* node) {
-  if (node == nullptr) return;
-
-  if (node->lhs_ != nullptr) {
-    NodeFree(node->lhs_);
-    node->lhs_ = nullptr;
-  }
-  if (node->rhs_ != nullptr) {
-    NodeFree(node->rhs_);
-    node->rhs_ = nullptr;
-  }
-  // if (node->kind_ == ND_ADDR) {
-  //   delete node->ty_;
-  // }
-  if (node->kind_ == ND_VAR) {
-    // all of var will create a list and is freed in Funciton class.
-    ;
-  }
-  if (node->kind_ == ND_CALL) {
-    free(node->call_);
-    NodeListFree(node->args_);
-  }
-  delete node;
-  return;
 }
 
 void Node::TypeInfer() {
@@ -599,7 +554,7 @@ void Node::TypeInfer() {
     inc_->TypeInfer();
   }
 
-  for (Node* n = body_; n != nullptr; n = n->next_) {
+  for (NodePtr n = body_; n != nullptr; n = n->next_) {
     n->TypeInfer();
   }
 

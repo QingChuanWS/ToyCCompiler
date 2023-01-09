@@ -30,6 +30,7 @@ class Object;
 
 using TypePtr = std::shared_ptr<Type>;
 using ObjectPtr = std::shared_ptr<Object>;
+using NodePtr = std::shared_ptr<Node>;
 
 extern ObjectPtr locals;
 extern ObjectPtr globals;
@@ -97,7 +98,7 @@ class Object {
   // function parameter
   ObjectPtr params_ = nullptr;
   // function body
-  Node* body_ = nullptr;
+  NodePtr body_ = nullptr;
   // function variable list
   ObjectPtr loc_list_ = nullptr;
   // function variable's stack size

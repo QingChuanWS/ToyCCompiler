@@ -12,6 +12,7 @@
 #ifndef NODE_GRUAD
 #define NODE_GRUAD
 
+#include <memory>
 #include <string>
 
 #include "object.h"
@@ -43,10 +44,14 @@ enum NodeKind {
   ND_END,
 };
 
+class Node;
+using NodePtr = std::shared_ptr<Node>;
+
 class Node {
  public:
   explicit Node() = default;
   explicit Node(NodeKind kind, TokenPtr tok) : kind_(kind), tok_(tok) {}
+  ~Node();
   // whether the node is point.
   bool IsPointerNode();
   // inference the node type.
@@ -56,41 +61,39 @@ class Node {
 
  public:
   // create const node.
-  static Node* CreateConstNode(long val, TokenPtr node_name);
+  static NodePtr CreateConstNode(long val, TokenPtr node_name);
   // create var node.
-  static Node* CreateVarNode( ObjectPtr var, TokenPtr node_name);
+  static NodePtr CreateVarNode( ObjectPtr var, TokenPtr node_name);
   // create identify node.
-  static Node* CreateIdentNode(TokenPtr node_name);
+  static NodePtr CreateIdentNode(TokenPtr node_name);
   // create call node
-  static Node* CreateCallNode(TokenPtr call_name, Node* args);
+  static NodePtr CreateCallNode(TokenPtr call_name, NodePtr args);
   // create unary expration node.
-  static Node* CreateUnaryNode(NodeKind kind, TokenPtr node_name, Node* op);
+  static NodePtr CreateUnaryNode(NodeKind kind, TokenPtr node_name, NodePtr op);
   // create binary expration node.
-  static Node* CreateBinaryNode(NodeKind kind, TokenPtr node_name, Node* op_left, Node* op_right);
+  static NodePtr CreateBinaryNode(NodeKind kind, TokenPtr node_name, NodePtr op_left, NodePtr op_right);
   // create add expration(contain point arithmatic calculation) node.
-  static Node* CreateAddNode(TokenPtr node_name, Node* op_left, Node* op_right);
+  static NodePtr CreateAddNode(TokenPtr node_name, NodePtr op_left, NodePtr op_right);
   // create subtract expration(contain point arithmatic calculation) node.
-  static Node* CreateSubNode(TokenPtr node_name, Node* op_left, Node* op_right);
+  static NodePtr CreateSubNode(TokenPtr node_name, NodePtr op_left, NodePtr op_right);
   // create IF expration node.
-  static Node* CreateIFNode(TokenPtr node_name, Node* cond, Node* then, Node* els);
+  static NodePtr CreateIFNode(TokenPtr node_name, NodePtr cond, NodePtr then, NodePtr els);
   // create for expration node.
-  static Node* CreateForNode(TokenPtr node_name, Node* init, Node* cond, Node* inc, Node* then);
+  static NodePtr CreateForNode(TokenPtr node_name, NodePtr init, NodePtr cond, NodePtr inc, NodePtr then);
   // create block expration node.
-  static Node* CreateBlockNode(TokenPtr node_name, Node* body);
-  // free the node list.
-  static void NodeListFree(Node* node);
+  static NodePtr CreateBlockNode(TokenPtr node_name, NodePtr body);
   // parsing token list and generate AST.
   // program = stmt*
-  static Node* Program(TokenPtr* rest, TokenPtr tok);
+  static NodePtr Program(TokenPtr* rest, TokenPtr tok);
 
  private:
   // ----------------Parse Function------------------
   // compound-stmt = (declaration | stmt)* "}"
-  static Node* CompoundStmt(TokenPtr* rest, TokenPtr tok);
+  static NodePtr CompoundStmt(TokenPtr* rest, TokenPtr tok);
   // declaration = declspec (
   //                 declarator ( "=" expr)?
   //                 ("," declarator ("=" expr)? ) * )? ";"
-  static Node* Declaration(TokenPtr* rest, TokenPtr tok);
+  static NodePtr Declaration(TokenPtr* rest, TokenPtr tok);
   // declspec = "int"
   static TypePtr Declspec(TokenPtr* rest, TokenPtr tok);
   // declarator = "*"* ident type-suffix
@@ -106,31 +109,29 @@ class Node {
   // "while" "(" expr ")" stmt |
   // "{" compuound-stmt |
   // expr-stmt
-  static Node* Stmt(TokenPtr* rest, TokenPtr tok);
+  static NodePtr Stmt(TokenPtr* rest, TokenPtr tok);
   // expr-stmt = expr ";"
-  static Node* ExprStmt(TokenPtr* rest, TokenPtr tok);
+  static NodePtr ExprStmt(TokenPtr* rest, TokenPtr tok);
   // expr = assign
-  static Node* Expr(TokenPtr* rest, TokenPtr tok);
+  static NodePtr Expr(TokenPtr* rest, TokenPtr tok);
   // assign = equality ("=" assign)?
-  static Node* Assign(TokenPtr* rest, TokenPtr tok);
+  static NodePtr Assign(TokenPtr* rest, TokenPtr tok);
   // equality = relational ("==" relational | "!=" relational)
-  static Node* Equality(TokenPtr* rest, TokenPtr tok);
+  static NodePtr Equality(TokenPtr* rest, TokenPtr tok);
   // relational = add ("<" add | "<=" add | ">" add | ">=" add)
-  static Node* Relational(TokenPtr* rest, TokenPtr tok);
+  static NodePtr Relational(TokenPtr* rest, TokenPtr tok);
   // add = mul ("+"mul | "-" mul)
-  static Node* Add(TokenPtr* rest, TokenPtr tok);
+  static NodePtr Add(TokenPtr* rest, TokenPtr tok);
   // mul = unary ("*" unary | "/" unary)
-  static Node* Mul(TokenPtr* rest, TokenPtr tok);
+  static NodePtr Mul(TokenPtr* rest, TokenPtr tok);
   // unary = ("+" | "-" | "*" | "&") ? unary | primary
-  static Node* Unary(TokenPtr* rest, TokenPtr tok);
+  static NodePtr Unary(TokenPtr* rest, TokenPtr tok);
   // postfix = primary ("[" Expr "]")*
-  static Node* Postfix(TokenPtr* rest, TokenPtr tok);
+  static NodePtr Postfix(TokenPtr* rest, TokenPtr tok);
   // primary = "(" expr ")" | "sizeof" unary | ident | num
-  static Node* Primary(TokenPtr* rest, TokenPtr tok);
+  static NodePtr Primary(TokenPtr* rest, TokenPtr tok);
   // function = ident "(" (assign ("," assign)*)? ")"
-  static Node* Call(TokenPtr* rest, TokenPtr tok);
-  // post-order for AST delete.
-  static void NodeFree(Node* node);
+  static NodePtr Call(TokenPtr* rest, TokenPtr tok);
 
   friend class CodeGenerator;
   friend class Object;
@@ -143,26 +144,26 @@ class Node {
   TypePtr ty_ = nullptr;
 
   // for compound-stmt
-  Node* next_ = nullptr;
+  NodePtr next_ = nullptr;
 
   // for operation +-/*
-  Node* lhs_ = nullptr;  // left-head side
-  Node* rhs_ = nullptr;  // right-head side
+  NodePtr lhs_ = nullptr;  // left-head side
+  NodePtr rhs_ = nullptr;  // right-head side
 
   // for block
-  Node* body_ = nullptr;
+  NodePtr body_ = nullptr;
 
   // for "if" statement
-  Node* cond_ = nullptr;
-  Node* then_ = nullptr;
-  Node* els_ = nullptr;
+  NodePtr cond_ = nullptr;
+  NodePtr then_ = nullptr;
+  NodePtr els_ = nullptr;
 
   // for "for" statement
-  Node* init_ = nullptr;
-  Node* inc_ = nullptr;
+  NodePtr init_ = nullptr;
+  NodePtr inc_ = nullptr;
   // ------ function ------;
   char* call_ = nullptr;
-  Node* args_ = nullptr;
+  NodePtr args_ = nullptr;
   //  ------ for Var ------;
    ObjectPtr var_ = nullptr;
   //  ------ for const ------;
