@@ -42,7 +42,7 @@ static void AsmPrint(const T first_arg, const Types... args) {
   AsmPrint(args...);
 }
 
-void CodeGenerator::GetVarAddr(NodePtr node) {
+void CodeGenerator::GetVarAddr(NodePtr& node) {
   switch (node->kind_) {
     case ND_VAR:
       if (node->var_->IsLocal()) {
@@ -161,13 +161,13 @@ void CodeGenerator::EmitText( ObjectPtr prog) {
   }
 }
 
-void CodeGenerator::StmtGen(NodePtr node) {
+void CodeGenerator::StmtGen(NodePtr& node) {
   switch (node->kind_) {
     case ND_EXPR_STMT:
       ExprGen(node->lhs_);
       return;
     case ND_BLOCK:
-      for (NodePtr n = node->body_; n != nullptr; n = n->next_) {
+      for (NodePtr& n = node->body_; n != nullptr; n = n->next_) {
         StmtGen(n);
       }
       return;
@@ -212,7 +212,7 @@ void CodeGenerator::StmtGen(NodePtr node) {
 }
 
 // post-order for code-gen
-void CodeGenerator::ExprGen(NodePtr node) {
+void CodeGenerator::ExprGen(NodePtr& node) {
   switch (node->kind_) {
     case ND_NUM:
       ASM_GEN("  mov rax, ", node->val_);
@@ -240,7 +240,7 @@ void CodeGenerator::ExprGen(NodePtr node) {
       return;
     case ND_CALL: {
       int nargs = 0;
-      for (NodePtr arg = node->args_; arg != nullptr; arg = arg->next_) {
+      for (NodePtr& arg = node->args_; arg != nullptr; arg = arg->next_) {
         ExprGen(arg);
         Push();
         nargs++;

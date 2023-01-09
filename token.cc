@@ -15,16 +15,27 @@
 #include <cstring>
 #include <memory>
 
-#include "tools.h"
 #include "object.h"
+#include "tools.h"
 
 char* Token::prg_ = nullptr;
 
 using TokenPtr = std::shared_ptr<Token>;
 
 TokenPtr Token::CreateStringToken(char* start, char* end) {
+  int max_len = static_cast<int>(end - start);
+  char* new_str = (char*)calloc(max_len, sizeof(char));
+  int len = 0;
+  for (char* p = start + 1; p < end;) {
+    if (*p == '\\') {
+      new_str[len++] = ReadEscapeedChar(p + 1);
+      p += 2;
+    } else {
+      new_str[len++] = *p++;
+    }
+  }
   TokenPtr res = std::make_shared<Token>(TK_STR, start, end - start + 1);
-  res->str_literal_ = strndup(start + 1, end - start - 1);
+  res->str_literal_ = new_str;
   return res;
 }
 
@@ -117,14 +128,55 @@ TokenPtr Token::SkipToken(const char* op, bool enable_error) {
   return this->next_;
 }
 
-TokenPtr Token::ReadStringLiteral(char* start) {
+int Token::ReadEscapeedChar(char* p) {
+  // Escape sequences are defined using themselves here. E.g.
+  // '\n' is implemented using '\n'. This tautological definition
+  // works because the compiler that compiles our compiler knows
+  // what '\n' actually is. In other words, we "inherit" the ASCII
+  // code of '\n' from the compiler that compiles our compiler,
+  // so we don't have to teach the actual code here.
+  //
+  // This fact has huge implications not only for the correctness
+  // of the compiler but also for the security of the generated code.
+  switch (*p) {
+    case 'a':
+      return '\a';
+    case 'b':
+      return '\b';
+    case 't':
+      return '\t';
+    case 'n':
+      return '\n';
+    case 'v':
+      return '\v';
+    case 'f':
+      return '\f';
+    case 'r':
+      return '\r';
+    // [GNU] \e is a escaped char in gnu extension.
+    case 'e':
+      return 27;
+    default:
+      return *p;
+  }
+}
+
+char* Token::StringLiteralEnd(char* start) {
   char* p = start + 1;
   for (; *p != '"'; p++) {
     if (*p == '\n' || *p == '\0') {
       ErrorAt(Token::prg_, start, "unclosed string literal!");
     }
+    if (*p == '\\') {
+      p++;
+    }
   }
-  TokenPtr tok = CreateStringToken(start, p);
+  return p;
+}
+
+TokenPtr Token::ReadStringLiteral(char* start) {
+  char* end = StringLiteralEnd(start);
+  TokenPtr tok = CreateStringToken(start, end);
   return tok;
 }
 

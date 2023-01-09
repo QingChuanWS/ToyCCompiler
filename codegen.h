@@ -23,11 +23,11 @@ class CodeGenerator {
  private:
   static void EmitData(ObjectPtr prog);
   static void EmitText(ObjectPtr prog);
-  static void GetVarAddr(NodePtr node);
+  static void GetVarAddr(NodePtr& node);
   static void Push(void);
   static void Pop(const char* arg);
-  static void ExprGen(NodePtr node);
-  static void StmtGen(NodePtr node);
+  static void ExprGen(NodePtr& node);
+  static void StmtGen(NodePtr& node);
   static void Load(TypePtr ty);
   static void Store(TypePtr ty);
 
