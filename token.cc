@@ -24,7 +24,7 @@ using TokenPtr = std::shared_ptr<Token>;
 
 TokenPtr Token::CreateStringToken(char* start, char* end) {
   int max_len = static_cast<int>(end - start);
-  char* new_str = (char*)calloc(max_len, sizeof(char));
+  String new_str = String(max_len, '\0');
   int len = 0;
   for (char* p = start + 1; p < end;) {
     if (*p == '\\') {
@@ -35,7 +35,7 @@ TokenPtr Token::CreateStringToken(char* start, char* end) {
     }
   }
   TokenPtr res = std::make_shared<Token>(TK_STR, start, end - start + 1);
-  res->str_literal_ = new_str;
+  res->str_literal_ = std::move(new_str);
   return res;
 }
 
@@ -85,12 +85,6 @@ TokenPtr Token::TokenCreate(TokenPtr tok_list, char* prg) {
   cur->next_ = std::make_shared<Token>(TK_EOF, p, 0);
   ConvertToReserved(tok_list->next_);
   return tok_list->next_;
-}
-
-Token::~Token() {
-  if (this->kind_ == TK_STR) {
-    free(this->str_literal_);
-  }
 }
 
 int Token::ReadPunct(char* p) {

@@ -46,12 +46,11 @@ enum NodeKind {
 
 class Node;
 using NodePtr = std::shared_ptr<Node>;
+using String = std::string;
 
 class Node {
  public:
-  explicit Node() = default;
-  explicit Node(NodeKind kind, TokenPtr tok) : kind_(kind), tok_(tok) {}
-  ~Node();
+  Node(NodeKind kind, TokenPtr tok) : kind_(kind), tok_(tok) {}
   // whether the node is point.
   bool IsPointerNode();
   // inference the node type.
@@ -162,7 +161,7 @@ class Node {
   NodePtr init_ = nullptr;
   NodePtr inc_ = nullptr;
   // ------ function ------;
-  char* call_ = nullptr;
+  String call_ = String();
   NodePtr args_ = nullptr;
   //  ------ for Var ------;
    ObjectPtr var_ = nullptr;

@@ -31,7 +31,7 @@ using TypePtr = std::shared_ptr<Type>;
 
 class Type {
  public:
-  explicit Type(TypeKind kind, int size) : kind_(kind), size_(size) {}
+  Type(TypeKind kind, int size) : kind_(kind), size_(size) {}
   // copy construct.
   explicit Type(const Type& ty) = default;
   // whether the type is integer.

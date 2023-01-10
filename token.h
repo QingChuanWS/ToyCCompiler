@@ -32,16 +32,13 @@ class Object;
 
 using TokenPtr = std::shared_ptr<Token>;
 using ObjectPtr = std::shared_ptr<Object>;
+using String = std::string;
 
 class Token {
  public:
-  explicit Token() = default;
   Token(Tokenkind kind, char* str, int len) : kind_(kind), str_(str), strlen_(len) {}
-  ~Token();
   // create string token.
   TokenPtr CreateStringToken(char* start, char* end);
-  // Creating token list from the source program.
-  static TokenPtr TokenCreate(TokenPtr tok_list, char* prg);
   // Check the current token->str is char op or not.
   // If the token's str is equal with op, return ture.
   TokenPtr SkipToken(const char* op, bool enable_error = true);
@@ -62,6 +59,10 @@ class Token {
   ObjectPtr FindLocalVar();
   // Find a tok name whether is in locals variable list.
   ObjectPtr FindGlobalVar();
+
+ public:
+  // Creating token list from the source program.
+  static TokenPtr TokenCreate(TokenPtr tok_list, char* prg);
 
  private:
   // find a closing double-quote.
@@ -93,7 +94,7 @@ class Token {
   // Token length
   int strlen_ = 0;
   // String literal contents include terminating '\0'
-  char* str_literal_ = nullptr;
+  String str_literal_ = String();
 };
 
 #endif  //  TOKEN_GRUAD

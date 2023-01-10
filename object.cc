@@ -44,10 +44,10 @@ ObjectPtr Object::CreateGlobalVar(char* name, TypePtr ty, ObjectPtr* next) {
   return obj;
 }
 
-ObjectPtr Object::CreateStringVar(char* name) {
-  TypePtr ty = Type::CreateArrayType(ty_char, strlen(name) + 1);
+ObjectPtr Object::CreateStringVar(String& name) {
+  TypePtr ty = Type::CreateArrayType(ty_char, name.size());
   ObjectPtr obj = CreateGlobalVar(CreateUniqueName(), ty, &globals);
-  obj->init_data = name;
+  obj->init_data = std::move(name);
   obj->is_string = true;
   return obj;
 }
@@ -140,8 +140,5 @@ ObjectPtr Object::Find(ObjectPtr root, char* p) {
 }
 
 Object::~Object(){
-  if (IsFunction()) {
-    // Node::NodeListFree(body_);
-  }
   free(this->name_);
 }

@@ -37,7 +37,6 @@ extern ObjectPtr globals;
 
 class Object {
  public:
-  explicit Object() = default;
   // construct a Object object based on kind.
   Object(Objectkind kind, char* name, TypePtr ty) : kind_(kind), ty_(ty), name_(name) {}
   // deconstructor.
@@ -61,7 +60,7 @@ class Object {
   // create a function based on token list.
   static TokenPtr CreateFunction(TokenPtr tok, TypePtr basety, ObjectPtr* next);
   // create a string literal variable
-  static ObjectPtr CreateStringVar(char* p);
+  static ObjectPtr CreateStringVar(String& name);
   // create function parameter list.
   static void CreateParamVar(TypePtr param);
   // parsing token list and generate AST.
@@ -91,7 +90,7 @@ class Object {
   int offset_ = 0;
 
   // Global Variable
-  char* init_data = nullptr;
+  String init_data = String();
   // whether is a stirng
   bool is_string = false;
 

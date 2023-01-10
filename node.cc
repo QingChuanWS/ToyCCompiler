@@ -48,7 +48,7 @@ NodePtr Node::CreateIdentNode(TokenPtr tok) {
 
 NodePtr Node::CreateCallNode(TokenPtr call_name, NodePtr args) {
   NodePtr call_node = std::make_shared<Node>(ND_CALL, call_name);
-  call_node->call_ = call_name->GetIdent();
+  call_node->call_ = String(call_name->str_, call_name->strlen_);
   call_node->args_ = args;
   return call_node;
 }
@@ -519,12 +519,6 @@ NodePtr Node::Call(TokenPtr* rest, TokenPtr tok) {
 
   *rest = tok->SkipToken(")");
   return CreateCallNode(start, args->next_);
-}
-
-Node::~Node(){
-  if (kind_ == ND_CALL) {
-    free(call_);
-  }
 }
 
 void Node::TypeInfer() {
