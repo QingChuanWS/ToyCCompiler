@@ -28,8 +28,7 @@ TokenPtr Token::CreateStringToken(char* start, char* end) {
   int len = 0;
   for (char* p = start + 1; p < end;) {
     if (*p == '\\') {
-      new_str[len++] = ReadEscapeedChar(p + 1);
-      p += 2;
+      new_str[len++] = ReadEscapeedChar(&p, p + 1);
     } else {
       new_str[len++] = *p++;
     }
@@ -122,7 +121,20 @@ TokenPtr Token::SkipToken(const char* op, bool enable_error) {
   return this->next_;
 }
 
-int Token::ReadEscapeedChar(char* p) {
+int Token::ReadEscapeedChar(char** new_pos, char* p) {
+  if ('0' <= *p && *p <= '7') {
+    //  Read an octal number.
+    int c = static_cast<int>(*p++ - '0');
+    if ('0' <= *p && *p <= '7') {
+      c = (c << 3) + (*p++ - '0');
+      if ('0' <= *p && *p <= '7') {
+        c = (c << 3) + (*p++ - '0');
+      }
+    }
+    *new_pos = p;
+    return c;
+  }
+  *new_pos = p + 1;
   // Escape sequences are defined using themselves here. E.g.
   // '\n' is implemented using '\n'. This tautological definition
   // works because the compiler that compiles our compiler knows
