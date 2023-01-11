@@ -11,36 +11,26 @@
 
 #include "codegen.h"
 
+#include <iostream>
+
 #include "node.h"
 #include "object.h"
 #include "tools.h"
 #include "type.h"
+#include "utils.h"
 
 static int Count() {
   static int count = 0;
   return count++;
 }
 
-int CodeGenerator::depth = 0;
+int depth = 0;
+ObjectPtr cur_fn = nullptr;
 
 const char* argreg8[6] = {"dil", "sil", "cl", "dl", "r8b", "r9b"};
 const char* argreg64[6] = {"rdi", "rsi", "rcx", "rdx", "r8", "r9"};
 
- ObjectPtr cur_fn = nullptr;
-
-#define ASM_GEN(...) AsmPrint(__VA_ARGS__)
-
-// recursive over state.
-template <typename T>
-static void AsmPrint(const T arg) {
-  std::cout << arg << std::endl;
-}
-
-template <typename T, typename... Types>
-static void AsmPrint(const T first_arg, const Types... args) {
-  std::cout << first_arg;
-  AsmPrint(args...);
-}
+#define ASM_GEN(...) Println(std::cout, __VA_ARGS__, "\n");
 
 void CodeGenerator::GetVarAddr(NodePtr& node) {
   switch (node->kind_) {
@@ -97,23 +87,23 @@ void CodeGenerator::Store(TypePtr ty) {
   }
 }
 
-void CodeGenerator::CodeGen( ObjectPtr prog) {
+void CodeGenerator::CodeGen(ObjectPtr prog) {
   prog->OffsetCal();
   EmitData(prog);
   EmitText(prog);
 }
 
-void CodeGenerator::EmitData( ObjectPtr prog) {
-  for ( ObjectPtr var = prog; var != nullptr; var = var->next_) {
+void CodeGenerator::EmitData(ObjectPtr prog) {
+  for (ObjectPtr var = prog; var != nullptr; var = var->next_) {
     if (var->IsFunction()) {
       continue;
     }
-    ASM_GEN("  .data");
-    ASM_GEN("  .global ", var->name_);
+    ASM_GEN("  .data", "\n");
+    ASM_GEN("  .global ", var->name_, "\n");
     ASM_GEN(var->name_, ":");
     if (var->is_string) {
       for (int i = 0; i < var->ty_->size_; i++) {
-        ASM_GEN("  .byte ", static_cast<int>(var->init_data[i]));
+        ASM_GEN("  .byte ", static_cast<int>(var->init_data[i]), "\n");
       }
     } else {
       ASM_GEN("  .zero ", var->ty_->size_);
@@ -121,11 +111,11 @@ void CodeGenerator::EmitData( ObjectPtr prog) {
   }
 }
 
-void CodeGenerator::EmitText( ObjectPtr prog) {
+void CodeGenerator::EmitText(ObjectPtr prog) {
   // using intel syntax
   // e.g. op dst, src
   ASM_GEN(".intel_syntax noprefix");
-  for ( ObjectPtr fn = prog; fn != nullptr; fn = fn->next_) {
+  for (ObjectPtr fn = prog; fn != nullptr; fn = fn->next_) {
     if (fn->IsGlobal()) {
       continue;
     }
@@ -141,7 +131,7 @@ void CodeGenerator::EmitText( ObjectPtr prog) {
     ASM_GEN("  sub rsp, ", fn->stack_size_);
 
     int i = 0;
-    for ( ObjectPtr var = fn->params_; var != nullptr; var = var->next_) {
+    for (ObjectPtr var = fn->params_; var != nullptr; var = var->next_) {
       if (var->ty_->size_ == 1) {
         ASM_GEN("  mov [rbp - ", var->offset_, "], ", argreg8[i++]);
       } else {

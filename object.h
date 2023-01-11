@@ -14,8 +14,8 @@
 
 #include <memory>
 
-#include "token.h"
 #include "type.h"
+#include "utils.h"
 
 enum Objectkind {
   OB_LOCAL,
@@ -24,23 +24,12 @@ enum Objectkind {
   OB_END,
 };
 
-class Node;
-class Type;
-class Object;
-
-using TypePtr = std::shared_ptr<Type>;
-using ObjectPtr = std::shared_ptr<Object>;
-using NodePtr = std::shared_ptr<Node>;
-
-extern ObjectPtr locals;
-extern ObjectPtr globals;
-
 class Object {
  public:
   // construct a Object object based on kind.
-  Object(Objectkind kind, char* name, TypePtr ty) : kind_(kind), ty_(ty), name_(name) {}
+  Object(Objectkind kind, String name, TypePtr ty) : kind_(kind), ty_(ty), name_(std::move(name)) {}
   // deconstructor.
-  ~Object();
+  // ~Object();
   // calculate the function local variable offset.
   void OffsetCal();
   // check whether is a local variable
@@ -54,9 +43,9 @@ class Object {
 
  public:
   // create global varibal
-  static ObjectPtr CreateGlobalVar(char* name, TypePtr ty, ObjectPtr* next);
+  static ObjectPtr CreateGlobalVar(String name, TypePtr ty, ObjectPtr* next);
   // create local varibal
-  static ObjectPtr CreateLocalVar(char* name, TypePtr ty, ObjectPtr* next);
+  static ObjectPtr CreateLocalVar(String name, TypePtr ty, ObjectPtr* next);
   // create a function based on token list.
   static TokenPtr CreateFunction(TokenPtr tok, TypePtr basety, ObjectPtr* next);
   // create a string literal variable
@@ -80,9 +69,7 @@ class Object {
   // for object list
   ObjectPtr next_ = nullptr;
   // variable name
-  char* name_ = nullptr;
-  // variable name len
-  int name_len_ = 0;
+  String name_ = String();
   // Type
   TypePtr ty_ = nullptr;
 

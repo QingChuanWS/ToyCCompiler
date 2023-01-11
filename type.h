@@ -14,6 +14,7 @@
 #include <memory>
 
 #include "token.h"
+#include "utils.h"
 
 enum TypeKind {
   TY_INT,
@@ -23,11 +24,6 @@ enum TypeKind {
   TY_ARRAY,
   TY_END,
 };
-
-class Type;
-class Token;
-using TokenPtr = std::shared_ptr<Token>;
-using TypePtr = std::shared_ptr<Type>;
 
 class Type {
  public:
@@ -73,8 +69,5 @@ class Type {
   // for params type list.
   TypePtr next_ = nullptr;
 };
-
-extern std::shared_ptr<Type> ty_int;
-extern std::shared_ptr<Type> ty_char;
 
 #endif  // !TYPE_GRUAD

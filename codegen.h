@@ -30,8 +30,6 @@ class CodeGenerator {
   static void StmtGen(NodePtr& node);
   static void Load(TypePtr ty);
   static void Store(TypePtr ty);
-
-  static int depth;
 };
 
 #endif  // !CODEGEN_GRUAD

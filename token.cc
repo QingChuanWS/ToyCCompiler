@@ -20,8 +20,6 @@
 
 char* Token::prg_ = nullptr;
 
-using TokenPtr = std::shared_ptr<Token>;
-
 TokenPtr Token::CreateStringToken(char* start, char* end) {
   int max_len = static_cast<int>(end - start);
   String new_str = String(max_len, '\0');
@@ -199,11 +197,11 @@ void Token::ErrorTok(const char* fmt, ...) {
   exit(1);
 }
 
-char* Token::GetIdent() {
+String Token::GetIdent() {
   if (kind_ != TK_IDENT) {
     ErrorTok("GetIdent expect an identifier.");
   }
-  return strndup(str_, strlen_);
+  return String(str_, strlen_);
 }
 
 long Token::GetNumber() {

@@ -16,6 +16,7 @@
 #include <cstring>
 #include <memory>
 
+#include "utils.h"
 #include "tools.h"
 
 enum Tokenkind {
@@ -26,13 +27,6 @@ enum Tokenkind {
   TK_STR,      // String literals,
   TK_EOF,      // End-of-file markers,
 };
-
-class Token;
-class Object;
-
-using TokenPtr = std::shared_ptr<Token>;
-using ObjectPtr = std::shared_ptr<Object>;
-using String = std::string;
 
 class Token {
  public:
@@ -50,7 +44,7 @@ class Token {
   // Report an error in token list
   void ErrorTok(const char* fmt, ...);
   // Get tok name string based copy mode.
-  char* GetIdent();
+  String GetIdent();
   // Get tok value when kind == NUM
   long GetNumber();
   // Check whether the given token is a typename.

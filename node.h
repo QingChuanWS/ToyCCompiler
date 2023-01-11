@@ -19,6 +19,7 @@
 #include "token.h"
 #include "tools.h"
 #include "type.h"
+#include "utils.h"
 
 enum NodeKind {
   ND_ADD,        // +
@@ -43,10 +44,6 @@ enum NodeKind {
   ND_VAR,        // variable
   ND_END,
 };
-
-class Node;
-using NodePtr = std::shared_ptr<Node>;
-using String = std::string;
 
 class Node {
  public:

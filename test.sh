@@ -28,7 +28,7 @@ memory_check(){
 assert() {
   expected="$1"
   input="$2"
-  memory_check 0
+  memory_check 1
   ./toyc "$input" > tmp.s || exit
   gcc -static -o tmp tmp.s tmp2.o
   ./tmp

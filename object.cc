@@ -22,9 +22,8 @@
 ObjectPtr locals;
 ObjectPtr globals;
 
-ObjectPtr Object::CreateLocalVar(char* name, TypePtr ty, ObjectPtr* next) {
+ObjectPtr Object::CreateLocalVar(String name, TypePtr ty, ObjectPtr* next) {
   ObjectPtr obj = std::make_shared<Object>(OB_LOCAL, name, ty);
-  obj->name_len_ = strlen(name);
   if (ty->HasName() && ty->name_->FindLocalVar() != nullptr) {
     ty->name_->ErrorTok("redefined variable.");
   }
@@ -33,9 +32,8 @@ ObjectPtr Object::CreateLocalVar(char* name, TypePtr ty, ObjectPtr* next) {
   return obj;
 }
 
-ObjectPtr Object::CreateGlobalVar(char* name, TypePtr ty, ObjectPtr* next) {
-  ObjectPtr obj =  std::make_shared<Object>(OB_GLOBAL, name, ty);
-  obj->name_len_ = strlen(name);
+ObjectPtr Object::CreateGlobalVar(String name, TypePtr ty, ObjectPtr* next) {
+  ObjectPtr obj =  std::make_shared<Object>(OB_GLOBAL, name, ty);;
   if (ty->HasName() && ty->name_->FindGlobalVar() != nullptr) {
     ty->name_->ErrorTok("redefined variable.");
   }
@@ -132,13 +130,9 @@ void Object::OffsetCal() {
 
 ObjectPtr Object::Find(ObjectPtr root, char* p) {
   for (ObjectPtr v = root; v != nullptr; v = v->next_) {
-    if (memcmp(v->name_, p, v->name_len_) == 0) {
+    if (memcmp(v->name_.c_str(), p, v->name_.size()) == 0) {
       return v;
     }
   }
   return nullptr;
-}
-
-Object::~Object(){
-  free(this->name_);
 }

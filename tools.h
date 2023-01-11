@@ -17,9 +17,26 @@
 #include <cstdio>
 #include <cstring>
 #include <iostream>
+#include <sstream>
+
+using String = std::string;
 
 #define DEBUG(expr) assert(expr)
 #define DLOG(expr) Log(expr)
+
+// recursive over state.
+template <typename Printer, typename T>
+static Printer& Println(Printer& print, const T arg) {
+  print << arg;
+  return print;
+}
+
+template <typename Printer, typename T, typename... Types>
+static Printer& Println(Printer& print, const T first_arg, const Types... args) {
+  print << first_arg;
+  Println(print, args...);
+  return print;
+}
 
 // Print error message.
 void Error(const char* fmt, ...);
@@ -36,8 +53,6 @@ bool IsAlnum(char c);
 // round up `n` to the nearest multiple of `align`.
 int AlignTo(int n, int align);
 // create a unique name.
-char* CreateUniqueName();
-// format function.
-char* StringFormat(const char *fmt, ...);
+String CreateUniqueName();
 
 #endif  // !TOOLS_GRUAD

@@ -16,6 +16,10 @@
 #include <cstdio>
 #include <cstdlib>
 
+std::ostringstream sprint;
+
+#define StringFormat(...) Println(sprint, __VA_ARGS__)
+
 void Error(const char* fmt, ...) {
   va_list ap;
   va_start(ap, fmt);
@@ -54,21 +58,7 @@ bool IsAlnum(char c) { return IsAlpha(c) || ('0' <= c && c <= '9'); }
 
 int AlignTo(int n, int align) { return (n + align - 1) / align * align; }
 
-char* CreateUniqueName() {
+String CreateUniqueName() {
   static int id = 0;
-  char* buf = StringFormat(".L..%d", id++);
-  return buf;
-}
-
-char* StringFormat(const char* fmt, ...){
-  char* buf;
-  size_t  buf_len;
-  FILE* out = open_memstream(&buf, &buf_len);
-
-  va_list ap;
-  va_start(ap, fmt);
-  vfprintf(out, fmt, ap);
-  va_end(ap);
-  fclose(out);
-  return buf;
+  return StringFormat(".L..", id++).str();
 }
