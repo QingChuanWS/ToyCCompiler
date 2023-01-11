@@ -27,17 +27,17 @@ enum Objectkind {
 class Object {
  public:
   // construct a Object object based on kind.
-  Object(Objectkind kind, String name, TypePtr ty) : kind_(kind), ty_(ty), name_(std::move(name)) {}
+  Object(Objectkind kind, String name, TypePtr ty) : kind(kind), ty(ty), obj_name(std::move(name)) {}
   // deconstructor.
   // ~Object();
   // calculate the function local variable offset.
   void OffsetCal();
   // check whether is a local variable
-  bool IsLocal() { return kind_ == OB_LOCAL; }
+  bool IsLocal() { return kind == OB_LOCAL; }
   // check whether is a global variable
-  bool IsGlobal() { return kind_ == OB_GLOBAL; }
+  bool IsGlobal() { return kind == OB_GLOBAL; }
   // check whether is a global variable or function
-  bool IsFunction() { return kind_ == OB_FUNCTION; }
+  bool IsFunction() { return kind == OB_FUNCTION; }
   // find a token name in object list.
   static ObjectPtr Find(ObjectPtr root, char* p);
 
@@ -65,16 +65,16 @@ class Object {
 
  private:
   // label the object type
-  Objectkind kind_ = OB_END;
+  Objectkind kind = OB_END;
   // for object list
-  ObjectPtr next_ = nullptr;
+  ObjectPtr next = nullptr;
   // variable name
-  String name_ = String();
+  String obj_name = String();
   // Type
-  TypePtr ty_ = nullptr;
+  TypePtr ty = nullptr;
 
   // local variable offset
-  int offset_ = 0;
+  int offset = 0;
 
   // Global Variable
   String init_data = String();
@@ -82,13 +82,13 @@ class Object {
   bool is_string = false;
 
   // function parameter
-  ObjectPtr params_ = nullptr;
+  ObjectPtr params = nullptr;
   // function body
-  NodePtr body_ = nullptr;
+  NodePtr body = nullptr;
   // function variable list
-  ObjectPtr loc_list_ = nullptr;
+  ObjectPtr loc_list = nullptr;
   // function variable's stack size
-  int stack_size_ = 0;
+  int stack_size = 0;
 };
 
 #endif  // OBJECT_GRUAD

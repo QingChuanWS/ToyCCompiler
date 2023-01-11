@@ -18,7 +18,7 @@
 #include "object.h"
 #include "tools.h"
 
-char* Token::prg_ = nullptr;
+char* Token::prg = nullptr;
 
 TokenPtr Token::CreateStringToken(char* start, char* end) {
   int max_len = static_cast<int>(end - start);
@@ -32,14 +32,14 @@ TokenPtr Token::CreateStringToken(char* start, char* end) {
     }
   }
   TokenPtr res = std::make_shared<Token>(TK_STR, start, end - start + 1);
-  res->str_literal_ = std::move(new_str);
+  res->str_literal = std::move(new_str);
   return res;
 }
 
 TokenPtr Token::TokenCreate(TokenPtr tok_list, char* prg) {
-  prg_ = prg;
+  prg = prg;
   TokenPtr cur = tok_list;
-  char* p = prg_;
+  char* p = prg;
   while (*p != '\0') {
     if (std::isspace(*p)) {
       p++;
@@ -47,16 +47,16 @@ TokenPtr Token::TokenCreate(TokenPtr tok_list, char* prg) {
     }
 
     if (std::isdigit(*p)) {
-      cur = cur->next_ = std::make_shared<Token>(TK_NUM, p, 0);
+      cur = cur->next = std::make_shared<Token>(TK_NUM, p, 0);
       char* q = p;
-      cur->val_ = strtol(p, &p, 10);
-      cur->strlen_ = static_cast<int>(p - q);
+      cur->val = strtol(p, &p, 10);
+      cur->strlen = static_cast<int>(p - q);
       continue;
     }
 
     if (*p == '"') {
-      cur = cur->next_ = cur->ReadStringLiteral(p);
-      p += cur->strlen_;
+      cur = cur->next = cur->ReadStringLiteral(p);
+      p += cur->strlen;
       continue;
     }
 
@@ -66,22 +66,22 @@ TokenPtr Token::TokenCreate(TokenPtr tok_list, char* prg) {
       while (IsAlnum(*p)) {
         p++;
       }
-      cur = cur->next_ = std::make_shared<Token>(TK_IDENT, q, p - q);
+      cur = cur->next = std::make_shared<Token>(TK_IDENT, q, p - q);
       continue;
     }
 
     int punct_len = cur->ReadPunct(p);
     if (punct_len) {
-      cur = cur->next_ = std::make_shared<Token>(TK_PUNCT, p, punct_len);
+      cur = cur->next = std::make_shared<Token>(TK_PUNCT, p, punct_len);
       p += punct_len;
       continue;
     }
     ErrorAt(prg, p, "expect a number.");
   }
 
-  cur->next_ = std::make_shared<Token>(TK_EOF, p, 0);
-  ConvertToReserved(tok_list->next_);
-  return tok_list->next_;
+  cur->next = std::make_shared<Token>(TK_EOF, p, 0);
+  ConvertToReserved(tok_list->next);
+  return tok_list->next;
 }
 
 int Token::ReadPunct(char* p) {
@@ -97,26 +97,26 @@ int Token::ReadPunct(char* p) {
 
 void Token::ConvertToReserved(TokenPtr tok) {
   static const char* kw[] = {"return", "if", "else", "for", "while", "int", "sizeof", "char"};
-  for (TokenPtr t = tok; t != nullptr; t = t->next_) {
+  for (TokenPtr t = tok; t != nullptr; t = t->next) {
     for (int i = 0; i < sizeof(kw) / sizeof(*kw); i++) {
-      if (StrEqual(t->str_, kw[i], t->strlen_)) {
-        t->kind_ = TK_KEYWORD;
+      if (StrEqual(t->str, kw[i], t->strlen)) {
+        t->kind = TK_KEYWORD;
       }
     }
   }
 }
 
-bool Token::Equal(const char* op) { return StrEqual(this->str_, op, this->strlen_); }
+bool Token::Equal(const char* op) { return StrEqual(this->str, op, this->strlen); }
 
 TokenPtr Token::SkipToken(const char* op, bool enable_error) {
   if (!this->Equal(op)) {
     if (enable_error) {
-      ErrorAt(prg_, this->str_, "Expect \'%s\'", op);
+      ErrorAt(prg, this->str, "Expect \'%s\'", op);
     } else {
       return nullptr;
     }
   }
-  return this->next_;
+  return this->next;
 }
 
 int Token::FromHex(char c){
@@ -148,7 +148,7 @@ int Token::ReadEscapeedChar(char** new_pos, char* p) {
     // return a hexadecimal number.
     p++;
     if(!std::isxdigit(*p)){
-      ErrorAt(prg_, p, "invaild hex escape sequence.");
+      ErrorAt(prg, p, "invaild hex escape sequence.");
     }
     int c = 0;
     for(; isxdigit(*p); p++){
@@ -194,7 +194,7 @@ char* Token::StringLiteralEnd(char* start) {
   char* p = start + 1;
   for (; *p != '"'; p++) {
     if (*p == '\n' || *p == '\0') {
-      ErrorAt(Token::prg_, start, "unclosed string literal!");
+      ErrorAt(Token::prg, start, "unclosed string literal!");
     }
     if (*p == '\\') {
       p++;
@@ -213,8 +213,8 @@ void Token::ErrorTok(const char* fmt, ...) {
   va_list ap;
   va_start(ap, fmt);
 
-  int pos = this->str_ - prg_;
-  fprintf(stderr, "%s\n", prg_);
+  int pos = this->str - prg;
+  fprintf(stderr, "%s\n", prg);
   fprintf(stderr, "%*s", pos, "");  // print pos spaces.
   fprintf(stderr, "^ ");
   vfprintf(stderr, fmt, ap);
@@ -223,21 +223,21 @@ void Token::ErrorTok(const char* fmt, ...) {
 }
 
 String Token::GetIdent() {
-  if (kind_ != TK_IDENT) {
+  if (kind != TK_IDENT) {
     ErrorTok("GetIdent expect an identifier.");
   }
-  return String(str_, strlen_);
+  return String(str, strlen);
 }
 
 long Token::GetNumber() {
-  if (kind_ != TK_NUM) {
+  if (kind != TK_NUM) {
     ErrorTok("GetNumber expect an number.");
   }
-  return val_;
+  return val;
 }
 
-ObjectPtr Token::FindLocalVar() { return Object::Find(locals, this->str_); }
+ObjectPtr Token::FindLocalVar() { return Object::Find(locals, this->str); }
 
-ObjectPtr Token::FindGlobalVar() { return Object::Find(globals, this->str_); }
+ObjectPtr Token::FindGlobalVar() { return Object::Find(globals, this->str); }
 
 bool Token::IsTypename() { return Equal("int") || Equal("char"); }

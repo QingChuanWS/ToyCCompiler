@@ -27,7 +27,7 @@ enum TypeKind {
 
 class Type {
  public:
-  Type(TypeKind kind, int size) : kind_(kind), size_(size) {}
+  Type(TypeKind kind, int size) : kind(kind), size(size) {}
   // copy construct.
   explicit Type(const Type& ty) = default;
   // whether the type is integer.
@@ -52,22 +52,22 @@ class Type {
   friend class Object;
   friend class CodeGenerator;
   // type kind
-  TypeKind kind_ = TY_END;
+  TypeKind kind = TY_END;
   // Declaration.
-  TokenPtr name_ = nullptr;
+  TokenPtr name = nullptr;
   // sizeof() value.
-  int size_ = 0;
+  int size = 0;
   // Pointer-to or array type. Using a same member to
   // represent pointer/array duality in C.
-  TypePtr base_ = nullptr;
+  TypePtr base = nullptr;
   // Array
-  int array_len_ = 0;
+  int array_len = 0;
   // Function type.
-  TypePtr return_ty_ = nullptr;
+  TypePtr return_ty = nullptr;
   // function params type list.
-  TypePtr params_ = nullptr;
+  TypePtr params = nullptr;
   // for params type list.
-  TypePtr next_ = nullptr;
+  TypePtr next = nullptr;
 };
 
 #endif  // !TYPE_GRUAD

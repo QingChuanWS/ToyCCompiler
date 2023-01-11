@@ -24,20 +24,20 @@ ObjectPtr globals;
 
 ObjectPtr Object::CreateLocalVar(String name, TypePtr ty, ObjectPtr* next) {
   ObjectPtr obj = std::make_shared<Object>(OB_LOCAL, name, ty);
-  if (ty->HasName() && ty->name_->FindLocalVar() != nullptr) {
-    ty->name_->ErrorTok("redefined variable.");
+  if (ty->HasName() && ty->name->FindLocalVar() != nullptr) {
+    ty->name->ErrorTok("redefined variable.");
   }
-  obj->next_ = *next;
+  obj->next = *next;
   *next = obj;
   return obj;
 }
 
 ObjectPtr Object::CreateGlobalVar(String name, TypePtr ty, ObjectPtr* next) {
   ObjectPtr obj =  std::make_shared<Object>(OB_GLOBAL, name, ty);;
-  if (ty->HasName() && ty->name_->FindGlobalVar() != nullptr) {
-    ty->name_->ErrorTok("redefined variable.");
+  if (ty->HasName() && ty->name->FindGlobalVar() != nullptr) {
+    ty->name->ErrorTok("redefined variable.");
   }
-  obj->next_ = *next;
+  obj->next = *next;
   *next = obj;
   return obj;
 }
@@ -53,23 +53,23 @@ ObjectPtr Object::CreateStringVar(String& name) {
 TokenPtr Object::CreateFunction(TokenPtr tok, TypePtr basety, ObjectPtr* next) {
   locals = nullptr;
   TypePtr ty = Node::Declarator(&tok, tok, basety);
-  CreateParamVar(ty->params_);
+  CreateParamVar(ty->params);
 
-  ObjectPtr fn =  std::make_shared<Object>(OB_FUNCTION, ty->name_->GetIdent(), ty);
-  fn->params_ = locals;
-  fn->body_ = Node::Program(&tok, tok);
-  fn->loc_list_ = locals;
-  fn->ty_ = ty;
+  ObjectPtr fn =  std::make_shared<Object>(OB_FUNCTION, ty->name->GetIdent(), ty);
+  fn->params = locals;
+  fn->body = Node::Program(&tok, tok);
+  fn->loc_list = locals;
+  fn->ty = ty;
 
-  fn->next_ = *next;
+  fn->next = *next;
   *next = fn;
   return tok;
 }
 
 void Object::CreateParamVar(TypePtr param) {
   if (param != nullptr) {
-    CreateParamVar(param->next_);
-    ObjectPtr v = CreateLocalVar(param->name_->GetIdent(), param, &locals);
+    CreateParamVar(param->next);
+    ObjectPtr v = CreateLocalVar(param->name->GetIdent(), param, &locals);
   }
 }
 
@@ -78,12 +78,12 @@ bool Object::IsFunction(TokenPtr tok) {
     return false;
   }
   while (tok->Equal("*")) {
-    tok = tok->next_;
+    tok = tok->next;
   }
-  if (tok->kind_ != TK_IDENT) {
+  if (tok->kind != TK_IDENT) {
     tok->ErrorTok("expected a variable name.");
   }
-  tok = tok->next_;
+  tok = tok->next;
   if (tok->Equal("(")) {
     return true;
   }
@@ -112,25 +112,25 @@ TokenPtr Object::ParseGlobalVar(TokenPtr tok, TypePtr basety) {
     }
     first = false;
     TypePtr ty = Node::Declarator(&tok, tok, basety);
-    ObjectPtr gv = CreateGlobalVar(ty->name_->GetIdent(), ty, &globals);
+    ObjectPtr gv = CreateGlobalVar(ty->name->GetIdent(), ty, &globals);
   }
   return tok->SkipToken(";");
 }
 
 void Object::OffsetCal() {
-  for (Object* fn = this; fn != nullptr; fn = fn->next_.get()) {
+  for (Object* fn = this; fn != nullptr; fn = fn->next.get()) {
     int offset = 0;
-    for (ObjectPtr cur = fn->loc_list_; cur != nullptr; cur = cur->next_) {
-      offset += cur->ty_->size_;
-      cur->offset_ = offset;
+    for (ObjectPtr cur = fn->loc_list; cur != nullptr; cur = cur->next) {
+      offset += cur->ty->size;
+      cur->offset = offset;
     }
-    fn->stack_size_ = AlignTo(offset, 16);
+    fn->stack_size = AlignTo(offset, 16);
   }
 }
 
 ObjectPtr Object::Find(ObjectPtr root, char* p) {
-  for (ObjectPtr v = root; v != nullptr; v = v->next_) {
-    if (memcmp(v->name_.c_str(), p, v->name_.size()) == 0) {
+  for (ObjectPtr v = root; v != nullptr; v = v->next) {
+    if (memcmp(v->obj_name.c_str(), p, v->obj_name.size()) == 0) {
       return v;
     }
   }

@@ -37,9 +37,9 @@ void CodeGenerator::GetVarAddr(NodePtr& node) {
   switch (node->kind) {
     case ND_VAR:
       if (node->var->IsLocal()) {
-        ASM_GEN("  lea rax, [rbp - ", node->var->offset_, "]");
+        ASM_GEN("  lea rax, [rbp - ", node->var->offset, "]");
       } else {
-        ASM_GEN("  lea rax, [rip + ", node->var->name_, "]");
+        ASM_GEN("  lea rax, [rip + ", node->var->obj_name, "]");
       }
       return;
     case ND_DEREF:
@@ -63,7 +63,7 @@ void CodeGenerator::Pop(const char* arg) {
 }
 
 void CodeGenerator::Load(TypePtr ty) {
-  if (ty->kind_ == TY_ARRAY) {
+  if (ty->kind == TY_ARRAY) {
     // If it is a array, do not attempt to load a value to
     // the register because we can't load entire array to
     // register. As a result, the evaluation's result isn't
@@ -72,7 +72,7 @@ void CodeGenerator::Load(TypePtr ty) {
     // element of the array in C" occur.
     return;
   }
-  if (ty->size_ == 1) {
+  if (ty->size == 1) {
     ASM_GEN("  mov al, [rax]");
   } else {
     ASM_GEN("  mov rax, [rax]");
@@ -81,7 +81,7 @@ void CodeGenerator::Load(TypePtr ty) {
 
 void CodeGenerator::Store(TypePtr ty) {
   Pop("rdi");
-  if (ty->size_ == 1) {
+  if (ty->size == 1) {
     ASM_GEN("  mov [rdi], al");
   } else {
     ASM_GEN("  mov [rdi], rax");
@@ -95,19 +95,19 @@ void CodeGenerator::CodeGen(ObjectPtr prog) {
 }
 
 void CodeGenerator::EmitData(ObjectPtr prog) {
-  for (ObjectPtr var = prog; var != nullptr; var = var->next_) {
+  for (ObjectPtr var = prog; var != nullptr; var = var->next) {
     if (var->IsFunction()) {
       continue;
     }
     ASM_GEN("  .data", "\n");
-    ASM_GEN("  .global ", var->name_, "\n");
-    ASM_GEN(var->name_, ":");
+    ASM_GEN("  .global ", var->obj_name, "\n");
+    ASM_GEN(var->obj_name, ":");
     if (var->is_string) {
-      for (int i = 0; i < var->ty_->size_; i++) {
+      for (int i = 0; i < var->ty->size; i++) {
         ASM_GEN("  .byte ", static_cast<int>(var->init_data[i]), "\n");
       }
     } else {
-      ASM_GEN("  .zero ", var->ty_->size_);
+      ASM_GEN("  .zero ", var->ty->size);
     }
   }
 }
@@ -116,36 +116,36 @@ void CodeGenerator::EmitText(ObjectPtr prog) {
   // using intel syntax
   // e.g. op dst, src
   ASM_GEN(".intel_syntax noprefix");
-  for (ObjectPtr fn = prog; fn != nullptr; fn = fn->next_) {
+  for (ObjectPtr fn = prog; fn != nullptr; fn = fn->next) {
     if (fn->IsGlobal()) {
       continue;
     }
 
-    ASM_GEN("  .global ", fn->name_);
+    ASM_GEN("  .global ", fn->obj_name);
     ASM_GEN(" .text");
-    ASM_GEN(fn->name_, ":");
+    ASM_GEN(fn->obj_name, ":");
     cur_fn = fn;
 
     // prologue; equally instruction "enter 0xD0,0".
     ASM_GEN("  push rbp");
     ASM_GEN("  mov rbp, rsp");
-    ASM_GEN("  sub rsp, ", fn->stack_size_);
+    ASM_GEN("  sub rsp, ", fn->stack_size);
 
     int i = 0;
-    for (ObjectPtr var = fn->params_; var != nullptr; var = var->next_) {
-      if (var->ty_->size_ == 1) {
-        ASM_GEN("  mov [rbp - ", var->offset_, "], ", argreg8[i++]);
+    for (ObjectPtr var = fn->params; var != nullptr; var = var->next) {
+      if (var->ty->size == 1) {
+        ASM_GEN("  mov [rbp - ", var->offset, "], ", argreg8[i++]);
       } else {
-        ASM_GEN("  mov [rbp - ", var->offset_, "], ", argreg64[i++]);
+        ASM_GEN("  mov [rbp - ", var->offset, "], ", argreg64[i++]);
       }
     }
 
     // Emit code
-    StmtGen(fn->body_);
+    StmtGen(fn->body);
     DEBUG(depth == 0);
 
     // Epilogue; equally instruction leave.
-    ASM_GEN(".L.return.", fn->name_, ":");
+    ASM_GEN(".L.return.", fn->obj_name, ":");
     ASM_GEN("  mov rsp, rbp");
     ASM_GEN("  pop rbp");
     ASM_GEN("  ret");
@@ -164,7 +164,7 @@ void CodeGenerator::StmtGen(NodePtr& node) {
       return;
     case ND_RETURN:
       ExprGen(node->lhs);
-      ASM_GEN("  jmp .L.return.", cur_fn->name_);
+      ASM_GEN("  jmp .L.return.", cur_fn->obj_name);
       return;
     case ND_IF: {
       int seq = Count();

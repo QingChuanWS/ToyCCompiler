@@ -30,7 +30,7 @@ enum Tokenkind {
 
 class Token {
  public:
-  Token(Tokenkind kind, char* str, int len) : kind_(kind), str_(str), strlen_(len) {}
+  Token(Tokenkind kind, char* str, int len) : kind(kind), str(str), strlen(len) {}
   // create string token.
   TokenPtr CreateStringToken(char* start, char* end);
   // Check the current token->str is char op or not.
@@ -38,7 +38,7 @@ class Token {
   TokenPtr SkipToken(const char* op, bool enable_error = true);
   // Check whether the current token's kind is EOF,
   // otherwise return false.
-  bool IsEof() { return this->kind_ == TK_EOF; }
+  bool IsEof() { return this->kind == TK_EOF; }
   // Check whether Token string equal special string
   bool Equal(const char* op);
   // Report an error in token list
@@ -78,19 +78,19 @@ class Token {
   friend class Object;
 
   // source code
-  static char* prg_;
+  static char* prg;
   // Token Kind
-  Tokenkind kind_ = TK_EOF;
+  Tokenkind kind = TK_EOF;
   // Next Token
-  TokenPtr next_ = nullptr;
+  TokenPtr next = nullptr;
   // If kind_ is TK_NUM, its values,
-  long val_ = 0;
+  long val = 0;
   // Token Location
-  char* str_ = nullptr;
+  char* str = nullptr;
   // Token length
-  int strlen_ = 0;
+  int strlen = 0;
   // String literal contents include terminating '\0'
-  String str_literal_ = String();
+  String str_literal = String();
 };
 
 #endif  //  TOKEN_GRUAD
