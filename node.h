@@ -36,6 +36,7 @@ enum NodeKind {
   ND_ADDR,       // unary &
   ND_DEREF,      // *
   ND_EXPR_STMT,  // expression statement
+  ND_STMT_EXPR,  // statement expression
   ND_RETURN,     // return
   ND_BLOCK,      // { ... }
   ND_CALL,       // Function call
@@ -47,19 +48,19 @@ enum NodeKind {
 
 class Node {
  public:
-  Node(NodeKind kind, TokenPtr tok) : kind_(kind), tok_(tok) {}
+  Node(NodeKind kind, TokenPtr tok) : kind(kind), name(tok) {}
   // whether the node is point.
   bool IsPointerNode();
   // inference the node type.
   void TypeInfer();
-    // Report an error based on tok.
+  // Report an error based on tok.
   void ErrorTok(const char* fmt, ...);
 
  public:
   // create const node.
   static NodePtr CreateConstNode(long val, TokenPtr node_name);
   // create var node.
-  static NodePtr CreateVarNode( ObjectPtr var, TokenPtr node_name);
+  static NodePtr CreateVarNode(ObjectPtr var, TokenPtr node_name);
   // create identify node.
   static NodePtr CreateIdentNode(TokenPtr node_name);
   // create call node
@@ -67,7 +68,8 @@ class Node {
   // create unary expration node.
   static NodePtr CreateUnaryNode(NodeKind kind, TokenPtr node_name, NodePtr op);
   // create binary expration node.
-  static NodePtr CreateBinaryNode(NodeKind kind, TokenPtr node_name, NodePtr op_left, NodePtr op_right);
+  static NodePtr CreateBinaryNode(NodeKind kind, TokenPtr node_name, NodePtr op_left,
+                                  NodePtr op_right);
   // create add expration(contain point arithmatic calculation) node.
   static NodePtr CreateAddNode(TokenPtr node_name, NodePtr op_left, NodePtr op_right);
   // create subtract expration(contain point arithmatic calculation) node.
@@ -75,9 +77,10 @@ class Node {
   // create IF expration node.
   static NodePtr CreateIFNode(TokenPtr node_name, NodePtr cond, NodePtr then, NodePtr els);
   // create for expration node.
-  static NodePtr CreateForNode(TokenPtr node_name, NodePtr init, NodePtr cond, NodePtr inc, NodePtr then);
-  // create block expration node.
-  static NodePtr CreateBlockNode(TokenPtr node_name, NodePtr body);
+  static NodePtr CreateForNode(TokenPtr node_name, NodePtr init, NodePtr cond, NodePtr inc,
+                               NodePtr then);
+  // create block expression node.
+  static NodePtr CreateBlockNode(NodeKind kind, TokenPtr node_name, NodePtr body);
   // parsing token list and generate AST.
   // program = stmt*
   static NodePtr Program(TokenPtr* rest, TokenPtr tok);
@@ -124,7 +127,8 @@ class Node {
   static NodePtr Unary(TokenPtr* rest, TokenPtr tok);
   // postfix = primary ("[" Expr "]")*
   static NodePtr Postfix(TokenPtr* rest, TokenPtr tok);
-  // primary = "(" expr ")" | "sizeof" unary | ident | num
+  // primary = "(" "{" stmt+ "}" ")"
+  //          |"(" expr ")" | "sizeof" unary | ident func-args? | str | num
   static NodePtr Primary(TokenPtr* rest, TokenPtr tok);
   // function = ident "(" (assign ("," assign)*)? ")"
   static NodePtr Call(TokenPtr* rest, TokenPtr tok);
@@ -133,37 +137,40 @@ class Node {
   friend class Object;
 
   // Node kind
-  NodeKind kind_ = ND_END;
+  NodeKind kind = ND_END;
   // Representative node, node name
-  TokenPtr tok_ = nullptr;
+  TokenPtr name = nullptr;
   // node type
-  TypePtr ty_ = nullptr;
+  TypePtr ty = nullptr;
 
   // for compound-stmt
-  NodePtr next_ = nullptr;
+  NodePtr next = nullptr;
 
   // for operation +-/*
-  NodePtr lhs_ = nullptr;  // left-head side
-  NodePtr rhs_ = nullptr;  // right-head side
+  NodePtr lhs = nullptr;  // left-head side
+  NodePtr rhs = nullptr;  // right-head side
 
-  // for block
-  NodePtr body_ = nullptr;
+  // for block or statment expression.
+  NodePtr body = nullptr;
 
   // for "if" statement
-  NodePtr cond_ = nullptr;
-  NodePtr then_ = nullptr;
-  NodePtr els_ = nullptr;
+  NodePtr cond = nullptr;
+  NodePtr then = nullptr;
+  NodePtr els = nullptr;
 
   // for "for" statement
-  NodePtr init_ = nullptr;
-  NodePtr inc_ = nullptr;
+  NodePtr init = nullptr;
+  NodePtr inc = nullptr;
+  
   // ------ function ------;
-  String call_ = String();
-  NodePtr args_ = nullptr;
+  String call = String();
+  NodePtr args = nullptr;
+
   //  ------ for Var ------;
-   ObjectPtr var_ = nullptr;
+  ObjectPtr var = nullptr;
+  
   //  ------ for const ------;
-  long val_ = 0;
+  long val = 0;
 };
 
 #endif  // !NODE_GRUAD

@@ -11,6 +11,7 @@
 
 #include "codegen.h"
 
+#include <cstddef>
 #include <iostream>
 
 #include "node.h"
@@ -33,22 +34,22 @@ const char* argreg64[6] = {"rdi", "rsi", "rcx", "rdx", "r8", "r9"};
 #define ASM_GEN(...) Println(std::cout, __VA_ARGS__, "\n");
 
 void CodeGenerator::GetVarAddr(NodePtr& node) {
-  switch (node->kind_) {
+  switch (node->kind) {
     case ND_VAR:
-      if (node->var_->IsLocal()) {
-        ASM_GEN("  lea rax, [rbp - ", node->var_->offset_, "]");
+      if (node->var->IsLocal()) {
+        ASM_GEN("  lea rax, [rbp - ", node->var->offset_, "]");
       } else {
-        ASM_GEN("  lea rax, [rip + ", node->var_->name_, "]");
+        ASM_GEN("  lea rax, [rip + ", node->var->name_, "]");
       }
       return;
     case ND_DEREF:
-      ExprGen(node->lhs_);
+      ExprGen(node->lhs);
       return;
     default:
       break;
   }
 
-  node->tok_->ErrorTok("not an lvalue");
+  node->name->ErrorTok("not an lvalue");
 }
 
 void CodeGenerator::Push() {
@@ -152,108 +153,112 @@ void CodeGenerator::EmitText(ObjectPtr prog) {
 }
 
 void CodeGenerator::StmtGen(NodePtr& node) {
-  switch (node->kind_) {
+  switch (node->kind) {
     case ND_EXPR_STMT:
-      ExprGen(node->lhs_);
+      ExprGen(node->lhs);
       return;
     case ND_BLOCK:
-      for (NodePtr& n = node->body_; n != nullptr; n = n->next_) {
+      for (NodePtr& n = node->body; n != nullptr; n = n->next) {
         StmtGen(n);
       }
       return;
     case ND_RETURN:
-      ExprGen(node->lhs_);
+      ExprGen(node->lhs);
       ASM_GEN("  jmp .L.return.", cur_fn->name_);
       return;
     case ND_IF: {
       int seq = Count();
-      ExprGen(node->cond_);
+      ExprGen(node->cond);
       ASM_GEN("  cmp rax, 0");
       ASM_GEN("  je .L.else.", seq);
-      StmtGen(node->then_);
+      StmtGen(node->then);
       ASM_GEN("  jmp .L.end.", seq);
       ASM_GEN(".L.else.", seq, ":");
-      if (node->els_ != nullptr) {
-        StmtGen(node->els_);
+      if (node->els != nullptr) {
+        StmtGen(node->els);
       }
       ASM_GEN(".L.end.", seq, ":");
       return;
     }
     case ND_FOR: {
       int seq = Count();
-      if (node->init_ != nullptr) StmtGen(node->init_);
+      if (node->init != nullptr) StmtGen(node->init);
       ASM_GEN(".L.begin.", seq, ":");
-      if (node->cond_ != nullptr) {
-        ExprGen(node->cond_);
+      if (node->cond != nullptr) {
+        ExprGen(node->cond);
         ASM_GEN("  cmp rax, 0");
         ASM_GEN("  je .L.end.", seq);
       }
-      StmtGen(node->then_);
-      if (node->inc_ != nullptr) {
-        ExprGen(node->inc_);
+      StmtGen(node->then);
+      if (node->inc != nullptr) {
+        ExprGen(node->inc);
       }
       ASM_GEN("  jmp .L.begin.", seq);
       ASM_GEN(".L.end.", seq, ":");
       return;
     }
     default:
-      node->tok_->ErrorTok("invalid statement");
+      node->name->ErrorTok("invalid statement");
   }
 }
 
 // post-order for code-gen
 void CodeGenerator::ExprGen(NodePtr& node) {
-  switch (node->kind_) {
+  switch (node->kind) {
     case ND_NUM:
-      ASM_GEN("  mov rax, ", node->val_);
+      ASM_GEN("  mov rax, ", node->val);
       return;
     case ND_NEG:
-      ExprGen(node->lhs_);
+      ExprGen(node->lhs);
       ASM_GEN("  neg rax");
       return;
     case ND_VAR:
       GetVarAddr(node);
-      Load(node->ty_);
+      Load(node->ty);
       return;
     case ND_DEREF:
-      ExprGen(node->lhs_);
-      Load(node->ty_);
+      ExprGen(node->lhs);
+      Load(node->ty);
       return;
     case ND_ADDR:
-      GetVarAddr(node->lhs_);
+      GetVarAddr(node->lhs);
       return;
     case ND_ASSIGN:
-      GetVarAddr(node->lhs_);
+      GetVarAddr(node->lhs);
       Push();
-      ExprGen(node->rhs_);
-      Store(node->ty_);
+      ExprGen(node->rhs);
+      Store(node->ty);
+      return;
+    case ND_STMT_EXPR:
+      for (NodePtr n = node->body; n != nullptr; n = n->next) {
+        StmtGen(n);
+      }
       return;
     case ND_CALL: {
       int nargs = 0;
-      for (NodePtr& arg = node->args_; arg != nullptr; arg = arg->next_) {
+      for (NodePtr& arg = node->args; arg != nullptr; arg = arg->next) {
         ExprGen(arg);
         Push();
         nargs++;
       }
-
       for (int i = nargs - 1; i >= 0; i--) {
         Pop(argreg64[i]);
       }
 
       ASM_GEN("  mov rax, 0");
-      ASM_GEN("  call ", node->call_);
+      ASM_GEN("  call ", node->call);
       return;
     }
     default:
       break;
   }
 
-  ExprGen(node->rhs_);
+  ExprGen(node->rhs);
   Push();
-  ExprGen(node->lhs_);
+  ExprGen(node->lhs);
   Pop("rdi");
 
-  switch (node->kind_) {
+  switch (node->kind) {
     case ND_ADD:
       ASM_GEN("  add rax, rdi");
       return;
@@ -288,6 +293,6 @@ void CodeGenerator::ExprGen(NodePtr& node) {
       ASM_GEN("  movzb rax, al");
       return;
     default:
-      node->tok_->ErrorTok("invalid expression.");
+      node->name->ErrorTok("invalid expression.");
   }
 }

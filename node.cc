@@ -19,18 +19,19 @@
 #include "token.h"
 #include "tools.h"
 #include "type.h"
+#include "utils.h"
 
 extern ObjectPtr locals;
 
 NodePtr Node::CreateConstNode(long val, TokenPtr tok) {
   NodePtr node = std::make_shared<Node>(ND_NUM, tok);
-  node->val_ = val;
+  node->val = val;
   return node;
 }
 
 NodePtr Node::CreateVarNode(ObjectPtr var, TokenPtr tok) {
   NodePtr node = std::make_shared<Node>(ND_VAR, tok);
-  node->var_ = var;
+  node->var = var;
   return node;
 }
 
@@ -48,14 +49,14 @@ NodePtr Node::CreateIdentNode(TokenPtr tok) {
 
 NodePtr Node::CreateCallNode(TokenPtr call_name, NodePtr args) {
   NodePtr call_node = std::make_shared<Node>(ND_CALL, call_name);
-  call_node->call_ = String(call_name->str_, call_name->strlen_);
-  call_node->args_ = args;
+  call_node->call = String(call_name->str_, call_name->strlen_);
+  call_node->args = args;
   return call_node;
 }
 
 NodePtr Node::CreateUnaryNode(NodeKind kind, TokenPtr node_name, NodePtr op) {
   NodePtr res = std::make_shared<Node>(kind, node_name);
-  res->lhs_ = op;
+  res->lhs = op;
   return res;
 }
 
@@ -64,7 +65,7 @@ NodePtr Node::CreateAddNode(TokenPtr node_name, NodePtr op_left, NodePtr op_righ
   op_right->TypeInfer();
   if (!op_left->IsPointerNode() && !op_right->IsPointerNode()) {
     NodePtr res = CreateBinaryNode(ND_ADD, node_name, op_left, op_right);
-    res->ty_ = ty_int;
+    res->ty = ty_int;
     return res;
   }
   // ptr + ptr
@@ -78,7 +79,7 @@ NodePtr Node::CreateAddNode(TokenPtr node_name, NodePtr op_left, NodePtr op_righ
     op_right = tmp;
   }
   // ptr + num
-  NodePtr factor = CreateConstNode(op_left->ty_->base_->size_, node_name);
+  NodePtr factor = CreateConstNode(op_left->ty->base_->size_, node_name);
   NodePtr real_num = CreateBinaryNode(ND_MUL, node_name, op_right, factor);
   NodePtr res = CreateBinaryNode(ND_ADD, node_name, op_left, real_num);
   return res;
@@ -90,55 +91,57 @@ NodePtr Node::CreateSubNode(TokenPtr node_name, NodePtr op_left, NodePtr op_righ
   // num - num
   if (!op_left->IsPointerNode() && !op_right->IsPointerNode()) {
     NodePtr res = CreateBinaryNode(ND_SUB, node_name, op_left, op_right);
-    res->ty_ = ty_int;
+    res->ty = ty_int;
     return res;
   }
   // ptr - ptr
   if (op_left->IsPointerNode() && op_right->IsPointerNode()) {
     // careful curisive call.
     NodePtr sub = CreateBinaryNode(ND_SUB, node_name, op_left, op_right);
-    NodePtr factor = CreateConstNode(op_left->ty_->base_->size_, node_name);
+    NodePtr factor = CreateConstNode(op_left->ty->base_->size_, node_name);
     NodePtr res = CreateBinaryNode(ND_DIV, node_name, sub, factor);
-    res->ty_ = ty_int;
+    res->ty = ty_int;
     return res;
   }
   if (!op_left->IsPointerNode() && op_right->IsPointerNode()) {
     node_name->ErrorTok("Invalid Operands.");
   }
   // ptr - num
-  NodePtr factor = CreateConstNode(op_left->ty_->base_->size_, node_name);
+  NodePtr factor = CreateConstNode(op_left->ty->base_->size_, node_name);
   NodePtr real_num = CreateBinaryNode(ND_MUL, node_name, op_right, factor);
   NodePtr res = CreateBinaryNode(ND_SUB, node_name, op_left, real_num);
   return res;
 }
 
-NodePtr Node::CreateBinaryNode(NodeKind kind, TokenPtr node_name, NodePtr op_left, NodePtr op_right) {
+NodePtr Node::CreateBinaryNode(NodeKind kind, TokenPtr node_name, NodePtr op_left,
+                               NodePtr op_right) {
   NodePtr res = std::make_shared<Node>(kind, node_name);
-  res->lhs_ = op_left;
-  res->rhs_ = op_right;
+  res->lhs = op_left;
+  res->rhs = op_right;
   return res;
 }
 
 NodePtr Node::CreateIFNode(TokenPtr node_name, NodePtr cond, NodePtr then, NodePtr els) {
   NodePtr res = std::make_shared<Node>(ND_IF, node_name);
-  res->cond_ = cond;
-  res->then_ = then;
-  res->els_ = els;
+  res->cond = cond;
+  res->then = then;
+  res->els = els;
   return res;
 }
 
-NodePtr Node::CreateForNode(TokenPtr node_name, NodePtr init, NodePtr cond, NodePtr inc, NodePtr then) {
+NodePtr Node::CreateForNode(TokenPtr node_name, NodePtr init, NodePtr cond, NodePtr inc,
+                            NodePtr then) {
   NodePtr res = std::make_shared<Node>(ND_FOR, node_name);
-  res->init_ = init;
-  res->cond_ = cond;
-  res->inc_ = inc;
-  res->then_ = then;
+  res->init = init;
+  res->cond = cond;
+  res->inc = inc;
+  res->then = then;
   return res;
 }
 
-NodePtr Node::CreateBlockNode(TokenPtr node_name, NodePtr body) {
-  NodePtr res = std::make_shared<Node>(ND_BLOCK, node_name);
-  res->body_ = body;
+NodePtr Node::CreateBlockNode(NodeKind kind, TokenPtr node_name, NodePtr body) {
+  NodePtr res = std::make_shared<Node>(kind, node_name);
+  res->body = body;
   return res;
 }
 
@@ -154,16 +157,16 @@ NodePtr Node::CompoundStmt(TokenPtr* rest, TokenPtr tok) {
 
   while (!tok->Equal("}")) {
     if (tok->IsTypename()) {
-      cur->next_ = Declaration(&tok, tok);
+      cur->next = Declaration(&tok, tok);
     } else {
-      cur->next_ = Node::Stmt(&tok, tok);
+      cur->next = Node::Stmt(&tok, tok);
     }
-    cur = cur->next_;
+    cur = cur->next;
     cur->TypeInfer();
   }
 
   *rest = tok->next_;
-  return CreateBlockNode(tok, sub_expr->next_);
+  return CreateBlockNode(ND_BLOCK, tok, sub_expr->next);
   ;
 }
 
@@ -189,11 +192,11 @@ NodePtr Node::Declaration(TokenPtr* rest, TokenPtr tok) {
     NodePtr lhs = CreateVarNode(var, tok);
     NodePtr rhs = Assign(&tok, tok->next_);
     NodePtr assgin_node = CreateBinaryNode(ND_ASSIGN, tok, lhs, rhs);
-    cur = cur->next_ = CreateUnaryNode(ND_EXPR_STMT, tok, assgin_node);
+    cur = cur->next = CreateUnaryNode(ND_EXPR_STMT, tok, assgin_node);
   }
 
   *rest = tok->next_;
-  return CreateBlockNode(tok, decl_expr->next_);
+  return CreateBlockNode(ND_BLOCK, tok, decl_expr->next);
   ;
 }
 
@@ -326,7 +329,7 @@ NodePtr Node::Stmt(TokenPtr* rest, TokenPtr tok) {
 NodePtr Node::ExprStmt(TokenPtr* rest, TokenPtr tok) {
   if (tok->Equal(";")) {
     *rest = tok->next_;
-    return CreateBlockNode(tok, nullptr);
+    return CreateBlockNode(ND_BLOCK, tok, nullptr);
   }
   NodePtr node = CreateUnaryNode(ND_EXPR_STMT, tok, Expr(&tok, tok));
   *rest = tok->SkipToken(";");
@@ -462,8 +465,16 @@ NodePtr Node::Postfix(TokenPtr* rest, TokenPtr tok) {
   return node;
 }
 
-// primary = "(" expr ")" | "sizeof" unary | ident | str | num
+// primary = "(" "{" stmt+ "}" ")"
+//          |"(" expr ")" | "sizeof" unary | ident func-args? | str | num
 NodePtr Node::Primary(TokenPtr* rest, TokenPtr tok) {
+  // This is a GNU statement expression.
+  if (tok->Equal("(") && tok->next_->Equal("{")) {
+    TokenPtr start = tok;
+    NodePtr stmt = CompoundStmt(&tok, tok->next_->next_);
+    *rest = tok->SkipToken(")");
+    return CreateBlockNode(ND_STMT_EXPR, start, stmt->body);
+  }
   if (tok->Equal("(")) {
     NodePtr node = Expr(&tok, tok->next_);
     *rest = tok->SkipToken(")");
@@ -473,7 +484,7 @@ NodePtr Node::Primary(TokenPtr* rest, TokenPtr tok) {
   if (tok->Equal("sizeof")) {
     NodePtr node = Unary(rest, tok->next_);
     node->TypeInfer();
-    long size = node->ty_->size_;
+    long size = node->ty->size_;
     return CreateConstNode(size, tok);
   }
 
@@ -513,58 +524,61 @@ NodePtr Node::Call(TokenPtr* rest, TokenPtr tok) {
     if (cur != args) {
       tok = tok->SkipToken(",");
     }
-    cur->next_ = Assign(&tok, tok);
-    cur = cur->next_;
+    cur->next = Assign(&tok, tok);
+    cur = cur->next;
   }
 
   *rest = tok->SkipToken(")");
-  return CreateCallNode(start, args->next_);
+  return CreateCallNode(start, args->next);
 }
 
 void Node::TypeInfer() {
-  if (this->ty_ != nullptr) {
+  if (this->ty != nullptr) {
     return;
   }
 
-  if (lhs_ != nullptr) {
-    lhs_->TypeInfer();
+  if (lhs != nullptr) {
+    lhs->TypeInfer();
   }
-  if (rhs_ != nullptr) {
-    rhs_->TypeInfer();
+  if (rhs != nullptr) {
+    rhs->TypeInfer();
   }
-  if (cond_ != nullptr) {
-    cond_->TypeInfer();
+  if (cond != nullptr) {
+    cond->TypeInfer();
   }
-  if (then_ != nullptr) {
-    then_->TypeInfer();
+  if (then != nullptr) {
+    then->TypeInfer();
   }
-  if (els_ != nullptr) {
-    els_->TypeInfer();
+  if (els != nullptr) {
+    els->TypeInfer();
   }
-  if (init_ != nullptr) {
-    init_->TypeInfer();
+  if (init != nullptr) {
+    init->TypeInfer();
   }
-  if (inc_ != nullptr) {
-    inc_->TypeInfer();
+  if (inc != nullptr) {
+    inc->TypeInfer();
   }
 
-  for (NodePtr n = body_; n != nullptr; n = n->next_) {
+  for (NodePtr n = body; n != nullptr; n = n->next) {
+    n->TypeInfer();
+  }
+  for (NodePtr n = args; n != nullptr; n = n->next) {
     n->TypeInfer();
   }
 
-  switch (kind_) {
+  switch (kind) {
     case ND_ADD:
     case ND_SUB:
     case ND_MUL:
     case ND_DIV:
     case ND_NEG:
-      ty_ = lhs_->ty_;
+      ty = lhs->ty;
       return;
     case ND_ASSIGN:
-      if (lhs_->ty_->kind_ == TY_ARRAY) {
-        lhs_->tok_->ErrorTok("not an lvalue");
+      if (lhs->ty->kind_ == TY_ARRAY) {
+        lhs->name->ErrorTok("not an lvalue");
       }
-      ty_ = lhs_->ty_;
+      ty = lhs->ty;
       return;
     case ND_EQ:
     case ND_NE:
@@ -572,34 +586,46 @@ void Node::TypeInfer() {
     case ND_LT:
     case ND_NUM:
     case ND_CALL:
-      ty_ = ty_int;
+      ty = ty_int;
       return;
     case ND_VAR:
-      ty_ = var_->ty_;
+      ty = var->ty_;
       return;
     case ND_ADDR:
-      if (lhs_->ty_->kind_ == TY_ARRAY) {
-        ty_ = Type::CreatePointerType(lhs_->ty_->base_);
+      if (lhs->ty->kind_ == TY_ARRAY) {
+        ty = Type::CreatePointerType(lhs->ty->base_);
       } else {
-        ty_ = Type::CreatePointerType(lhs_->ty_);
+        ty = Type::CreatePointerType(lhs->ty);
       }
       return;
     case ND_DEREF:
-      if (lhs_->ty_->base_ == nullptr) {
+      if (lhs->ty->base_ == nullptr) {
         ErrorTok("invalid pointer reference!");
       }
-      ty_ = lhs_->ty_->base_;
+      ty = lhs->ty->base_;
       return;
+    case ND_STMT_EXPR:
+      if(body != nullptr){
+        NodePtr stmt = body;
+        while(stmt->next != nullptr){
+          stmt = stmt->next;
+        }
+        if(stmt->kind == ND_EXPR_STMT){
+          ty = stmt->lhs->ty;
+          return;
+        }
+      }
+      name->ErrorTok("statement expression return void is not supported.");
     default:
       return;
   }
 }
 
-bool Node::IsPointerNode() { return ty_->IsPointer(); }
+bool Node::IsPointerNode() { return ty->IsPointer(); }
 
 // Report an error based on tok
 void Node::ErrorTok(const char* fmt, ...) {
   va_list ap;
   va_start(ap, fmt);
-  tok_->ErrorTok(fmt, ap);
+  name->ErrorTok(fmt, ap);
 }
