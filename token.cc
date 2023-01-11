@@ -119,6 +119,16 @@ TokenPtr Token::SkipToken(const char* op, bool enable_error) {
   return this->next_;
 }
 
+int Token::FromHex(char c){
+  if('0' <= c && c <= '9'){
+    return c - '0';
+  }
+  if('a' <= c && c <= 'f'){
+    return c - 'a' + 10;
+  }
+  return c - 'A' + 10;
+}
+
 int Token::ReadEscapeedChar(char** new_pos, char* p) {
   if ('0' <= *p && *p <= '7') {
     //  Read an octal number.
@@ -133,6 +143,21 @@ int Token::ReadEscapeedChar(char** new_pos, char* p) {
     return c;
   }
   *new_pos = p + 1;
+
+  if(*p == 'x'){
+    // return a hexadecimal number.
+    p++;
+    if(!std::isxdigit(*p)){
+      ErrorAt(prg_, p, "invaild hex escape sequence.");
+    }
+    int c = 0;
+    for(; isxdigit(*p); p++){
+      c = (c << 4) + FromHex(*p);
+    }
+    *new_pos = p;
+    return c;
+  }
+
   // Escape sequences are defined using themselves here. E.g.
   // '\n' is implemented using '\n'. This tautological definition
   // works because the compiler that compiles our compiler knows

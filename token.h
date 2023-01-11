@@ -60,9 +60,11 @@ class Token {
 
  private:
   // find a closing double-quote.
-  static char* StringLiteralEnd(char* p);
+  char* StringLiteralEnd(char* p);
   // read the escaped char
-  static int ReadEscapeedChar(char** new_pos, char* p);
+  int ReadEscapeedChar(char** new_pos, char* p);
+  // convert char c to hex format
+  int FromHex(char c);
   // matching reserved keyword based start.
   static void ConvertToReserved(TokenPtr tok);
   // matching punction.

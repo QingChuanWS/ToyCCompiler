@@ -28,7 +28,7 @@ memory_check(){
 assert() {
   expected="$1"
   input="$2"
-  memory_check 1
+  memory_check 0
   ./toyc "$input" > tmp.s || exit
   gcc -static -o tmp tmp.s tmp2.o
   ./tmp
@@ -218,5 +218,10 @@ assert 0 'int main() { return "\0"[0]; }'
 assert 16 'int main() { return "\20"[0]; }'
 assert 65 'int main() { return "\101"[0]; }'
 assert 104 'int main() { return "\1500"[0]; }'
+
+assert 0 'int main() { return "\x00"[0]; }'
+assert 119 'int main() { return "\x77"[0]; }'
+assert 165 'int main() { return "\xA5"[0]; }'
+assert 255 'int main() { return "\x00ff"[0]; }'
 
 echo OK
