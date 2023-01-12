@@ -12,13 +12,18 @@
 #include "token.h"
 
 #include <cctype>
+#include <cstddef>
 #include <cstring>
+#include <fstream>
 #include <memory>
+#include <ostream>
 
 #include "object.h"
 #include "tools.h"
+#include "utils.h"
 
-char* Token::prg = nullptr;
+StringPtr prg;
+String current_filename;
 
 TokenPtr Token::CreateStringToken(char* start, char* end) {
   int max_len = static_cast<int>(end - start);
@@ -36,10 +41,40 @@ TokenPtr Token::CreateStringToken(char* start, char* end) {
   return res;
 }
 
-TokenPtr Token::TokenCreate(TokenPtr tok_list, char* prg) {
-  prg = prg;
+StringPtr Token::ReadFile(const String& filename) {
+  std::stringstream buf;
+  // By convention, read from the stdin if the given file name is '-'.
+  if (filename == "-") {
+    buf << std::cin.rdbuf();
+  } else {
+    std::ifstream input(filename);
+    if (!input.is_open()) {
+      Error("cannot open %s: %s", filename.c_str(), strerror(errno));
+    }
+    buf << input.rdbuf();
+    input.close();
+  }
+
+  String program(buf.str());
+  // Make sure that the last line is properly terminated with '\n'
+  if (program.size() == 0 || program[program.size() - 1] != '\n') {
+    program.push_back('\n');
+  }
+  program.push_back('\0');
+
+  return std::make_shared<String>(std::move(program));
+}
+
+TokenPtr Token::TokenizeFile(const String& file_name) {
+  return CreateTokens(file_name, ReadFile(file_name));
+}
+
+TokenPtr Token::CreateTokens(const String& file_name, StringPtr program) {
+  current_filename = std::move(file_name);
+  prg = program;
+  TokenPtr tok_list = std::make_shared<Token>(TK_EOF, nullptr, 0);
   TokenPtr cur = tok_list;
-  char* p = prg;
+  char* p = &(*prg)[0];
   while (*p != '\0') {
     if (std::isspace(*p)) {
       p++;
@@ -76,7 +111,7 @@ TokenPtr Token::TokenCreate(TokenPtr tok_list, char* prg) {
       p += punct_len;
       continue;
     }
-    ErrorAt(prg, p, "expect a number.");
+    ErrorAt(prg->c_str(), p, "expect a number.");
   }
 
   cur->next = std::make_shared<Token>(TK_EOF, p, 0);
@@ -111,7 +146,7 @@ bool Token::Equal(const char* op) { return StrEqual(this->str, op, this->strlen)
 TokenPtr Token::SkipToken(const char* op, bool enable_error) {
   if (!this->Equal(op)) {
     if (enable_error) {
-      ErrorAt(prg, this->str, "Expect \'%s\'", op);
+      ErrorAt(prg->c_str(), this->str, "Expect \'%s\'", op);
     } else {
       return nullptr;
     }
@@ -119,11 +154,11 @@ TokenPtr Token::SkipToken(const char* op, bool enable_error) {
   return this->next;
 }
 
-int Token::FromHex(char c){
-  if('0' <= c && c <= '9'){
+int Token::FromHex(char c) {
+  if ('0' <= c && c <= '9') {
     return c - '0';
   }
-  if('a' <= c && c <= 'f'){
+  if ('a' <= c && c <= 'f') {
     return c - 'a' + 10;
   }
   return c - 'A' + 10;
@@ -144,14 +179,14 @@ int Token::ReadEscapeedChar(char** new_pos, char* p) {
   }
   *new_pos = p + 1;
 
-  if(*p == 'x'){
+  if (*p == 'x') {
     // return a hexadecimal number.
     p++;
-    if(!std::isxdigit(*p)){
-      ErrorAt(prg, p, "invaild hex escape sequence.");
+    if (!std::isxdigit(*p)) {
+      ErrorAt(prg->c_str(), p, "invaild hex escape sequence.");
     }
     int c = 0;
-    for(; isxdigit(*p); p++){
+    for (; isxdigit(*p); p++) {
       c = (c << 4) + FromHex(*p);
     }
     *new_pos = p;
@@ -194,7 +229,7 @@ char* Token::StringLiteralEnd(char* start) {
   char* p = start + 1;
   for (; *p != '"'; p++) {
     if (*p == '\n' || *p == '\0') {
-      ErrorAt(Token::prg, start, "unclosed string literal!");
+      ErrorAt(prg->c_str(), start, "unclosed string literal!");
     }
     if (*p == '\\') {
       p++;
@@ -213,8 +248,8 @@ void Token::ErrorTok(const char* fmt, ...) {
   va_list ap;
   va_start(ap, fmt);
 
-  int pos = this->str - prg;
-  fprintf(stderr, "%s\n", prg);
+  int pos = static_cast<int>(this->str - prg->c_str());
+  fprintf(stderr, "%s\n", prg->c_str());
   fprintf(stderr, "%*s", pos, "");  // print pos spaces.
   fprintf(stderr, "^ ");
   vfprintf(stderr, fmt, ap);

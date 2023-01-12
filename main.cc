@@ -24,8 +24,7 @@ int main(int argc, char** argv) {
     return 1;
   }
 
-  TokenPtr tok_list = std::make_shared<Token>(TK_EOF, nullptr, 0);
-  TokenPtr cur = Token::TokenCreate(tok_list, argv[1]);
+  TokenPtr cur = Token::TokenizeFile(String(argv[1]));
   ObjectPtr prog = Object::Parse(cur);
 
   CodeGenerator gene;

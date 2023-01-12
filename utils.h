@@ -22,6 +22,7 @@ using TokenPtr = std::shared_ptr<Token>;
 using TypePtr = std::shared_ptr<Type>;
 using NodePtr = std::shared_ptr<Node>;
 using ObjectPtr = std::shared_ptr<Object>;
+using StringPtr = std::shared_ptr<std::string>;
 using String = std::string;
 
 extern ObjectPtr locals;

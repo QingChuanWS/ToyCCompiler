@@ -28,11 +28,11 @@ void Error(const char* fmt, ...) {
   exit(0);
 }
 
-void ErrorAt(char* prg, char* loc, const char* fmt, ...) {
+void ErrorAt(const char* prg, char* loc, const char* fmt, ...) {
   va_list ap;
   va_start(ap, fmt);
 
-  int pos = loc - prg;
+  int pos = static_cast<int>(loc - prg);
   fprintf(stderr, "%s\n", prg);
   fprintf(stderr, "%*s", pos, "");  // print pos spaces.
   fprintf(stderr, "^ ");

@@ -16,8 +16,8 @@
 #include <cstring>
 #include <memory>
 
-#include "utils.h"
 #include "tools.h"
+#include "utils.h"
 
 enum Tokenkind {
   TK_PUNCT,    // Punctuators,
@@ -55,18 +55,22 @@ class Token {
   ObjectPtr FindGlobalVar();
 
  public:
-  // Creating token list from the source program.
-  static TokenPtr TokenCreate(TokenPtr tok_list, char* prg);
+  // Create
+  static TokenPtr TokenizeFile(const String& file_name);
 
  private:
+  // return the contents of given file.
+  static StringPtr ReadFile(const String& filename);
+  // creating token list from the source program.
+  static TokenPtr CreateTokens(const String& file_name, StringPtr program);
+  // matching reserved keyword based start.
+  static void ConvertToReserved(TokenPtr tok);
   // find a closing double-quote.
   char* StringLiteralEnd(char* p);
   // read the escaped char
   int ReadEscapeedChar(char** new_pos, char* p);
   // convert char c to hex format
   int FromHex(char c);
-  // matching reserved keyword based start.
-  static void ConvertToReserved(TokenPtr tok);
   // matching punction.
   int ReadPunct(char* p);
   // read a string literal for source pargram char.
@@ -77,8 +81,6 @@ class Token {
   friend class Node;
   friend class Object;
 
-  // source code
-  static char* prg;
   // Token Kind
   Tokenkind kind = TK_EOF;
   // Next Token
