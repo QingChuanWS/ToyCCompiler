@@ -22,7 +22,7 @@
 ObjectPtr locals;
 ObjectPtr globals;
 
-ObjectPtr Object::CreateLocalVar(String name, TypePtr ty, ObjectPtr* next) {
+ObjectPtr Object::CreateLocalVar(const String& name, TypePtr ty, ObjectPtr* next) {
   ObjectPtr obj = std::make_shared<Object>(OB_LOCAL, name, ty);
   if (ty->HasName() && ty->name->FindLocalVar() != nullptr) {
     ty->name->ErrorTok("redefined variable.");
@@ -32,8 +32,9 @@ ObjectPtr Object::CreateLocalVar(String name, TypePtr ty, ObjectPtr* next) {
   return obj;
 }
 
-ObjectPtr Object::CreateGlobalVar(String name, TypePtr ty, ObjectPtr* next) {
-  ObjectPtr obj =  std::make_shared<Object>(OB_GLOBAL, name, ty);;
+ObjectPtr Object::CreateGlobalVar(const String& name, TypePtr ty, ObjectPtr* next) {
+  ObjectPtr obj = std::make_shared<Object>(OB_GLOBAL, name, ty);
+  ;
   if (ty->HasName() && ty->name->FindGlobalVar() != nullptr) {
     ty->name->ErrorTok("redefined variable.");
   }
@@ -55,7 +56,7 @@ TokenPtr Object::CreateFunction(TokenPtr tok, TypePtr basety, ObjectPtr* next) {
   TypePtr ty = Node::Declarator(&tok, tok, basety);
   CreateParamVar(ty->params);
 
-  ObjectPtr fn =  std::make_shared<Object>(OB_FUNCTION, ty->name->GetIdent(), ty);
+  ObjectPtr fn = std::make_shared<Object>(OB_FUNCTION, ty->name->GetIdent(), ty);
   fn->params = locals;
   fn->body = Node::Program(&tok, tok);
   fn->loc_list = locals;

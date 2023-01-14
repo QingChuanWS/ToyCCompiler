@@ -1,24 +1,23 @@
 /*
  * This project is exclusively owned by QingChuanWS and shall not be used for
  * commercial and profitting purpose without QingChuanWS's permission.
- * 
+ *
  * @Author: bingshan45@163.com
  * Github: https://github.com/QingChuanWS
- * @Description: 
- * 
- * Copyright (c) 2023 by QingChuanWS, All Rights Reserved. 
+ * @Description:
+ *
+ * Copyright (c) 2023 by QingChuanWS, All Rights Reserved.
  */
 
 #include "tools.h"
+
 #include <bits/types/FILE.h>
 
+#include <algorithm>
 #include <cstdarg>
 #include <cstdio>
 #include <cstdlib>
-
-std::ostringstream sprint;
-
-#define StringFormat(...) Println(sprint, __VA_ARGS__)
+#include <sstream>
 
 void Error(const char* fmt, ...) {
   va_list ap;
@@ -45,7 +44,30 @@ bool IsAlnum(char c) { return IsAlpha(c) || ('0' <= c && c <= '9'); }
 
 int AlignTo(int n, int align) { return (n + align - 1) / align * align; }
 
-String CreateUniqueName() {
+#define StringFormat(...) Println<StringFormator>(__VA_ARGS__)
+
+class StringFormator {
+ public:
+  template <typename T>
+  void operator()(T t) {
+    sprint << t;
+  }
+  static StringFormator& GetInstance(const String& path = "-") {
+    static StringFormator printor;
+    return printor;
+  }
+  static const String GetString() { return std::move(GetInstance().sprint.str()); }
+
+ private:
+  StringFormator() {}
+  ~StringFormator() {}
+  StringFormator(const StringFormator&) = delete;
+  StringFormator operator=(const StringFormator&) = delete;
+  std::stringstream sprint;
+};
+
+const String CreateUniqueName() {
   static int id = 0;
-  return StringFormat(".L..", id++).str();
+  StringFormat(".L..", id++);
+  return StringFormator::GetString();
 }

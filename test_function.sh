@@ -15,7 +15,8 @@ memory_check(){
     return "$1"
   fi
   output="tmp.txt"
-  valgrind --tool=memcheck --leak-check=full --track-origins=yes ./toyc "$input" > ${output} 2>&1
+  echo "$input" > source.c
+  valgrind --tool=memcheck --leak-check=full --track-origins=yes ./toyc source.c -o tmp.s > "$output" 2>&1
   grep -q "ERROR SUMMARY: 0 errors" "$output"
   ret=$?
   if [ $ret != 0 ]; then
@@ -28,12 +29,14 @@ memory_check(){
 assert() {
   expected="$1"
   input="$2"
+
   memory_check 1
-  echo "$input" | ./toyc - > tmp.s || exit
+  
+  echo "$input" | ./toyc -o tmp.s - || exit
   gcc -static -o tmp tmp.s tmp2.o
   ./tmp
   actual="$?"
-
+  
   if [ "$actual" = "$expected" ]; then
     echo "$input => $actual"
   else

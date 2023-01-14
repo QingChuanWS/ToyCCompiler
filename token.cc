@@ -17,6 +17,7 @@
 #include <cstdio>
 #include <cstring>
 #include <fstream>
+#include <iostream>
 #include <memory>
 #include <ostream>
 
@@ -300,12 +301,11 @@ void Token::VrdicErrorAt(char* loc, const char* fmt, va_list ap) {
   while (current_input < start && start[-1] != '\n') {
     start--;
   }
-
+  // get the current line end.
   char* end = loc;
   while (*end != '\n') {
     end++;
   }
-
   // get line number
   int line_no = 1;
   for (const char* p = current_input; p < start; p++) {
@@ -313,11 +313,9 @@ void Token::VrdicErrorAt(char* loc, const char* fmt, va_list ap) {
       line_no++;
     }
   }
-
   // print the line
   int indent = fprintf(stderr, "%s:%d: ", current_filename.c_str(), line_no);
   fprintf(stderr, "%.*s\n", static_cast<int>(end - start), start);
-
   int pos = static_cast<int>(loc - start + indent);
 
   fprintf(stderr, "%*s", pos, "");  // print pos spaces.

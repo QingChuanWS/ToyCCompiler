@@ -11,6 +11,8 @@
 #ifndef UTILS_GRUAD
 #define UTILS_GRUAD
 
+#include <memory>
+#include <ostream>
 #include "memory"
 
 class Token;

@@ -43,9 +43,9 @@ class Object {
 
  public:
   // create global varibal
-  static ObjectPtr CreateGlobalVar(String name, TypePtr ty, ObjectPtr* next);
+  static ObjectPtr CreateGlobalVar(const String& name, TypePtr ty, ObjectPtr* next);
   // create local varibal
-  static ObjectPtr CreateLocalVar(String name, TypePtr ty, ObjectPtr* next);
+  static ObjectPtr CreateLocalVar(const String& name, TypePtr ty, ObjectPtr* next);
   // create a function based on token list.
   static TokenPtr CreateFunction(TokenPtr tok, TypePtr basety, ObjectPtr* next);
   // create a string literal variable

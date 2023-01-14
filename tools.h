@@ -1,12 +1,12 @@
 /*
  * This project is exclusively owned by QingChuanWS and shall not be used for
  * commercial and profitting purpose without QingChuanWS's permission.
- * 
+ *
  * @Author: bingshan45@163.com
  * Github: https://github.com/QingChuanWS
- * @Description: 
- * 
- * Copyright (c) 2023 by QingChuanWS, All Rights Reserved. 
+ * @Description:
+ *
+ * Copyright (c) 2023 by QingChuanWS, All Rights Reserved.
  */
 
 #ifndef TOOLS_GRUAD
@@ -25,17 +25,15 @@ using String = std::string;
 #define DLOG(expr) Log(expr)
 
 // recursive over state.
-template <typename Printer, typename T>
-static Printer& Println(Printer& print, const T arg) {
-  print << arg;
-  return print;
+template <typename Functor, typename T>
+static void Println(const T arg) {
+  Functor::GetInstance()(arg);
 }
 
-template <typename Printer, typename T, typename... Types>
-static Printer& Println(Printer& print, const T first_arg, const Types... args) {
-  print << first_arg;
-  Println(print, args...);
-  return print;
+template <typename Functor, typename T, typename... Types>
+static void Println(const T first_arg, const Types... args) {
+  Functor::GetInstance()(first_arg);
+  Println<Functor>(args...);
 }
 
 // Print error message.
@@ -51,6 +49,6 @@ bool IsAlnum(char c);
 // round up `n` to the nearest multiple of `align`.
 int AlignTo(int n, int align);
 // create a unique name.
-String CreateUniqueName();
+const String CreateUniqueName();
 
 #endif  // !TOOLS_GRUAD
