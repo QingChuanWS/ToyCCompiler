@@ -11,9 +11,12 @@
 #ifndef UTILS_GRUAD
 #define UTILS_GRUAD
 
+#include <fstream>
+#include <iostream>
 #include <memory>
 #include <ostream>
-#include "memory"
+
+#include "tools.h"
 
 class Token;
 class Object;

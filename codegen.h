@@ -20,23 +20,25 @@
 #include "node.h"
 #include "utils.h"
 
-class PrintFunctor {
+class CodeGenFunctor {
  public:
-  template <typename T>
-  void operator()(T t) {
-    if (use_std) {
-      std::cout << t;
-    } else {
-      out << t;
-    }
-  }
-  static PrintFunctor& GetInstance(const String& path = "-") {
-    static PrintFunctor printor(path);
+  static CodeGenFunctor& GetInstance(const String& path = "-") {
+    static CodeGenFunctor printor(path);
     return printor;
   }
 
+  template <typename T>
+  static void Print(T t) {
+    bool use_std = CodeGenFunctor::GetInstance().use_std;
+    if (use_std) {
+      std::cout << t;
+    } else {
+      CodeGenFunctor::GetInstance().out << t;
+    }
+  }
+
  private:
-  PrintFunctor(const String& path) {
+  CodeGenFunctor(const String& path) {
     if (path.empty() || path == "-") {
       use_std = true;
     }
@@ -46,13 +48,13 @@ class PrintFunctor {
     }
     use_std = false;
   }
-  ~PrintFunctor() {
+  ~CodeGenFunctor() {
     if (!use_std) {
       out.close();
     }
   }
-  PrintFunctor(const PrintFunctor&) = delete;
-  PrintFunctor operator=(const PrintFunctor&) = delete;
+  CodeGenFunctor(const CodeGenFunctor&) = delete;
+  CodeGenFunctor operator=(const CodeGenFunctor&) = delete;
   std::ofstream out;
   bool use_std;
 };
@@ -60,7 +62,7 @@ class PrintFunctor {
 class CodeGenerator {
  public:
   // using specific output stream.
-  CodeGenerator(const String& path) { PrintFunctor::GetInstance(path); }
+  CodeGenerator(const String& path) { CodeGenFunctor::GetInstance(path); }
   // don't allow copy constructor.
   CodeGenerator(const CodeGenerator&) = delete;
   // don't allow assign constructor.

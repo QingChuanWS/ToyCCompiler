@@ -34,7 +34,6 @@ ObjectPtr Object::CreateLocalVar(const String& name, TypePtr ty, ObjectPtr* next
 
 ObjectPtr Object::CreateGlobalVar(const String& name, TypePtr ty, ObjectPtr* next) {
   ObjectPtr obj = std::make_shared<Object>(OB_GLOBAL, name, ty);
-  ;
   if (ty->HasName() && ty->name->FindGlobalVar() != nullptr) {
     ty->name->ErrorTok("redefined variable.");
   }
@@ -129,7 +128,7 @@ void Object::OffsetCal() {
   }
 }
 
-ObjectPtr Object::Find(ObjectPtr root, char* p) {
+ObjectPtr Object::Find(ObjectPtr root, const char* p) {
   for (ObjectPtr v = root; v != nullptr; v = v->next) {
     if (memcmp(v->obj_name.c_str(), p, v->obj_name.size()) == 0) {
       return v;

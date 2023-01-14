@@ -30,9 +30,9 @@ enum Tokenkind {
 
 class Token {
  public:
-  Token(Tokenkind kind, char* str, int len) : kind(kind), loc(str), len(len) {}
+  Token(Tokenkind kind, const char* str, const int len) : kind(kind), loc(str), len(len) {}
   // create string token.
-  TokenPtr CreateStringToken(char* start, char* end);
+  TokenPtr CreateStringToken(const char* start, const char* end);
   // Check the current token->str is char op or not.
   // If the token's str is equal with op, return ture.
   TokenPtr SkipToken(const char* op, bool enable_error = true);
@@ -56,15 +56,15 @@ class Token {
 
  private:
   // find a closing double-quote.
-  char* StringLiteralEnd(char* p);
+  const char* StringLiteralEnd(const char* start);
   // read the escaped char
-  int ReadEscapeedChar(char** new_pos, char* p);
+  int ReadEscapeedChar(const char** new_pos, const char* p);
   // convert char c to hex format
-  int FromHex(char c);
+  int FromHex(const char c);
   // matching punction.
-  int ReadPunct(char* p);
+  int ReadPunct(const char* p);
   // read a string literal for source pargram char.
-  TokenPtr ReadStringLiteral(char* p);
+  TokenPtr ReadStringLiteral(const char* start);
   // free token kind = TK_STR
   void StrTokenFree();
 
@@ -82,17 +82,17 @@ class Token {
   // matching reserved keyword based start.
   static void ConvertToReserved(TokenPtr tok);
   // Reports an error location and exit.
-  static void ErrorAt(char* loc, const char* fmt, ...);
+  static void ErrorAt(const char* loc, const char* fmt, ...);
   // Reports an error message in the follow format and exit.
   //
   // foo.c:10: x = y + 1;
   //               ^ <error message here>
-  static void VrdicErrorAt(char* loc, const char* fmt, va_list ap);
+  static void VrdicErrorAt(const char* loc, const char* fmt, va_list ap);
 
   friend class Node;
   friend class Object;
 
-private:
+ private:
   // Token Kind
   Tokenkind kind = TK_EOF;
   // Next Token
@@ -100,7 +100,7 @@ private:
   // If kind_ is TK_NUM, its values,
   long val = 0;
   // Token Location
-  char* loc = nullptr;
+  const char* loc;
   // Token length
   int len = 0;
   // String literal contents include terminating '\0'

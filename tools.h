@@ -25,15 +25,15 @@ using String = std::string;
 #define DLOG(expr) Log(expr)
 
 // recursive over state.
-template <typename Functor, typename T>
+template <typename F, typename T>
 static void Println(const T arg) {
-  Functor::GetInstance()(arg);
+  F::Print(arg);
 }
 
-template <typename Functor, typename T, typename... Types>
+template <typename F, typename T, typename... Types>
 static void Println(const T first_arg, const Types... args) {
-  Functor::GetInstance()(first_arg);
-  Println<Functor>(args...);
+  F::Print(first_arg);
+  Println<F>(args...);
 }
 
 // Print error message.
@@ -41,13 +41,13 @@ void Error(const char* fmt, ...);
 // Log message.
 void Log(const char* fmt, ...);
 // compare two string based strncmp.
-bool StrEqual(const char* src, const char* dst, int src_len);
+bool StrEqual(const char* src, const char* dst, const int src_len);
 // check whether current character is alpha.
-bool IsAlpha(char c);
+bool IsAlpha(const char c);
 // check whether current character is alpha or number.
-bool IsAlnum(char c);
+bool IsAlnum(const char c);
 // round up `n` to the nearest multiple of `align`.
-int AlignTo(int n, int align);
+int AlignTo(const int n, const int align);
 // create a unique name.
 const String CreateUniqueName();
 

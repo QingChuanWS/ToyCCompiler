@@ -31,7 +31,7 @@ ObjectPtr cur_fn = nullptr;
 const char* argreg8[6] = {"dil", "sil", "cl", "dl", "r8b", "r9b"};
 const char* argreg64[6] = {"rdi", "rsi", "rcx", "rdx", "r8", "r9"};
 
-#define ASM_GEN(...) Println<PrintFunctor>(__VA_ARGS__, "\n");
+#define ASM_GEN(...) Println<CodeGenFunctor>(__VA_ARGS__, "\n");
 
 void CodeGenerator::GetVarAddr(NodePtr& node) {
   switch (node->kind) {

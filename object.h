@@ -39,7 +39,7 @@ class Object {
   // check whether is a global variable or function
   bool IsFunction() { return kind == OB_FUNCTION; }
   // find a token name in object list.
-  static ObjectPtr Find(ObjectPtr root, char* p);
+  static ObjectPtr Find(ObjectPtr root, const char* p);
 
  public:
   // create global varibal

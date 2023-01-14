@@ -29,11 +29,11 @@ String current_filename;
 
 StringPtr prg;
 
-TokenPtr Token::CreateStringToken(char* start, char* end) {
+TokenPtr Token::CreateStringToken(const char* start, const char* end) {
   int max_len = static_cast<int>(end - start);
   String new_str = String(max_len, '\0');
   int len = 0;
-  for (char* p = start + 1; p < end;) {
+  for (const char* p = start + 1; p < end;) {
     if (*p == '\\') {
       new_str[len++] = ReadEscapeedChar(&p, p + 1);
     } else {
@@ -142,7 +142,7 @@ TokenPtr Token::CreateTokens(const String& file_name, const StringPtr& program) 
   return tok_list->next;
 }
 
-int Token::ReadPunct(char* p) {
+int Token::ReadPunct(const char* p) {
   static const char* ops[] = {">=", "==", "!=", "<="};
   for (int i = 0; i < sizeof(ops) / sizeof(*ops); i++) {
     if (StrEqual(p, ops[i], 2)) {
@@ -177,7 +177,7 @@ TokenPtr Token::SkipToken(const char* op, bool enable_error) {
   return this->next;
 }
 
-int Token::FromHex(char c) {
+int Token::FromHex(const char c) {
   if ('0' <= c && c <= '9') {
     return c - '0';
   }
@@ -187,7 +187,7 @@ int Token::FromHex(char c) {
   return c - 'A' + 10;
 }
 
-int Token::ReadEscapeedChar(char** new_pos, char* p) {
+int Token::ReadEscapeedChar(const char** new_pos, const char* p) {
   if ('0' <= *p && *p <= '7') {
     //  Read an octal number.
     int c = static_cast<int>(*p++ - '0');
@@ -248,8 +248,8 @@ int Token::ReadEscapeedChar(char** new_pos, char* p) {
   }
 }
 
-char* Token::StringLiteralEnd(char* start) {
-  char* p = start + 1;
+const char* Token::StringLiteralEnd(const char* start) {
+  const char* p = start + 1;
   for (; *p != '"'; p++) {
     if (*p == '\n' || *p == '\0') {
       ErrorAt(start, "unclosed string literal!");
@@ -261,8 +261,8 @@ char* Token::StringLiteralEnd(char* start) {
   return p;
 }
 
-TokenPtr Token::ReadStringLiteral(char* start) {
-  char* end = StringLiteralEnd(start);
+TokenPtr Token::ReadStringLiteral(const char* start) {
+  const char* end = StringLiteralEnd(start);
   TokenPtr tok = CreateStringToken(start, end);
   return tok;
 }
@@ -297,21 +297,21 @@ void Token::ErrorTok(const char* fmt, ...) {
   VrdicErrorAt(this->loc, fmt, ap);
 }
 
-void Token::ErrorAt(char* loc, const char* fmt, ...) {
+void Token::ErrorAt(const char* loc, const char* fmt, ...) {
   va_list ap;
   va_start(ap, fmt);
   VrdicErrorAt(loc, fmt, ap);
 }
 
-void Token::VrdicErrorAt(char* loc, const char* fmt, va_list ap) {
+void Token::VrdicErrorAt(const char* loc, const char* fmt, va_list ap) {
   // find a line containing `loc`
-  char* start = loc;
+  const char* start = loc;
   const char* current_input = prg->c_str();
   while (current_input < start && start[-1] != '\n') {
     start--;
   }
   // get the current line end.
-  char* end = loc;
+  const char* end = loc;
   while (*end != '\n') {
     end++;
   }
@@ -323,7 +323,7 @@ void Token::VrdicErrorAt(char* loc, const char* fmt, va_list ap) {
     }
   }
   // print the line
-  int indent = fprintf(stderr, "%s:%d: ", current_filename.c_str(), line_no);
+  const int indent = fprintf(stderr, "%s:%d: ", current_filename.c_str(), line_no);
   fprintf(stderr, "%.*s\n", static_cast<int>(end - start), start);
   int pos = static_cast<int>(loc - start + indent);
 
