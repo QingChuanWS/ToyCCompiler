@@ -30,7 +30,7 @@ enum Tokenkind {
 
 class Token {
  public:
-  Token(Tokenkind kind, char* str, int len) : kind(kind), str(str), strlen(len) {}
+  Token(Tokenkind kind, char* str, int len) : kind(kind), loc(str), len(len) {}
   // create string token.
   TokenPtr CreateStringToken(char* start, char* end);
   // Check the current token->str is char op or not.
@@ -54,17 +54,7 @@ class Token {
   // Find a tok name whether is in locals variable list.
   ObjectPtr FindGlobalVar();
 
- public:
-  // Create
-  static TokenPtr TokenizeFile(const String& file_name);
-
  private:
-  // return the contents of given file.
-  static StringPtr ReadFile(const String& filename);
-  // creating token list from the source program.
-  static TokenPtr CreateTokens(const String& file_name, StringPtr program);
-  // matching reserved keyword based start.
-  static void ConvertToReserved(TokenPtr tok);
   // find a closing double-quote.
   char* StringLiteralEnd(char* p);
   // read the escaped char
@@ -78,6 +68,29 @@ class Token {
   // free token kind = TK_STR
   void StrTokenFree();
 
+ public:
+  // Create
+  static TokenPtr TokenizeFile(const String& file_name);
+
+ private:
+  // read code from stdin.
+  static StringStream ReadFromStdin();
+  // read code from filename.
+  static StringStream ReadFromFile(const String& filename);
+  // return the contents of given file.
+  static StringPtr ReadFile(const String& filename);
+  // creating token list from the source program.
+  static TokenPtr CreateTokens(const String& file_name, const StringPtr& program);
+  // matching reserved keyword based start.
+  static void ConvertToReserved(TokenPtr tok);
+  // Reports an error location and exit.
+  static void ErrorAt(char* loc, const char* fmt, ...);
+  // Reports an error message in the follow format and exit.
+  //
+  // foo.c:10: x = y + 1;
+  //               ^ <error message here>
+  static void VrdicErrorAt(char* loc, const char* fmt, va_list ap);
+
   friend class Node;
   friend class Object;
 
@@ -88,9 +101,9 @@ class Token {
   // If kind_ is TK_NUM, its values,
   long val = 0;
   // Token Location
-  char* str = nullptr;
+  char* loc = nullptr;
   // Token length
-  int strlen = 0;
+  int len = 0;
   // String literal contents include terminating '\0'
   String str_literal = String();
 };

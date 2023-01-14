@@ -28,19 +28,6 @@ void Error(const char* fmt, ...) {
   exit(0);
 }
 
-void ErrorAt(const char* prg, char* loc, const char* fmt, ...) {
-  va_list ap;
-  va_start(ap, fmt);
-
-  int pos = static_cast<int>(loc - prg);
-  fprintf(stderr, "%s\n", prg);
-  fprintf(stderr, "%*s", pos, "");  // print pos spaces.
-  fprintf(stderr, "^ ");
-  vfprintf(stderr, fmt, ap);
-  fprintf(stderr, "\n");
-  exit(1);
-}
-
 void LOG(const char* fmt, ...) {
   va_list ap;
   va_start(ap, fmt);

@@ -49,7 +49,7 @@ NodePtr Node::CreateIdentNode(TokenPtr tok) {
 
 NodePtr Node::CreateCallNode(TokenPtr call_name, NodePtr args) {
   NodePtr call_node = std::make_shared<Node>(ND_CALL, call_name);
-  call_node->call = String(call_name->str, call_name->strlen);
+  call_node->call = String(call_name->loc, call_name->len);
   call_node->args = args;
   return call_node;
 }

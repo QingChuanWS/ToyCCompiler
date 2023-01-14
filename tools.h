@@ -40,8 +40,6 @@ static Printer& Println(Printer& print, const T first_arg, const Types... args) 
 
 // Print error message.
 void Error(const char* fmt, ...);
-// Reports an error location and exit.
-void ErrorAt(const char* prg, char* loc, const char* fmt, ...);
 // Log message.
 void Log(const char* fmt, ...);
 // compare two string based strncmp.

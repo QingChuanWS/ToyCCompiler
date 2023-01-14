@@ -12,7 +12,9 @@
 #include "token.h"
 
 #include <cctype>
+#include <cstdarg>
 #include <cstddef>
+#include <cstdio>
 #include <cstring>
 #include <fstream>
 #include <memory>
@@ -22,8 +24,9 @@
 #include "tools.h"
 #include "utils.h"
 
-StringPtr prg;
 String current_filename;
+
+StringPtr prg;
 
 TokenPtr Token::CreateStringToken(char* start, char* end) {
   int max_len = static_cast<int>(end - start);
@@ -41,18 +44,32 @@ TokenPtr Token::CreateStringToken(char* start, char* end) {
   return res;
 }
 
+StringStream Token::ReadFromStdin() {
+  StringStream buf;
+
+  buf << std::cin.rdbuf();
+  return buf;
+}
+
+StringStream Token::ReadFromFile(const String& filename) {
+  StringStream buf;
+
+  std::ifstream input(filename);
+  if (!input.is_open()) {
+    Error("cannot open %s: %s", filename.c_str(), strerror(errno));
+  }
+  buf << input.rdbuf();
+  input.close();
+  return buf;
+}
+
 StringPtr Token::ReadFile(const String& filename) {
-  std::stringstream buf;
+  StringStream buf;
   // By convention, read from the stdin if the given file name is '-'.
   if (filename == "-") {
-    buf << std::cin.rdbuf();
+    buf = ReadFromStdin();
   } else {
-    std::ifstream input(filename);
-    if (!input.is_open()) {
-      Error("cannot open %s: %s", filename.c_str(), strerror(errno));
-    }
-    buf << input.rdbuf();
-    input.close();
+    buf = ReadFromFile(filename);
   }
 
   String program(buf.str());
@@ -65,12 +82,8 @@ StringPtr Token::ReadFile(const String& filename) {
   return std::make_shared<String>(std::move(program));
 }
 
-TokenPtr Token::TokenizeFile(const String& file_name) {
-  return CreateTokens(file_name, ReadFile(file_name));
-}
-
-TokenPtr Token::CreateTokens(const String& file_name, StringPtr program) {
-  current_filename = std::move(file_name);
+TokenPtr Token::CreateTokens(const String& file_name, const StringPtr& program) {
+  current_filename = file_name;
   prg = program;
   TokenPtr tok_list = std::make_shared<Token>(TK_EOF, nullptr, 0);
   TokenPtr cur = tok_list;
@@ -85,13 +98,13 @@ TokenPtr Token::CreateTokens(const String& file_name, StringPtr program) {
       cur = cur->next = std::make_shared<Token>(TK_NUM, p, 0);
       char* q = p;
       cur->val = strtol(p, &p, 10);
-      cur->strlen = static_cast<int>(p - q);
+      cur->len = static_cast<int>(p - q);
       continue;
     }
 
     if (*p == '"') {
       cur = cur->next = cur->ReadStringLiteral(p);
-      p += cur->strlen;
+      p += cur->len;
       continue;
     }
 
@@ -111,7 +124,7 @@ TokenPtr Token::CreateTokens(const String& file_name, StringPtr program) {
       p += punct_len;
       continue;
     }
-    ErrorAt(prg->c_str(), p, "expect a number.");
+    ErrorAt(p, "expect a number.");
   }
 
   cur->next = std::make_shared<Token>(TK_EOF, p, 0);
@@ -134,19 +147,19 @@ void Token::ConvertToReserved(TokenPtr tok) {
   static const char* kw[] = {"return", "if", "else", "for", "while", "int", "sizeof", "char"};
   for (TokenPtr t = tok; t != nullptr; t = t->next) {
     for (int i = 0; i < sizeof(kw) / sizeof(*kw); i++) {
-      if (StrEqual(t->str, kw[i], t->strlen)) {
+      if (StrEqual(t->loc, kw[i], t->len)) {
         t->kind = TK_KEYWORD;
       }
     }
   }
 }
 
-bool Token::Equal(const char* op) { return StrEqual(this->str, op, this->strlen); }
+bool Token::Equal(const char* op) { return StrEqual(this->loc, op, this->len); }
 
 TokenPtr Token::SkipToken(const char* op, bool enable_error) {
   if (!this->Equal(op)) {
     if (enable_error) {
-      ErrorAt(prg->c_str(), this->str, "Expect \'%s\'", op);
+      ErrorAt(this->loc, "Expect \'%s\'", op);
     } else {
       return nullptr;
     }
@@ -183,7 +196,7 @@ int Token::ReadEscapeedChar(char** new_pos, char* p) {
     // return a hexadecimal number.
     p++;
     if (!std::isxdigit(*p)) {
-      ErrorAt(prg->c_str(), p, "invaild hex escape sequence.");
+      ErrorAt(p, "invaild hex escape sequence.");
     }
     int c = 0;
     for (; isxdigit(*p); p++) {
@@ -229,7 +242,7 @@ char* Token::StringLiteralEnd(char* start) {
   char* p = start + 1;
   for (; *p != '"'; p++) {
     if (*p == '\n' || *p == '\0') {
-      ErrorAt(prg->c_str(), start, "unclosed string literal!");
+      ErrorAt(start, "unclosed string literal!");
     }
     if (*p == '\\') {
       p++;
@@ -244,24 +257,11 @@ TokenPtr Token::ReadStringLiteral(char* start) {
   return tok;
 }
 
-void Token::ErrorTok(const char* fmt, ...) {
-  va_list ap;
-  va_start(ap, fmt);
-
-  int pos = static_cast<int>(this->str - prg->c_str());
-  fprintf(stderr, "%s\n", prg->c_str());
-  fprintf(stderr, "%*s", pos, "");  // print pos spaces.
-  fprintf(stderr, "^ ");
-  vfprintf(stderr, fmt, ap);
-  fprintf(stderr, "\n");
-  exit(1);
-}
-
 String Token::GetIdent() {
   if (kind != TK_IDENT) {
     ErrorTok("GetIdent expect an identifier.");
   }
-  return String(str, strlen);
+  return String(loc, len);
 }
 
 long Token::GetNumber() {
@@ -271,8 +271,58 @@ long Token::GetNumber() {
   return val;
 }
 
-ObjectPtr Token::FindLocalVar() { return Object::Find(locals, this->str); }
+ObjectPtr Token::FindLocalVar() { return Object::Find(locals, this->loc); }
 
-ObjectPtr Token::FindGlobalVar() { return Object::Find(globals, this->str); }
+ObjectPtr Token::FindGlobalVar() { return Object::Find(globals, this->loc); }
 
 bool Token::IsTypename() { return Equal("int") || Equal("char"); }
+
+TokenPtr Token::TokenizeFile(const String& file_name) {
+  return CreateTokens(file_name, ReadFile(file_name));
+}
+
+void Token::ErrorTok(const char* fmt, ...) {
+  va_list ap;
+  va_start(ap, fmt);
+  VrdicErrorAt(this->loc, fmt, ap);
+}
+
+void Token::ErrorAt(char* loc, const char* fmt, ...) {
+  va_list ap;
+  va_start(ap, fmt);
+  VrdicErrorAt(loc, fmt, ap);
+}
+
+void Token::VrdicErrorAt(char* loc, const char* fmt, va_list ap) {
+  // find a line containing `loc`
+  char* start = loc;
+  const char* current_input = prg->c_str();
+  while (current_input < start && start[-1] != '\n') {
+    start--;
+  }
+
+  char* end = loc;
+  while (*end != '\n') {
+    end++;
+  }
+
+  // get line number
+  int line_no = 1;
+  for (const char* p = current_input; p < start; p++) {
+    if (*p == '\n') {
+      line_no++;
+    }
+  }
+
+  // print the line
+  int indent = fprintf(stderr, "%s:%d: ", current_filename.c_str(), line_no);
+  fprintf(stderr, "%.*s\n", static_cast<int>(end - start), start);
+
+  int pos = static_cast<int>(loc - start + indent);
+
+  fprintf(stderr, "%*s", pos, "");  // print pos spaces.
+  fprintf(stderr, "^ ");
+  vfprintf(stderr, fmt, ap);
+  fprintf(stderr, "\n");
+  exit(1);
+}

@@ -24,6 +24,7 @@ using NodePtr = std::shared_ptr<Node>;
 using ObjectPtr = std::shared_ptr<Object>;
 using StringPtr = std::shared_ptr<std::string>;
 using String = std::string;
+using StringStream = std::stringstream;
 
 extern ObjectPtr locals;
 extern ObjectPtr globals;
