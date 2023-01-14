@@ -73,8 +73,6 @@ class Token {
   static TokenPtr TokenizeFile(const String& file_name);
 
  private:
-  // read code from stdin.
-  static StringStream ReadFromStdin();
   // read code from filename.
   static StringStream ReadFromFile(const String& filename);
   // return the contents of given file.
@@ -94,6 +92,7 @@ class Token {
   friend class Node;
   friend class Object;
 
+private:
   // Token Kind
   Tokenkind kind = TK_EOF;
   // Next Token

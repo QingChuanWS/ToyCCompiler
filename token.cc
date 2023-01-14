@@ -45,15 +45,13 @@ TokenPtr Token::CreateStringToken(char* start, char* end) {
   return res;
 }
 
-StringStream Token::ReadFromStdin() {
-  StringStream buf;
-
-  buf << std::cin.rdbuf();
-  return buf;
-}
-
 StringStream Token::ReadFromFile(const String& filename) {
   StringStream buf;
+  // By convention, read from the stdin if the given file name is '-'.
+  if (filename == "-") {
+    buf << std::cin.rdbuf();
+    return std::move(buf);
+  }
 
   std::ifstream input(filename);
   if (!input.is_open()) {
@@ -61,19 +59,11 @@ StringStream Token::ReadFromFile(const String& filename) {
   }
   buf << input.rdbuf();
   input.close();
-  return buf;
+  return std::move(buf);
 }
 
 StringPtr Token::ReadFile(const String& filename) {
-  StringStream buf;
-  // By convention, read from the stdin if the given file name is '-'.
-  if (filename == "-") {
-    buf = ReadFromStdin();
-  } else {
-    buf = ReadFromFile(filename);
-  }
-
-  String program(buf.str());
+  String program(ReadFromFile(filename).str());
   // Make sure that the last line is properly terminated with '\n'
   if (program.size() == 0 || program[program.size() - 1] != '\n') {
     program.push_back('\n');
@@ -90,6 +80,25 @@ TokenPtr Token::CreateTokens(const String& file_name, const StringPtr& program) 
   TokenPtr cur = tok_list;
   char* p = &(*prg)[0];
   while (*p != '\0') {
+    // skip line comments.
+    if (StrEqual(p, "//", 2)) {
+      p += 2;
+      while (*p != '\n') {
+        p++;
+      }
+      continue;
+    }
+
+    // skip block comments.
+    if (StrEqual(p, "/*", 2)) {
+      char* q = strstr(p + 2, "*/");
+      if (!q) {
+        ErrorAt(p, "unclose block comment.");
+      }
+      p = q + 2;
+      continue;
+    }
+
     if (std::isspace(*p)) {
       p++;
       continue;
