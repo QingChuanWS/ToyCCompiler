@@ -27,9 +27,8 @@ enum Objectkind {
 class Object {
  public:
   // construct a Object object based on kind.
-  Object(Objectkind kind, String name, TypePtr ty) : kind(kind), ty(ty), obj_name(std::move(name)) {}
-  // deconstructor.
-  // ~Object();
+  Object(Objectkind kind, const String& name, const TypePtr& ty)
+      : kind(kind), ty(ty), obj_name(name) {}
   // calculate the function local variable offset.
   void OffsetCal();
   // check whether is a local variable
@@ -38,29 +37,30 @@ class Object {
   bool IsGlobal() { return kind == OB_GLOBAL; }
   // check whether is a global variable or function
   bool IsFunction() { return kind == OB_FUNCTION; }
+  // get the object var type.
+  const TypePtr& GetType()const { return ty; }
   // find a token name in object list.
   static ObjectPtr Find(ObjectPtr root, const char* p);
 
  public:
   // create global varibal
-  static ObjectPtr CreateGlobalVar(const String& name, TypePtr ty, ObjectPtr* next);
+  static ObjectPtr CreateGlobalVar(const String& name, const TypePtr& ty, ObjectPtr* next);
   // create local varibal
-  static ObjectPtr CreateLocalVar(const String& name, TypePtr ty, ObjectPtr* next);
+  static ObjectPtr CreateLocalVar(const String& name, const TypePtr& ty, ObjectPtr* next);
   // create a function based on token list.
   static TokenPtr CreateFunction(TokenPtr tok, TypePtr basety, ObjectPtr* next);
   // create a string literal variable
-  static ObjectPtr CreateStringVar(String& name);
+  static ObjectPtr CreateStringVar(const String& name);
   // create function parameter list.
   static void CreateParamVar(TypePtr param);
   // parsing token list and generate AST.
   static ObjectPtr Parse(TokenPtr tok);
   // Lookahead tokens and returns true if a given token is a start
   // of a function definition or declaration.
-  static bool IsFunction(TokenPtr tok);
+  static bool IsFuncToks(TokenPtr tok);
   // create global variable list based on token list.
   static TokenPtr ParseGlobalVar(TokenPtr tok, TypePtr basety);
 
-  friend class Node;
   friend class CodeGenerator;
 
  private:

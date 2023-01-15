@@ -7,7 +7,7 @@ add_compile_options(-std=c++11)
 
 include_directories(.)
 
-add_executable(toyc tools.cc object.cc node.cc type.cc main.cc codegen.cc token.cc)
+add_executable(toyc tools.cc object.cc node.cc type.cc main.cc codegen.cc token.cc parser.cc)
 
 enable_testing()
 

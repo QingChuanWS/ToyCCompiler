@@ -142,7 +142,7 @@ TokenPtr Token::CreateTokens(const String& file_name, const StringPtr& program) 
   return tok_list->next;
 }
 
-int Token::ReadPunct(const char* p) {
+int Token::ReadPunct(const char* p) const {
   static const char* ops[] = {">=", "==", "!=", "<="};
   for (int i = 0; i < sizeof(ops) / sizeof(*ops); i++) {
     if (StrEqual(p, ops[i], 2)) {
@@ -164,7 +164,7 @@ void Token::ConvertToReserved(TokenPtr tok) {
   }
 }
 
-bool Token::Equal(const char* op) { return StrEqual(this->loc, op, this->len); }
+bool Token::Equal(const char* op) const { return StrEqual(loc, op, len); }
 
 TokenPtr Token::SkipToken(const char* op, bool enable_error) {
   if (!this->Equal(op)) {
@@ -177,7 +177,7 @@ TokenPtr Token::SkipToken(const char* op, bool enable_error) {
   return this->next;
 }
 
-int Token::FromHex(const char c) {
+int Token::FromHex(const char c) const {
   if ('0' <= c && c <= '9') {
     return c - '0';
   }
@@ -267,31 +267,31 @@ TokenPtr Token::ReadStringLiteral(const char* start) {
   return tok;
 }
 
-String Token::GetIdent() {
+String Token::GetIdent() const {
   if (kind != TK_IDENT) {
     ErrorTok("GetIdent expect an identifier.");
   }
   return String(loc, len);
 }
 
-long Token::GetNumber() {
+long Token::GetNumber() const {
   if (kind != TK_NUM) {
     ErrorTok("GetNumber expect an number.");
   }
   return val;
 }
 
-ObjectPtr Token::FindLocalVar() { return Object::Find(locals, this->loc); }
+ObjectPtr Token::FindLocalVar()const { return Object::Find(locals, this->loc); }
 
-ObjectPtr Token::FindGlobalVar() { return Object::Find(globals, this->loc); }
+ObjectPtr Token::FindGlobalVar()const { return Object::Find(globals, this->loc); }
 
-bool Token::IsTypename() { return Equal("int") || Equal("char"); }
+bool Token::IsTypename() const { return Equal("int") || Equal("char"); }
 
 TokenPtr Token::TokenizeFile(const String& file_name) {
   return CreateTokens(file_name, ReadFile(file_name));
 }
 
-void Token::ErrorTok(const char* fmt, ...) {
+void Token::ErrorTok(const char* fmt, ...) const {
   va_list ap;
   va_start(ap, fmt);
   VrdicErrorAt(this->loc, fmt, ap);

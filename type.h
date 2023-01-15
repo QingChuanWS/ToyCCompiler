@@ -29,15 +29,23 @@ class Type {
  public:
   Type(TypeKind kind, int size) : kind(kind), size(size) {}
   // copy construct.
-  explicit Type(const Type& ty) = default;
+  Type(const Type& ty) = default;
   // whether the type is integer.
   bool IsInteger();
   // whether the type is points.
   bool IsPointer();
   // whether the type is function.
   bool IsFunction();
+  // whether the type is array
+  bool IsArray();
   // whether the type contains the tok name.
   bool HasName();
+  // get data size.
+  int Size() { return size; }
+  // get base pointer size.
+  int GetBaseSize() { return base->size; }
+  // get type's base type.
+  const TypePtr& GetBase() const { return base; }
 
  public:
   // create pointer type.
@@ -48,9 +56,9 @@ class Type {
   static TypePtr CreateArrayType(TypePtr base, int array_len);
 
  private:
-  friend class Node;
+  friend class Parser;
   friend class Object;
-  friend class CodeGenerator;
+
   // type kind
   TypeKind kind = TY_END;
   // Declaration.

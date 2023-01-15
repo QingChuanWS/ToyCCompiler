@@ -40,4 +40,6 @@ bool Type::IsFunction() { return this->kind == TY_FUNC; }
 
 bool Type::IsPointer() { return base != nullptr; }
 
+bool Type::IsArray(){return kind == TY_ARRAY;}
+
 bool Type::HasName() { return name != nullptr; }

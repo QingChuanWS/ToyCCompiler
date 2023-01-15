@@ -75,66 +75,16 @@ class Node {
   // create subtract expration(contain point arithmatic calculation) node.
   static NodePtr CreateSubNode(TokenPtr node_name, NodePtr op_left, NodePtr op_right);
   // create IF expration node.
-  static NodePtr CreateIFNode(TokenPtr node_name, NodePtr cond, NodePtr then, NodePtr els);
+  static NodePtr CreateIfNode(TokenPtr node_name, NodePtr cond, NodePtr then, NodePtr els);
   // create for expration node.
   static NodePtr CreateForNode(TokenPtr node_name, NodePtr init, NodePtr cond, NodePtr inc,
                                NodePtr then);
   // create block expression node.
   static NodePtr CreateBlockNode(NodeKind kind, TokenPtr node_name, NodePtr body);
-  // parsing token list and generate AST.
-  // program = stmt*
-  static NodePtr Program(TokenPtr* rest, TokenPtr tok);
 
  private:
-  // ----------------Parse Function------------------
-  // compound-stmt = (declaration | stmt)* "}"
-  static NodePtr CompoundStmt(TokenPtr* rest, TokenPtr tok);
-  // declaration = declspec (
-  //                 declarator ( "=" expr)?
-  //                 ("," declarator ("=" expr)? ) * )? ";"
-  static NodePtr Declaration(TokenPtr* rest, TokenPtr tok);
-  // declspec = "int"
-  static TypePtr Declspec(TokenPtr* rest, TokenPtr tok);
-  // declarator = "*"* ident type-suffix
-  static TypePtr Declarator(TokenPtr* rest, TokenPtr tok, TypePtr ty);
-  // type-suffix = "(" func-params | "[" num "]" | ɛ
-  static TypePtr TypeSuffix(TokenPtr* rest, TokenPtr tok, TypePtr ty);
-  // func-param = param ("," param) *
-  // param = declspec declarator
-  static TypePtr FunctionParam(TokenPtr* rest, TokenPtr tok, TypePtr ty);
-  // stmt = "return" expr ";" |
-  // "if" "(" expr ")" stmt ("else" stmt)? |
-  // "for" "(" expr-stmt expr? ";" expr? ")" stmt |
-  // "while" "(" expr ")" stmt |
-  // "{" compuound-stmt |
-  // expr-stmt
-  static NodePtr Stmt(TokenPtr* rest, TokenPtr tok);
-  // expr-stmt = expr ";"
-  static NodePtr ExprStmt(TokenPtr* rest, TokenPtr tok);
-  // expr = assign
-  static NodePtr Expr(TokenPtr* rest, TokenPtr tok);
-  // assign = equality ("=" assign)?
-  static NodePtr Assign(TokenPtr* rest, TokenPtr tok);
-  // equality = relational ("==" relational | "!=" relational)
-  static NodePtr Equality(TokenPtr* rest, TokenPtr tok);
-  // relational = add ("<" add | "<=" add | ">" add | ">=" add)
-  static NodePtr Relational(TokenPtr* rest, TokenPtr tok);
-  // add = mul ("+"mul | "-" mul)
-  static NodePtr Add(TokenPtr* rest, TokenPtr tok);
-  // mul = unary ("*" unary | "/" unary)
-  static NodePtr Mul(TokenPtr* rest, TokenPtr tok);
-  // unary = ("+" | "-" | "*" | "&") ? unary | primary
-  static NodePtr Unary(TokenPtr* rest, TokenPtr tok);
-  // postfix = primary ("[" Expr "]")*
-  static NodePtr Postfix(TokenPtr* rest, TokenPtr tok);
-  // primary = "(" "{" stmt+ "}" ")"
-  //          |"(" expr ")" | "sizeof" unary | ident func-args? | str | num
-  static NodePtr Primary(TokenPtr* rest, TokenPtr tok);
-  // function = ident "(" (assign ("," assign)*)? ")"
-  static NodePtr Call(TokenPtr* rest, TokenPtr tok);
-
   friend class CodeGenerator;
-  friend class Object;
+  friend class Parser;
 
   // Node kind
   NodeKind kind = ND_END;
@@ -161,14 +111,14 @@ class Node {
   // for "for" statement
   NodePtr init = nullptr;
   NodePtr inc = nullptr;
-  
+
   // ------ function ------;
   String call = String();
   NodePtr args = nullptr;
 
   //  ------ for Var ------;
   ObjectPtr var = nullptr;
-  
+
   //  ------ for const ------;
   long val = 0;
 };

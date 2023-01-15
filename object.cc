@@ -16,13 +16,14 @@
 #include <memory>
 
 #include "node.h"
+#include "parser.h"
 #include "tools.h"
 #include "type.h"
 
 ObjectPtr locals;
 ObjectPtr globals;
 
-ObjectPtr Object::CreateLocalVar(const String& name, TypePtr ty, ObjectPtr* next) {
+ObjectPtr Object::CreateLocalVar(const String& name, const TypePtr& ty, ObjectPtr* next) {
   ObjectPtr obj = std::make_shared<Object>(OB_LOCAL, name, ty);
   if (ty->HasName() && ty->name->FindLocalVar() != nullptr) {
     ty->name->ErrorTok("redefined variable.");
@@ -32,7 +33,7 @@ ObjectPtr Object::CreateLocalVar(const String& name, TypePtr ty, ObjectPtr* next
   return obj;
 }
 
-ObjectPtr Object::CreateGlobalVar(const String& name, TypePtr ty, ObjectPtr* next) {
+ObjectPtr Object::CreateGlobalVar(const String& name, const TypePtr& ty, ObjectPtr* next) {
   ObjectPtr obj = std::make_shared<Object>(OB_GLOBAL, name, ty);
   if (ty->HasName() && ty->name->FindGlobalVar() != nullptr) {
     ty->name->ErrorTok("redefined variable.");
@@ -42,22 +43,22 @@ ObjectPtr Object::CreateGlobalVar(const String& name, TypePtr ty, ObjectPtr* nex
   return obj;
 }
 
-ObjectPtr Object::CreateStringVar(String& name) {
+ObjectPtr Object::CreateStringVar(const String& name) {
   TypePtr ty = Type::CreateArrayType(ty_char, name.size());
   ObjectPtr obj = CreateGlobalVar(CreateUniqueName(), ty, &globals);
-  obj->init_data = std::move(name);
+  obj->init_data = name;
   obj->is_string = true;
   return obj;
 }
 
 TokenPtr Object::CreateFunction(TokenPtr tok, TypePtr basety, ObjectPtr* next) {
   locals = nullptr;
-  TypePtr ty = Node::Declarator(&tok, tok, basety);
+  TypePtr ty = Parser::Declarator(&tok, tok, basety);
   CreateParamVar(ty->params);
 
   ObjectPtr fn = std::make_shared<Object>(OB_FUNCTION, ty->name->GetIdent(), ty);
   fn->params = locals;
-  fn->body = Node::Program(&tok, tok);
+  fn->body = Parser::Program(&tok, tok);
   fn->loc_list = locals;
   fn->ty = ty;
 
@@ -73,17 +74,17 @@ void Object::CreateParamVar(TypePtr param) {
   }
 }
 
-bool Object::IsFunction(TokenPtr tok) {
+bool Object::IsFuncToks(TokenPtr tok) {
   if (tok->Equal(";")) {
     return false;
   }
   while (tok->Equal("*")) {
-    tok = tok->next;
+    tok = tok->GetNext();
   }
-  if (tok->kind != TK_IDENT) {
+  if (tok->GetKind() != TK_IDENT) {
     tok->ErrorTok("expected a variable name.");
   }
-  tok = tok->next;
+  tok = tok->GetNext();
   if (tok->Equal("(")) {
     return true;
   }
@@ -93,8 +94,8 @@ bool Object::IsFunction(TokenPtr tok) {
 ObjectPtr Object::Parse(TokenPtr tok) {
   globals = nullptr;
   while (!tok->IsEof()) {
-    TypePtr basety = Node::Declspec(&tok, tok);
-    if (IsFunction(tok)) {
+    TypePtr basety = Parser::Declspec(&tok, tok);
+    if (IsFuncToks(tok)) {
       tok = CreateFunction(tok, basety, &globals);
       continue;
     }
@@ -111,7 +112,7 @@ TokenPtr Object::ParseGlobalVar(TokenPtr tok, TypePtr basety) {
       tok = tok->SkipToken(",");
     }
     first = false;
-    TypePtr ty = Node::Declarator(&tok, tok, basety);
+    TypePtr ty = Parser::Declarator(&tok, tok, basety);
     ObjectPtr gv = CreateGlobalVar(ty->name->GetIdent(), ty, &globals);
   }
   return tok->SkipToken(";");

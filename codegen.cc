@@ -63,7 +63,7 @@ void CodeGenerator::Pop(const char* arg) {
 }
 
 void CodeGenerator::Load(TypePtr ty) {
-  if (ty->kind == TY_ARRAY) {
+  if (ty->IsArray()) {
     // If it is a array, do not attempt to load a value to
     // the register because we can't load entire array to
     // register. As a result, the evaluation's result isn't
@@ -72,7 +72,7 @@ void CodeGenerator::Load(TypePtr ty) {
     // element of the array in C" occur.
     return;
   }
-  if (ty->size == 1) {
+  if (ty->Size() == 1) {
     ASM_GEN("  mov al, [rax]");
   } else {
     ASM_GEN("  mov rax, [rax]");
@@ -81,7 +81,7 @@ void CodeGenerator::Load(TypePtr ty) {
 
 void CodeGenerator::Store(TypePtr ty) {
   Pop("rdi");
-  if (ty->size == 1) {
+  if (ty->Size() == 1) {
     ASM_GEN("  mov [rdi], al");
   } else {
     ASM_GEN("  mov [rdi], rax");
@@ -103,11 +103,11 @@ void CodeGenerator::EmitData(ObjectPtr prog) {
     ASM_GEN("  .global ", var->obj_name, "\n");
     ASM_GEN(var->obj_name, ":");
     if (var->is_string) {
-      for (int i = 0; i < var->ty->size; i++) {
+      for (int i = 0; i < var->ty->Size(); i++) {
         ASM_GEN("  .byte ", static_cast<int>(var->init_data[i]), "\n");
       }
     } else {
-      ASM_GEN("  .zero ", var->ty->size);
+      ASM_GEN("  .zero ", var->ty->Size());
     }
   }
 }
@@ -133,7 +133,7 @@ void CodeGenerator::EmitText(ObjectPtr prog) {
 
     int i = 0;
     for (ObjectPtr var = fn->params; var != nullptr; var = var->next) {
-      if (var->ty->size == 1) {
+      if (var->ty->Size() == 1) {
         ASM_GEN("  mov [rbp - ", var->offset, "], ", argreg8[i++]);
       } else {
         ASM_GEN("  mov [rbp - ", var->offset, "], ", argreg64[i++]);

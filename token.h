@@ -40,19 +40,23 @@ class Token {
   // otherwise return false.
   bool IsEof() { return this->kind == TK_EOF; }
   // Check whether Token string equal special string
-  bool Equal(const char* op);
+  bool Equal(const char* op) const;
   // Report an error in token list
-  void ErrorTok(const char* fmt, ...);
+  void ErrorTok(const char* fmt, ...) const;
   // Get tok name string based copy mode.
-  String GetIdent();
+  String GetIdent() const;
   // Get tok value when kind == NUM
-  long GetNumber();
+  long GetNumber() const;
   // Check whether the given token is a typename.
-  bool IsTypename();
+  bool IsTypename() const;
   // Find a tok name whether is in locals variable list.
-  ObjectPtr FindLocalVar();
+  ObjectPtr FindLocalVar() const;
   // Find a tok name whether is in locals variable list.
-  ObjectPtr FindGlobalVar();
+  ObjectPtr FindGlobalVar() const;
+  // get the tok next point
+  const TokenPtr& GetNext() const { return next; }
+  // get the tok kind.
+  Tokenkind GetKind() const { return kind; }
 
  private:
   // find a closing double-quote.
@@ -60,9 +64,9 @@ class Token {
   // read the escaped char
   int ReadEscapeedChar(const char** new_pos, const char* p);
   // convert char c to hex format
-  int FromHex(const char c);
+  int FromHex(const char c) const;
   // matching punction.
-  int ReadPunct(const char* p);
+  int ReadPunct(const char* p) const;
   // read a string literal for source pargram char.
   TokenPtr ReadStringLiteral(const char* start);
   // free token kind = TK_STR
@@ -89,8 +93,7 @@ class Token {
   //               ^ <error message here>
   static void VrdicErrorAt(const char* loc, const char* fmt, va_list ap);
 
-  friend class Node;
-  friend class Object;
+  friend class Parser;
 
  private:
   // Token Kind
@@ -104,7 +107,7 @@ class Token {
   // Token length
   int len = 0;
   // String literal contents include terminating '\0'
-  String str_literal = String();
+  String str_literal = "";
 };
 
 #endif  //  TOKEN_GRUAD
