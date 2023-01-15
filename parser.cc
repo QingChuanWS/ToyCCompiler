@@ -1,8 +1,9 @@
 
 #include "parser.h"
+
+#include "node.h"
 #include "token.h"
 #include "utils.h"
-#include "node.h"
 
 NodePtr Parser::Program(TokenPtr* rest, TokenPtr tok) {
   tok = tok->SkipToken("{");
@@ -14,6 +15,8 @@ NodePtr Parser::CompoundStmt(TokenPtr* rest, TokenPtr tok) {
   NodePtr sub_expr = std::make_shared<Node>(ND_END, tok);
   NodePtr cur = sub_expr;
 
+  Scope::EnterScope(scope);
+
   while (!tok->Equal("}")) {
     if (tok->IsTypename()) {
       cur->next = Declaration(&tok, tok);
@@ -23,6 +26,8 @@ NodePtr Parser::CompoundStmt(TokenPtr* rest, TokenPtr tok) {
     cur = cur->next;
     cur->TypeInfer();
   }
+
+  Scope::LevarScope(scope);
 
   *rest = tok->next;
   return Node::CreateBlockNode(ND_BLOCK, tok, sub_expr->next);

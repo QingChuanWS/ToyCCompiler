@@ -49,14 +49,12 @@ class Token {
   long GetNumber() const;
   // Check whether the given token is a typename.
   bool IsTypename() const;
-  // Find a tok name whether is in locals variable list.
-  ObjectPtr FindLocalVar() const;
-  // Find a tok name whether is in locals variable list.
-  ObjectPtr FindGlobalVar() const;
   // get the tok next point
   const TokenPtr& GetNext() const { return next; }
   // get the tok kind.
   Tokenkind GetKind() const { return kind; }
+  // find a variable in scope.
+  ObjectPtr FindVar();
 
  private:
   // find a closing double-quote.
@@ -69,8 +67,6 @@ class Token {
   int ReadPunct(const char* p) const;
   // read a string literal for source pargram char.
   TokenPtr ReadStringLiteral(const char* start);
-  // free token kind = TK_STR
-  void StrTokenFree();
 
  public:
   // Create

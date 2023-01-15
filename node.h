@@ -12,6 +12,7 @@
 #ifndef NODE_GRUAD
 #define NODE_GRUAD
 
+#include <cstddef>
 #include <memory>
 #include <string>
 

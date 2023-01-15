@@ -36,15 +36,11 @@ NodePtr Node::CreateVarNode(ObjectPtr var, TokenPtr tok) {
 }
 
 NodePtr Node::CreateIdentNode(TokenPtr tok) {
-  ObjectPtr local_var = tok->FindLocalVar();
-  ObjectPtr global_var = tok->FindGlobalVar();
-  if (global_var == nullptr && local_var == nullptr) {
+  ObjectPtr var = tok->FindVar();
+  if (var == nullptr) {
     tok->ErrorTok("undefined variable.");
   }
-  if (local_var) {
-    return CreateVarNode(local_var, tok);
-  }
-  return CreateVarNode(global_var, tok);
+  return CreateVarNode(var, tok);
 }
 
 NodePtr Node::CreateCallNode(TokenPtr call_name, NodePtr args) {

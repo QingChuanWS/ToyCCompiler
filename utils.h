@@ -22,6 +22,8 @@ class Token;
 class Object;
 class Node;
 class Type;
+class VarScope;
+class Scope;
 
 using TokenPtr = std::shared_ptr<Token>;
 using TypePtr = std::shared_ptr<Type>;
@@ -30,9 +32,13 @@ using ObjectPtr = std::shared_ptr<Object>;
 using StringPtr = std::shared_ptr<std::string>;
 using String = std::string;
 using StringStream = std::stringstream;
+using ScopePtr = std::shared_ptr<Scope>;
+using VarScopePtr = std::shared_ptr<VarScope>;
 
 extern ObjectPtr locals;
 extern ObjectPtr globals;
+
+extern ScopePtr scope;
 
 extern std::shared_ptr<Type> ty_int;
 extern std::shared_ptr<Type> ty_char;

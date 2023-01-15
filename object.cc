@@ -11,6 +11,7 @@
 
 #include "object.h"
 
+#include <cstddef>
 #include <cstdlib>
 #include <cstring>
 #include <memory>
@@ -19,25 +20,42 @@
 #include "parser.h"
 #include "tools.h"
 #include "type.h"
+#include "utils.h"
 
-ObjectPtr locals;
-ObjectPtr globals;
+ObjectPtr locals = nullptr;
+ObjectPtr globals = nullptr;
+
+ScopePtr scope = nullptr;
+
+void Scope::EnterScope(ScopePtr& next) {
+  ScopePtr sc = std::make_shared<Scope>();
+  sc->next = next;
+  next = sc;
+}
+
+void Scope::LevarScope(ScopePtr& next) { next = next->next; }
+
+ObjectPtr Object::CreateVar(Objectkind kind, const String& name, const TypePtr& ty) {
+  ObjectPtr obj = std::make_shared<Object>(kind, name, ty);
+  VarScope::PushScope(name, obj, scope->vars);
+  return obj;
+}
 
 ObjectPtr Object::CreateLocalVar(const String& name, const TypePtr& ty, ObjectPtr* next) {
-  ObjectPtr obj = std::make_shared<Object>(OB_LOCAL, name, ty);
-  if (ty->HasName() && ty->name->FindLocalVar() != nullptr) {
-    ty->name->ErrorTok("redefined variable.");
-  }
+  ObjectPtr obj = CreateVar(OB_LOCAL, name, ty);
+  // if (Find(name.c_str()) != nullptr) {
+  //   ty->name->ErrorTok("redefined variable.");
+  // }
   obj->next = *next;
   *next = obj;
   return obj;
 }
 
 ObjectPtr Object::CreateGlobalVar(const String& name, const TypePtr& ty, ObjectPtr* next) {
-  ObjectPtr obj = std::make_shared<Object>(OB_GLOBAL, name, ty);
-  if (ty->HasName() && ty->name->FindGlobalVar() != nullptr) {
-    ty->name->ErrorTok("redefined variable.");
-  }
+  ObjectPtr obj = CreateVar(OB_GLOBAL, name, ty);
+  // if (ty->HasName() && ty->name->FindVar() != nullptr) {
+  //   ty->name->ErrorTok("redefined variable.");
+  // }
   obj->next = *next;
   *next = obj;
   return obj;
@@ -54,13 +72,18 @@ ObjectPtr Object::CreateStringVar(const String& name) {
 TokenPtr Object::CreateFunction(TokenPtr tok, TypePtr basety, ObjectPtr* next) {
   locals = nullptr;
   TypePtr ty = Parser::Declarator(&tok, tok, basety);
-  CreateParamVar(ty->params);
 
-  ObjectPtr fn = std::make_shared<Object>(OB_FUNCTION, ty->name->GetIdent(), ty);
+  // create scope.
+  Scope::EnterScope(scope);
+
+  ObjectPtr fn = CreateVar(OB_FUNCTION, ty->name->GetIdent(), ty);
+  CreateParamVar(ty->params);
   fn->params = locals;
   fn->body = Parser::Program(&tok, tok);
   fn->loc_list = locals;
-  fn->ty = ty;
+
+  // leave scope.
+  Scope::LevarScope(scope);
 
   fn->next = *next;
   *next = fn;
@@ -93,6 +116,8 @@ bool Object::IsFuncToks(TokenPtr tok) {
 
 ObjectPtr Object::Parse(TokenPtr tok) {
   globals = nullptr;
+  // enter scope
+  Scope::EnterScope(scope);
   while (!tok->IsEof()) {
     TypePtr basety = Parser::Declspec(&tok, tok);
     if (IsFuncToks(tok)) {
@@ -101,6 +126,8 @@ ObjectPtr Object::Parse(TokenPtr tok) {
     }
     tok = ParseGlobalVar(tok, basety);
   }
+  // leave scope.
+  Scope::LevarScope(scope);
   return globals;
 }
 
@@ -129,10 +156,12 @@ void Object::OffsetCal() {
   }
 }
 
-ObjectPtr Object::Find(ObjectPtr root, const char* p) {
-  for (ObjectPtr v = root; v != nullptr; v = v->next) {
-    if (memcmp(v->obj_name.c_str(), p, v->obj_name.size()) == 0) {
-      return v;
+ObjectPtr Object::Find(const char* p) {
+  for (ScopePtr sc = scope; sc != nullptr; sc = sc->next) {
+    for (VarScopePtr lc_sc = sc->vars; lc_sc != nullptr; lc_sc = lc_sc->next) {
+      if (memcmp(lc_sc->name.c_str(), p, lc_sc->name.size()) == 0) {
+        return lc_sc->var;
+      }
     }
   }
   return nullptr;

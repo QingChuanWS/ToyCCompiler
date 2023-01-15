@@ -281,9 +281,7 @@ long Token::GetNumber() const {
   return val;
 }
 
-ObjectPtr Token::FindLocalVar()const { return Object::Find(locals, this->loc); }
-
-ObjectPtr Token::FindGlobalVar()const { return Object::Find(globals, this->loc); }
+ObjectPtr Token::FindVar() { return Object::Find(loc); }
 
 bool Token::IsTypename() const { return Equal("int") || Equal("char"); }
 

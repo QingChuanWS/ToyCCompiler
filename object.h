@@ -14,6 +14,7 @@
 
 #include <memory>
 
+#include "tools.h"
 #include "type.h"
 #include "utils.h"
 
@@ -22,6 +23,35 @@ enum Objectkind {
   OB_GLOBAL,
   OB_FUNCTION,
   OB_END,
+};
+
+class VarScope {
+public:
+  VarScope(String name, ObjectPtr var) : name(name), var(var) {}
+
+  static VarScopePtr PushScope(String name, ObjectPtr var, VarScopePtr& scope) {
+    VarScopePtr sc = std::make_shared<VarScope>(name, var);
+    sc->next = scope;
+    scope = sc;
+    return sc;
+  }
+
+ private:
+  friend class Object;
+  VarScopePtr next = nullptr;
+  String name = String();
+  ObjectPtr var = nullptr;
+};
+
+class Scope {
+ public:
+  static void EnterScope(ScopePtr& next);
+  static void LevarScope(ScopePtr& next);
+
+ private:
+  friend class Object;
+  ScopePtr next = nullptr;
+  VarScopePtr vars = nullptr;
 };
 
 class Object {
@@ -38,11 +68,13 @@ class Object {
   // check whether is a global variable or function
   bool IsFunction() { return kind == OB_FUNCTION; }
   // get the object var type.
-  const TypePtr& GetType()const { return ty; }
-  // find a token name in object list.
-  static ObjectPtr Find(ObjectPtr root, const char* p);
+  const TypePtr& GetType() const { return ty; }
+  // find a variable by name.
+  static ObjectPtr Find(const char* p);
 
  public:
+  // create variable.
+  static ObjectPtr CreateVar(Objectkind kind, const String& name, const TypePtr& ty);
   // create global varibal
   static ObjectPtr CreateGlobalVar(const String& name, const TypePtr& ty, ObjectPtr* next);
   // create local varibal
