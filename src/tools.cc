@@ -52,12 +52,17 @@ class StringFormator {
   static void Print(const T t) {
     GetInstance().sprint << t;
   }
-  
+
   static StringFormator& GetInstance() {
     static StringFormator printor;
     return printor;
   }
-  static const String GetString() { return std::move(GetInstance().sprint.str()); }
+  static const String GetString() {
+    String res = GetInstance().sprint.str();
+    GetInstance().sprint.clear();
+    GetInstance().sprint.str("");
+    return res;
+  }
 
  private:
   StringFormator() {}

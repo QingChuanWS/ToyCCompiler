@@ -23,12 +23,15 @@ check() {
 
 # -o
 rm -f $tmp/out
-./toyc -o $tmp/out $tmp/empty.c
+
+build_path=$1
+
+$build_path"/toyc" -o $tmp/out $tmp/empty.c
 [ -f $tmp/out ]
 check -o
 
 # --help
-./toyc --help 2>&1 | grep -q toyc
+$build_path"/toyc" --help 2>&1 | grep -q toyc
 check --help
 
 echo OK

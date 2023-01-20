@@ -50,7 +50,7 @@ StringStream Token::ReadFromFile(const String& filename) {
   // By convention, read from the stdin if the given file name is '-'.
   if (filename == "-") {
     buf << std::cin.rdbuf();
-    return std::move(buf);
+    return buf;
   }
 
   std::ifstream input(filename);
@@ -59,7 +59,7 @@ StringStream Token::ReadFromFile(const String& filename) {
   }
   buf << input.rdbuf();
   input.close();
-  return std::move(buf);
+  return buf;
 }
 
 StringPtr Token::ReadFile(const String& filename) {

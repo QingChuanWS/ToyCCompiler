@@ -28,8 +28,8 @@ static int Count() {
 int depth = 0;
 ObjectPtr cur_fn = nullptr;
 
-const char* argreg8[6] = {"dil", "sil", "cl", "dl", "r8b", "r9b"};
-const char* argreg64[6] = {"rdi", "rsi", "rcx", "rdx", "r8", "r9"};
+const char* argreg8[6] = {"dil", "sil", "dl", "cl", "r8b", "r9b"};
+const char* argreg64[6] = {"rdi", "rsi", "rdx", "rcx", "r8", "r9"};
 
 #define ASM_GEN(...) Println<CodeGenFunctor>(__VA_ARGS__, "\n");
 
@@ -73,7 +73,7 @@ void CodeGenerator::Load(TypePtr ty) {
     return;
   }
   if (ty->Size() == 1) {
-    ASM_GEN("  mov al, [rax]");
+    ASM_GEN("  movsbq rax, BYTE PTR [rax]");
   } else {
     ASM_GEN("  mov rax, [rax]");
   }
@@ -99,12 +99,12 @@ void CodeGenerator::EmitData(ObjectPtr prog) {
     if (var->IsFunction()) {
       continue;
     }
-    ASM_GEN("  .data", "\n");
-    ASM_GEN("  .global ", var->obj_name, "\n");
+    ASM_GEN("  .data");
+    ASM_GEN("  .global ", var->obj_name);
     ASM_GEN(var->obj_name, ":");
     if (var->is_string) {
       for (int i = 0; i < var->ty->Size(); i++) {
-        ASM_GEN("  .byte ", static_cast<int>(var->init_data[i]), "\n");
+        ASM_GEN("  .byte ", static_cast<int>(var->init_data[i]));
       }
     } else {
       ASM_GEN("  .zero ", var->ty->Size());
@@ -115,7 +115,7 @@ void CodeGenerator::EmitData(ObjectPtr prog) {
 void CodeGenerator::EmitText(ObjectPtr prog) {
   // using intel syntax
   // e.g. op dst, src
-  ASM_GEN(".intel_syntax noprefix");
+  ASM_GEN("  .intel_syntax noprefix");
   for (ObjectPtr fn = prog; fn != nullptr; fn = fn->next) {
     if (fn->IsGlobal()) {
       continue;
