@@ -45,6 +45,10 @@ void CodeGenerator::GetVarAddr(NodePtr& node) {
     case ND_DEREF:
       ExprGen(node->lhs);
       return;
+    case ND_COMMON:
+      ExprGen(node->lhs);
+      GetVarAddr(node->rhs);
+      return ;
     default:
       break;
   }
@@ -237,6 +241,10 @@ void CodeGenerator::ExprGen(NodePtr& node) {
       for (NodePtr n = node->body; n != nullptr; n = n->next) {
         StmtGen(n);
       }
+      return;
+    case ND_COMMON:
+      ExprGen(node->lhs);
+      ExprGen(node->rhs);
       return;
     case ND_CALL: {
       int nargs = 0;

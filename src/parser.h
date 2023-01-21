@@ -43,7 +43,7 @@ class Parser {
   static NodePtr Stmt(TokenPtr* rest, TokenPtr tok);
   // expr-stmt = expr ";"
   static NodePtr ExprStmt(TokenPtr* rest, TokenPtr tok);
-  // expr = assign
+  // expr = assign ("," expr)?
   static NodePtr Expr(TokenPtr* rest, TokenPtr tok);
   // assign = equality ("=" assign)?
   static NodePtr Assign(TokenPtr* rest, TokenPtr tok);

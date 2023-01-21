@@ -200,6 +200,9 @@ void Node::TypeInfer() {
     case ND_VAR:
       ty = var->GetType();
       return;
+    case ND_COMMON:
+      ty = rhs->ty;
+      return;
     case ND_ADDR:
       if (lhs->ty->IsArray()) {
         ty = Type::CreatePointerType(lhs->ty->GetBase());

@@ -34,6 +34,7 @@ enum NodeKind {
   ND_LE,         // <=
   ND_NUM,        // number
   ND_ASSIGN,     // =
+  ND_COMMON,     // ,
   ND_ADDR,       // unary &
   ND_DEREF,      // *
   ND_EXPR_STMT,  // expression statement

@@ -201,7 +201,15 @@ NodePtr Parser::ExprStmt(TokenPtr* rest, TokenPtr tok) {
 }
 
 // expr = assign
-NodePtr Parser::Expr(TokenPtr* rest, TokenPtr tok) { return Assign(rest, tok); }
+NodePtr Parser::Expr(TokenPtr* rest, TokenPtr tok) {
+  NodePtr node = Assign(&tok, tok);
+
+  if (tok->Equal(",")) {
+    return Node::CreateBinaryNode(ND_COMMON, tok,  node, Expr(rest, tok->next));
+  }
+  *rest = tok;
+  return node;
+}
 
 // assign = equality ("=" assign)?
 NodePtr Parser::Assign(TokenPtr* rest, TokenPtr tok) {
