@@ -153,6 +153,8 @@ void CodeGenerator::EmitText(ObjectPtr prog) {
 }
 
 void CodeGenerator::StmtGen(NodePtr& node) {
+  ASM_GEN("  .loc 1 ", node->name->GetLineNo());
+
   switch (node->kind) {
     case ND_EXPR_STMT:
       ExprGen(node->lhs);
@@ -204,6 +206,8 @@ void CodeGenerator::StmtGen(NodePtr& node) {
 
 // post-order for code-gen
 void CodeGenerator::ExprGen(NodePtr& node) {
+  ASM_GEN("  .loc 1 ", node->name->GetLineNo());
+
   switch (node->kind) {
     case ND_NUM:
       ASM_GEN("  mov rax, ", node->val);

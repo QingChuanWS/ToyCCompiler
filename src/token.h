@@ -47,6 +47,8 @@ class Token {
   String GetIdent() const;
   // Get tok value when kind == NUM
   long GetNumber() const;
+  // Get tok line number.
+  int GetLineNo() const;
   // Check whether the given token is a typename.
   bool IsTypename() const;
   // get the tok next point

@@ -41,12 +41,14 @@ class CodeGenFunctor {
   CodeGenFunctor(const String& path) {
     if (path.empty() || path == "-") {
       use_std = true;
+      std::cout << ".file 1 \"" << path << "\"\n";
     }
     out = std::ofstream(path);
     if (!out.is_open()) {
       Error("cannot open output file: %s.");
     }
     use_std = false;
+    out << ".file 1 \"" << path << "\"\n";
   }
   ~CodeGenFunctor() {
     if (!use_std) {

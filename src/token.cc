@@ -300,6 +300,8 @@ long Token::GetNumber() const {
   return val;
 }
 
+int Token::GetLineNo() const { return line_no; }
+
 ObjectPtr Token::FindVar() { return Object::Find(loc); }
 
 bool Token::IsTypename() const { return Equal("int") || Equal("char"); }
