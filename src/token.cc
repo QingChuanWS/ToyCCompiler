@@ -25,8 +25,10 @@
 #include "tools.h"
 #include "utils.h"
 
+// intput file name.
 String current_filename;
 
+// input string.
 StringPtr prg;
 
 TokenPtr Token::CreateStringToken(const char* start, const char* end) {
@@ -139,6 +141,7 @@ TokenPtr Token::CreateTokens(const String& file_name, const StringPtr& program) 
 
   cur->next = std::make_shared<Token>(TK_EOF, p, 0);
   ConvertToReserved(tok_list->next);
+  InitLineNumInfo(tok_list->next);
   return tok_list->next;
 }
 
@@ -162,6 +165,22 @@ void Token::ConvertToReserved(TokenPtr tok) {
       }
     }
   }
+}
+
+void Token::InitLineNumInfo(TokenPtr tok) {
+  const char* p = prg->c_str();
+  int n = 1;
+
+  do {
+    if (p == tok->loc) {
+      tok->line_no = n;
+      tok = tok->next;
+    }
+
+    if (*p == '\n') {
+      n++;
+    }
+  } while (*p++);
 }
 
 bool Token::Equal(const char* op) const { return StrEqual(loc, op, len); }
@@ -292,16 +311,23 @@ TokenPtr Token::TokenizeFile(const String& file_name) {
 void Token::ErrorTok(const char* fmt, ...) const {
   va_list ap;
   va_start(ap, fmt);
-  VrdicErrorAt(this->loc, fmt, ap);
+  VrdicErrorAt(this->line_no, this->loc, fmt, ap);
 }
 
 void Token::ErrorAt(const char* loc, const char* fmt, ...) {
+  // get line number
+  int line_no = 1;
+  for (const char* p = prg->c_str(); p < loc; p++) {
+    if (*p == '\n') {
+      line_no++;
+    }
+  }
   va_list ap;
   va_start(ap, fmt);
-  VrdicErrorAt(loc, fmt, ap);
+  VrdicErrorAt(line_no, loc, fmt, ap);
 }
 
-void Token::VrdicErrorAt(const char* loc, const char* fmt, va_list ap) {
+void Token::VrdicErrorAt(int line_no, const char* loc, const char* fmt, va_list ap) {
   // find a line containing `loc`
   const char* start = loc;
   const char* current_input = prg->c_str();
@@ -312,13 +338,6 @@ void Token::VrdicErrorAt(const char* loc, const char* fmt, va_list ap) {
   const char* end = loc;
   while (*end != '\n') {
     end++;
-  }
-  // get line number
-  int line_no = 1;
-  for (const char* p = current_input; p < start; p++) {
-    if (*p == '\n') {
-      line_no++;
-    }
   }
   // print the line
   const int indent = fprintf(stderr, "%s:%d: ", current_filename.c_str(), line_no);

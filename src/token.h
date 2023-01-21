@@ -81,13 +81,15 @@ class Token {
   static TokenPtr CreateTokens(const String& file_name, const StringPtr& program);
   // matching reserved keyword based start.
   static void ConvertToReserved(TokenPtr tok);
+  // initializa the line info of all token.
+  static void InitLineNumInfo(TokenPtr tok);
   // Reports an error location and exit.
   static void ErrorAt(const char* loc, const char* fmt, ...);
   // Reports an error message in the follow format and exit.
   //
   // foo.c:10: x = y + 1;
   //               ^ <error message here>
-  static void VrdicErrorAt(const char* loc, const char* fmt, va_list ap);
+  static void VrdicErrorAt(int line_on, const char* loc, const char* fmt, va_list ap);
 
   friend class Parser;
 
@@ -104,6 +106,8 @@ class Token {
   int len = 0;
   // String literal contents include terminating '\0'
   String str_literal = "";
+  // token line number
+  int line_no = -1;
 };
 
 #endif  //  TOKEN_GRUAD
