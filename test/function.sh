@@ -10,50 +10,66 @@
  # Copyright (c) 2023 by QingChuanWS, All Rights Reserved. 
 ### 
 memory_check(){
+  echo; echo "start "$ut" memory check";
   src_code=$gene_dir"/source.c"
   output=$gene_dir"/tmp.txt"
-  out_file=$gene_dir"/tmp.s"
+  tmpfile=$gene_dir"/tmp.s"
 
-  $COMPILER -o- -E -P -C $test_name > $src_code
+  $CXX -o- -E -P -C $ut_name > $src_code
 
-  valgrind --tool=memcheck --leak-check=full --track-origins=yes $complier $src_code -o $out_file > "$output" 2>&1
+  valgrind --tool=memcheck --leak-check=full --track-origins=yes $complier $src_code -o $tmpfile > "$output" 2>&1
   grep -q "ERROR SUMMARY: 0 errors" "$output"
   ret=$?
   
   if [ $ret != 0 ]; then
     echo "test case : "
     echo "$1"
-    read -p "find memory error, check complier memory, see tmp.txt for the details." char
+    read -p "find memory error, check memory, see tmp.txt for the details." char
   fi
   echo "Memory check pass."; echo;
 }
 
 function_check(){
-  $COMPILER -o- -E -P -C $test_name | $complier -o $gene_file".s" -
-  $COMPILER -o $gene_file $gene_file".s" -xc $test_path"/common"
-  echo $gene_file
-  $gene_file || exit 1;
+  ut_assemly=$ut".s"
+  $CXX -o- -E -P -C $ut_name | $complier -o $ut_assemly -
+  $CXX -o $ut $ut_assemly -xc $bash_dir"/common"
+  echo $ut
+  $ut || exit 1;
 }
 
-build_path=$1
+# build path of project.
+build=$1
+# if using memory check or function check
+is_memory=$2
 
-complier=$build_path"/toyc" # self-compiler
-test_path=`dirname $0` # currently shell file path
-COMPILER=/usr/bin/g++-10 # parent compiler
+# self-compiler
+complier=$build"/toyc"
+# currently shell file path
+bash_dir=`dirname $0`
+# parent compiler 
+CXX=/usr/bin/g++-10 
 
-gene_dir=$build_path"/test" 
+# generate test directory.
+gene_dir=$build"/test" 
 if [ ! -d $gene_dir  ];then
   mkdir $gene_dir
 fi
 
-files=$(ls $test_path)
-for filename in $files
+files=$(ls $bash_dir)
+for file in $files
 do
-  test_name=$test_path/$filename
-  gene_file=$gene_dir/${filename%%.*}".out"
+  # unit test name
+  ut_name=$bash_dir/$file
+  # unit test
+  ut=$gene_dir/${file%%.*}
 
-  if [ "${filename##*.}"x = "c"x ];then
-    memory_check
-    function_check
+  if [ "${file##*.}"x = "c"x ];then
+    if [ "$2" == "memo" ];then
+      memory_check
+    elif [ "$2" == "func" ]; then
+      function_check
+    else
+      echo "unknown test arguement."
+    fi
   fi
 done

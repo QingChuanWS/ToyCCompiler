@@ -4,15 +4,20 @@ project(ToyC)
 set (CMAKE_CXX_COMPILER "/usr/bin/g++-10")
 add_compile_options(-std=c++11)
 
-include_directories(include)
+include_directories(src)
 aux_source_directory(src SOURCES)
 add_executable(toyc  ${SOURCES})
 
 enable_testing()
 
 add_test(
+  NAME mem_check
+  COMMAND ${BASH_EXECUTABLE} ${CMAKE_SOURCE_DIR}/test/function.sh ${CMAKE_CURRENT_BINARY_DIR} memo #using memory check
+  )
+
+add_test(
   NAME func_test
-  COMMAND ${BASH_EXECUTABLE} ${CMAKE_SOURCE_DIR}/test/function.sh ${CMAKE_CURRENT_BINARY_DIR}
+  COMMAND ${BASH_EXECUTABLE} ${CMAKE_SOURCE_DIR}/test/function.sh ${CMAKE_CURRENT_BINARY_DIR} func
   )
 
 add_test(
