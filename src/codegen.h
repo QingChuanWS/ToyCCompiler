@@ -20,25 +20,26 @@
 #include "node.h"
 #include "utils.h"
 
-class CodeGenFunctor {
+// Code generator pinter.
+class CodeGenPrinter {
  public:
-  static CodeGenFunctor& GetInstance(const Config& config=Config()) {
-    static CodeGenFunctor printor(config);
+  static CodeGenPrinter& GetInstance(const Config& config=Config()) {
+    static CodeGenPrinter printor(config);
     return printor;
   }
 
   template <typename T>
   static void Print(T t) {
-    bool use_std = CodeGenFunctor::GetInstance().use_std;
+    bool use_std = CodeGenPrinter::GetInstance().use_std;
     if (use_std) {
       std::cout << t;
     } else {
-      CodeGenFunctor::GetInstance().out << t;
+      CodeGenPrinter::GetInstance().out << t;
     }
   }
 
  private:
-  CodeGenFunctor(const Config& config) {
+  CodeGenPrinter(const Config& config) {
     const String& input = config.input_path;
     const String& output = config.output_path;
     if (output.empty() || output == "-") {
@@ -52,22 +53,23 @@ class CodeGenFunctor {
     use_std = false;
     out << ".file 1 \"" << input << "\"\n";
   }
-  
-  ~CodeGenFunctor() {
+
+  ~CodeGenPrinter() {
     if (!use_std) {
       out.close();
     }
   }
-  CodeGenFunctor(const CodeGenFunctor&) = delete;
-  CodeGenFunctor operator=(const CodeGenFunctor&) = delete;
+  CodeGenPrinter(const CodeGenPrinter&) = delete;
+  CodeGenPrinter operator=(const CodeGenPrinter&) = delete;
   std::ofstream out;
   bool use_std;
 };
 
+// code generator.
 class CodeGenerator {
  public:
   // using specific output stream.
-  CodeGenerator(const Config& config) { CodeGenFunctor::GetInstance(config); }
+  CodeGenerator(const Config& config) { CodeGenPrinter::GetInstance(config); }
   // don't allow copy constructor.
   CodeGenerator(const CodeGenerator&) = delete;
   // don't allow assign constructor.

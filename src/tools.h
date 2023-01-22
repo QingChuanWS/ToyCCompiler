@@ -49,5 +49,9 @@ bool IsAlnum(const char c);
 int AlignTo(const int n, const int align);
 // create a unique name.
 const String CreateUniqueName();
+// compiler helper function.
+void Usage(int state);
+// parse input arguement.
+void ParseArgs(int argc, char** argv);
 
 #endif  // !TOOLS_GRUAD

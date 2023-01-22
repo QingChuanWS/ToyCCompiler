@@ -41,13 +41,14 @@ extern ObjectPtr globals;
 
 extern ScopePtr scope;
 
-extern std::shared_ptr<Type> ty_int;
-extern std::shared_ptr<Type> ty_char;
-
 struct Config {
   Config() = default;
   String output_path = "-";
   String input_path = "-";
 };
+
+extern std::shared_ptr<Type> ty_int;
+extern std::shared_ptr<Type> ty_char;
+extern Config config;
 
 #endif  // UTILS_GRUAD

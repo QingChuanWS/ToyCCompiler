@@ -33,21 +33,21 @@ class Type {
   // copy construct.
   Type(const Type& ty) = default;
   // whether the type is integer.
-  bool IsInteger() const;
+  bool IsInteger() const { return kind == TY_INT; }
   // whether the type is points.
-  bool IsPointer() const;
+  bool IsPointer() const { return base != nullptr; }
   // whether the type is function.
-  bool IsFunction() const;
+  bool IsFunction() const { return kind == TY_FUNC; }
   // whether the type is array
-  bool IsArray() const;
+  bool IsArray() const { return kind == TY_ARRAY; }
   // whether the type is struct
-  bool IsStruct() const;
+  bool IsStruct() const { return kind == TY_STRUCT; }
   // whether the type contains the tok name.
-  bool HasName();
+  bool HasName() const { return name != nullptr; }
   // get data size.
-  int Size() { return size; }
+  int Size() const { return size; }
   // get base pointer size.
-  int GetBaseSize() { return base->size; }
+  int GetBaseSize() const { return base->size; }
   // get type's base type.
   const TypePtr& GetBase() const { return base; }
   // get type's name
@@ -55,7 +55,7 @@ class Type {
   // get struct member based on token.
   StructPtr GetStructMember(TokenPtr tok);
   // get type align
-  int GetAlign() { return align; }
+  int GetAlign() const { return align; }
 
  public:
   // create pointer type.

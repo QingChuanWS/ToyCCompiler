@@ -18,7 +18,10 @@ class Struct {
  public:
   Struct() = default;
   Struct(TypePtr type, TokenPtr struct_name) : ty(type), name(struct_name) {}
+  // get struct member offset.
   int GetOffset() { return offset; }
+
+ public:
   // calculate struct align based on a list of Struct member.
   static int CalcuAlign(StructPtr mem);
   // init struct member list offset, return the sum of offset.
@@ -29,9 +32,13 @@ class Struct {
   friend Type;
   friend Parser;
 
+  // member type.
   TypePtr ty = nullptr;
+  // member name.
   TokenPtr name = nullptr;
+  // next member.
   StructPtr next = nullptr;
+  // member offset based on the struct head.
   int offset = 0;
 };
 

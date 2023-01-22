@@ -10,7 +10,7 @@
  # Copyright (c) 2023 by QingChuanWS, All Rights Reserved. 
 ### 
 memory_check(){
-  echo; echo "start "$ut" memory check";
+  echo "start "$ut" memory check";
   src_code=$gene_dir"/source.c"
   output=$gene_dir"/tmp.txt"
   tmpfile=$gene_dir"/tmp.s"
@@ -26,7 +26,8 @@ memory_check(){
     echo "$1"
     read -p "find memory error, check memory, see tmp.txt for the details." char
   fi
-  echo "Memory check pass."; echo;
+  echo $ut" memory check pass."
+  echo "---------------------------------" 
 }
 
 function_check(){

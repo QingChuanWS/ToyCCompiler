@@ -26,38 +26,6 @@
 
 Config config;
 
-static void Usage(int state) {
-  std::cerr << "toyc [ -o <path> ] <file>." << std::endl;
-  exit(state);
-}
-
-static void ParseArgs(int argc, char** argv) {
-  for (int i = 1; i < argc; i++) {
-    if (!strcmp(argv[i], "--help")) {
-      Usage(0);
-    }
-    if (!strcmp(argv[i], "-o")) {
-      if (!argv[++i]) {
-        Usage(1);
-      }
-      config.output_path = String(argv[i]);
-      continue;
-    }
-    if (!strncmp(argv[i], "-o", 2)) {
-      config.output_path = String(argv[i] + 2);
-      continue;
-    }
-    if (argv[i][0] == '-' && argv[i][1] != '\0') {
-      Error("unknow argument: %s", argv[i]);
-    }
-
-    config.input_path = argv[i];
-  }
-  if (config.input_path.empty()) {
-    Error("no input files.");
-  }
-}
-
 int main(int argc, char** argv) {
   ParseArgs(argc, argv);
 

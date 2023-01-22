@@ -47,18 +47,6 @@ TypePtr Type::CreateStructType(StructPtr mem) {
   return ty;
 }
 
-bool Type::IsInteger() const { return this->kind == TY_INT; }
-
-bool Type::IsFunction() const { return this->kind == TY_FUNC; }
-
-bool Type::IsPointer() const { return base != nullptr; }
-
-bool Type::IsArray() const { return kind == TY_ARRAY; }
-
-bool Type::IsStruct() const { return kind == TY_STRUCT; }
-
-bool Type::HasName() { return name != nullptr; }
-
 const TokenPtr& Type::GetName() const {
   if (name == nullptr) {
     Error("The type has not name!");
