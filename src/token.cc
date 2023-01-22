@@ -311,8 +311,8 @@ ObjectPtr Token::FindVar() { return Object::Find(loc); }
 
 bool Token::IsTypename() const { return Equal("int") || Equal("char") || Equal("struct"); }
 
-TokenPtr Token::TokenizeFile(const String& file_name) {
-  return CreateTokens(file_name, ReadFile(file_name));
+TokenPtr Token::TokenizeFile(const String& input_file) {
+  return CreateTokens(input_file, ReadFile(input_file));
 }
 
 void Token::ErrorTok(const char* fmt, ...) const {

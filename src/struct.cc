@@ -13,14 +13,26 @@
 #include <memory>
 
 #include "parser.h"
+#include "tools.h"
 #include "type.h"
 #include "utils.h"
 
-int Struct::GetSize(StructPtr mem) {
-  int off = 0;
+int Struct::CalcuAlign(StructPtr mem) {
+  int align = 1;
   for (StructPtr m = mem; m != nullptr; m = m->next) {
-    m->offset = off;
-    off += m->ty->Size();
+    if(align < m->ty->GetAlign()){
+      align = m->ty->GetAlign();
+    }
   }
-  return off;
+  return align;
+}
+
+int Struct::CalcuOffset(StructPtr mem) {
+  int offset = 0;
+  for (StructPtr m = mem; m != nullptr; m = m->next) {
+    offset = AlignTo(offset, m->ty->GetAlign());
+    m->offset = offset;
+    offset += m->ty->Size();
+  }
+  return offset;
 }

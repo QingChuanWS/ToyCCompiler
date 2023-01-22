@@ -36,7 +36,6 @@ using VarScopePtr = std::shared_ptr<VarScope>;
 using StructPtr = std::shared_ptr<Struct>;
 using String = std::string;
 
-
 extern ObjectPtr locals;
 extern ObjectPtr globals;
 
@@ -45,4 +44,10 @@ extern ScopePtr scope;
 extern std::shared_ptr<Type> ty_int;
 extern std::shared_ptr<Type> ty_char;
 
-#endif // UTILS_GRUAD
+struct Config {
+  Config() = default;
+  String output_path = "-";
+  String input_path = "-";
+};
+
+#endif  // UTILS_GRUAD

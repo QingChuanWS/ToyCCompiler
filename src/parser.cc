@@ -119,7 +119,7 @@ TypePtr Parser::TypeSuffix(TokenPtr* rest, TokenPtr tok, TypePtr ty) {
 // func-param = param ("," param) *
 // param = declspec declarator
 TypePtr Parser::FunctionParam(TokenPtr* rest, TokenPtr tok, TypePtr ty) {
-  TypePtr params = std::make_shared<Type>(TY_END, 0);
+  TypePtr params = std::make_shared<Type>(TY_END, 0, 0);
   TypePtr cur = params;
 
   while (!tok->Equal(")")) {

@@ -19,7 +19,10 @@ class Struct {
   Struct() = default;
   Struct(TypePtr type, TokenPtr struct_name) : ty(type), name(struct_name) {}
   int GetOffset() { return offset; }
-  static int GetSize(StructPtr mem);
+  // calculate struct align based on a list of Struct member.
+  static int CalcuAlign(StructPtr mem);
+  // init struct member list offset, return the sum of offset.
+  static int CalcuOffset(StructPtr mem);
 
  private:
   friend Node;

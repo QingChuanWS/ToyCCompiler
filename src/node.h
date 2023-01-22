@@ -57,8 +57,6 @@ class Node {
   bool IsPointerNode();
   // inference the node type.
   void TypeInfer();
-  // Report an error based on tok.
-  void ErrorTok(const char* fmt, ...);
 
  public:
   // create const node.

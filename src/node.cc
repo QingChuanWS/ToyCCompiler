@@ -228,7 +228,7 @@ void Node::TypeInfer() {
       return;
     case ND_DEREF:
       if (!lhs->ty->IsPointer()) {
-        ErrorTok("invalid pointer reference!");
+        name->ErrorTok("invalid pointer reference!");
       }
       ty = lhs->ty->GetBase();
       return;
@@ -251,9 +251,3 @@ void Node::TypeInfer() {
 
 bool Node::IsPointerNode() { return ty->IsPointer(); }
 
-// Report an error based on tok
-void Node::ErrorTok(const char* fmt, ...) {
-  va_list ap;
-  va_start(ap, fmt);
-  name->ErrorTok(fmt, ap);
-}

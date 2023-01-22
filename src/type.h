@@ -29,7 +29,7 @@ enum TypeKind {
 
 class Type {
  public:
-  Type(TypeKind kind, int size) : kind(kind), size(size) {}
+  Type(TypeKind kind, int size, int align) : kind(kind), size(size), align(align) {}
   // copy construct.
   Type(const Type& ty) = default;
   // whether the type is integer.
@@ -54,6 +54,8 @@ class Type {
   const TokenPtr& GetName() const;
   // get struct member based on token.
   StructPtr GetStructMember(TokenPtr tok);
+  // get type align
+  int GetAlign() { return align; }
 
  public:
   // create pointer type.
@@ -75,6 +77,8 @@ class Type {
   TokenPtr name = nullptr;
   // sizeof() value.
   int size = 0;
+  // alignment
+  int align = 0;
   // Pointer-to or array type. Using a same member to
   // represent pointer/array duality in C.
   TypePtr base = nullptr;

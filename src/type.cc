@@ -17,31 +17,32 @@
 #include "tools.h"
 #include "utils.h"
 
-TypePtr ty_int = std::make_shared<Type>(TY_INT, 8);
-TypePtr ty_char = std::make_shared<Type>(TY_CHAR, 1);
+TypePtr ty_int = std::make_shared<Type>(TY_INT, 8, 8);
+TypePtr ty_char = std::make_shared<Type>(TY_CHAR, 1, 1);
 
 TypePtr Type::CreatePointerType(TypePtr base) {
-  TypePtr ty = std::make_shared<Type>(TY_PRT, 8);
+  TypePtr ty = std::make_shared<Type>(TY_PRT, 8, 8);
   ty->base = base;
   return ty;
 }
 
 TypePtr Type::CreateFunctionType(TypePtr ret_type, TypePtr params) {
-  TypePtr ty = std::make_shared<Type>(TY_FUNC, ret_type->size);
+  TypePtr ty = std::make_shared<Type>(TY_FUNC, ret_type->size, 0);
   ty->return_ty = ret_type;
   ty->params = params;
   return ty;
 }
 
 TypePtr Type::CreateArrayType(TypePtr base, int array_len) {
-  TypePtr ty = std::make_shared<Type>(TY_ARRAY, base->size * array_len);
+  TypePtr ty = std::make_shared<Type>(TY_ARRAY, base->size * array_len, base->align);
   ty->base = base;
   return ty;
 }
 
 TypePtr Type::CreateStructType(StructPtr mem) {
-  int size = Struct::GetSize(mem);
-  TypePtr ty = std::make_shared<Type>(TY_STRUCT, size);
+  TypePtr ty = std::make_shared<Type>(TY_STRUCT, 1, 1);
+  ty->align = Struct::CalcuAlign(mem);
+  ty->size = AlignTo(Struct::CalcuOffset(mem), ty->align);
   ty->mem = mem;
   return ty;
 }

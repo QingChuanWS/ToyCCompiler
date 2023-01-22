@@ -24,8 +24,7 @@
 #include "tools.h"
 #include "utils.h"
 
-static String opt_out;
-static String input_path;
+Config config;
 
 static void Usage(int state) {
   std::cerr << "toyc [ -o <path> ] <file>." << std::endl;
@@ -41,21 +40,20 @@ static void ParseArgs(int argc, char** argv) {
       if (!argv[++i]) {
         Usage(1);
       }
-      std::cout << opt_out;
-      opt_out = String(argv[i]);
+      config.output_path = String(argv[i]);
       continue;
     }
     if (!strncmp(argv[i], "-o", 2)) {
-      opt_out = String(argv[i] + 2);
+      config.output_path = String(argv[i] + 2);
       continue;
     }
     if (argv[i][0] == '-' && argv[i][1] != '\0') {
       Error("unknow argument: %s", argv[i]);
     }
 
-    input_path = argv[i];
+    config.input_path = argv[i];
   }
-  if (input_path.empty()) {
+  if (config.input_path.empty()) {
     Error("no input files.");
   }
 }
@@ -63,10 +61,10 @@ static void ParseArgs(int argc, char** argv) {
 int main(int argc, char** argv) {
   ParseArgs(argc, argv);
 
-  TokenPtr cur = Token::TokenizeFile(input_path);
+  TokenPtr cur = Token::TokenizeFile(config.input_path);
   ObjectPtr prog = Object::Parse(cur);
 
-  CodeGenerator gene(input_path, opt_out);
+  CodeGenerator gene(config);
   gene.CodeGen(prog);
 
   return 0;
