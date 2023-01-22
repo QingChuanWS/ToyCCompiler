@@ -154,6 +154,7 @@ void Object::OffsetCal() {
     int offset = 0;
     for (ObjectPtr v = fn->loc_list; v != nullptr; v = v->next) {
       offset += v->ty->size;
+      offset = AlignTo(offset, v->ty->align);
       v->offset = offset;
     }
     fn->stack_size = AlignTo(offset, 16);
