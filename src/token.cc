@@ -153,11 +153,12 @@ int Token::ReadPunct(const char* p) const {
     }
   }
 
-  return std::strchr("+-*/()<>;=,{}[]&", *p) != 0 ? 1 : 0;
+  return std::strchr("+-*/()<>;=,{}[]&.", *p) != 0 ? 1 : 0;
 }
 
 void Token::ConvertToReserved(TokenPtr tok) {
-  static const char* kw[] = {"return", "if", "else", "for", "while", "int", "sizeof", "char"};
+  static const char* kw[] = {"return", "if",     "else", "for",   "while",
+                             "int",    "sizeof", "char", "struct"};
   for (TokenPtr t = tok; t != nullptr; t = t->next) {
     for (int i = 0; i < sizeof(kw) / sizeof(*kw); i++) {
       if (StrEqual(t->loc, kw[i], t->len)) {
@@ -184,6 +185,10 @@ void Token::InitLineNumInfo(TokenPtr tok) {
 }
 
 bool Token::Equal(const char* op) const { return StrEqual(loc, op, len); }
+
+bool Token::Equal(const TokenPtr tok) const {
+  return tok->len == len && !std::strncmp(loc, tok->loc, len);
+}
 
 TokenPtr Token::SkipToken(const char* op, bool enable_error) {
   if (!this->Equal(op)) {
@@ -304,7 +309,7 @@ int Token::GetLineNo() const { return line_no; }
 
 ObjectPtr Token::FindVar() { return Object::Find(loc); }
 
-bool Token::IsTypename() const { return Equal("int") || Equal("char"); }
+bool Token::IsTypename() const { return Equal("int") || Equal("char") || Equal("struct"); }
 
 TokenPtr Token::TokenizeFile(const String& file_name) {
   return CreateTokens(file_name, ReadFile(file_name));

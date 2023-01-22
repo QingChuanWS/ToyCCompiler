@@ -48,7 +48,11 @@ void CodeGenerator::GetVarAddr(NodePtr& node) {
     case ND_COMMON:
       ExprGen(node->lhs);
       GetVarAddr(node->rhs);
-      return ;
+      return;
+    case ND_MUMBER:
+      GetVarAddr(node->lhs);
+      ASM_GEN("  add rax, ", node->mem->GetOffset());
+      return;
     default:
       break;
   }
@@ -221,6 +225,7 @@ void CodeGenerator::ExprGen(NodePtr& node) {
       ASM_GEN("  neg rax");
       return;
     case ND_VAR:
+    case ND_MUMBER:
       GetVarAddr(node);
       Load(node->ty);
       return;

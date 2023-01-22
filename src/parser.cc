@@ -64,15 +64,24 @@ NodePtr Parser::Declaration(TokenPtr* rest, TokenPtr tok) {
   ;
 }
 
-// declspec = "char" | "int"
+// declspec = "char" | "int" | struct-decl
 TypePtr Parser::Declspec(TokenPtr* rest, TokenPtr tok) {
   if (tok->Equal("char")) {
     *rest = tok->SkipToken("char");
     return ty_char;
   }
 
-  *rest = tok->SkipToken("int");
-  return ty_int;
+  if (tok->Equal("int")) {
+    *rest = tok->SkipToken("int");
+    return ty_int;
+  }
+
+  if (tok->Equal("struct")) {
+    return StructDecl(rest, tok->next);
+  }
+
+  tok->ErrorTok("typename expected.");
+  return nullptr;
 }
 
 // declarator = "*"* ident type-suffix
@@ -126,6 +135,31 @@ TypePtr Parser::FunctionParam(TokenPtr* rest, TokenPtr tok, TypePtr ty) {
 
   *rest = tok->next;
   return ty;
+}
+
+// struct-decl = "{" struct-member
+TypePtr Parser::StructDecl(TokenPtr* rest, TokenPtr tok) {
+  tok = tok->SkipToken("{");
+  StructPtr head = std::make_shared<Struct>();
+  StructPtr cur = head;
+
+  while (!tok->Equal("}")) {
+    TypePtr basety = Parser::Declspec(&tok, tok);
+
+    int i = 0;
+    while (!tok->Equal(";")) {
+      if (i++) {
+        tok = tok->SkipToken(",");
+      }
+      TypePtr ty = Parser::Declarator(&tok, tok, basety);
+      cur->next = std::make_shared<Struct>(ty, ty->GetName());
+      cur = cur->next;
+    }
+    tok = tok->SkipToken(";");
+  }
+
+  *rest = tok->next;
+  return Type::CreateStructType(head->next);;
 }
 
 // stmt = "return" expr ";" |
@@ -205,7 +239,7 @@ NodePtr Parser::Expr(TokenPtr* rest, TokenPtr tok) {
   NodePtr node = Assign(&tok, tok);
 
   if (tok->Equal(",")) {
-    return Node::CreateBinaryNode(ND_COMMON, tok,  node, Expr(rest, tok->next));
+    return Node::CreateBinaryNode(ND_COMMON, tok, node, Expr(rest, tok->next));
   }
   *rest = tok;
   return node;
@@ -325,16 +359,26 @@ NodePtr Parser::Unary(TokenPtr* rest, TokenPtr tok) {
 NodePtr Parser::Postfix(TokenPtr* rest, TokenPtr tok) {
   NodePtr node = Primary(&tok, tok);
 
-  while (tok->Equal("[")) {
-    // x[y] is short for *(x + y)
-    TokenPtr node_name = tok;
-    NodePtr idx = Expr(&tok, tok->next);
-    tok = tok->SkipToken("]");
-    NodePtr op = Node::CreateAddNode(node_name, node, idx);
-    node = Node::CreateUnaryNode(ND_DEREF, node_name, op);
+  for (;;) {
+    if (tok->Equal("[")) {
+      // x[y] is short for *(x + y)
+      TokenPtr node_name = tok;
+      NodePtr idx = Expr(&tok, tok->next);
+      tok = tok->SkipToken("]");
+      NodePtr op = Node::CreateAddNode(node_name, node, idx);
+      node = Node::CreateUnaryNode(ND_DEREF, node_name, op);
+      continue;
+    }
+
+    if(tok->Equal(".")){
+      node = Node::CreateMemberNode(node, tok->next);
+      tok = tok->next->next;
+      continue;
+    }
+
+    *rest = tok;
+    return node;
   }
-  *rest = tok;
-  return node;
 }
 
 // primary = "(" "{" stmt+ "}" ")"

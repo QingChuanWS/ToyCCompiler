@@ -11,6 +11,7 @@
 #ifndef TYPE_GRUAD
 #define TYPE_GRUAD
 
+#include <cstddef>
 #include <memory>
 
 #include "token.h"
@@ -22,6 +23,7 @@ enum TypeKind {
   TY_PRT,
   TY_FUNC,
   TY_ARRAY,
+  TY_STRUCT,
   TY_END,
 };
 
@@ -31,13 +33,15 @@ class Type {
   // copy construct.
   Type(const Type& ty) = default;
   // whether the type is integer.
-  bool IsInteger();
+  bool IsInteger() const;
   // whether the type is points.
-  bool IsPointer();
+  bool IsPointer() const;
   // whether the type is function.
-  bool IsFunction();
+  bool IsFunction() const;
   // whether the type is array
-  bool IsArray();
+  bool IsArray() const;
+  // whether the type is struct
+  bool IsStruct() const;
   // whether the type contains the tok name.
   bool HasName();
   // get data size.
@@ -46,14 +50,20 @@ class Type {
   int GetBaseSize() { return base->size; }
   // get type's base type.
   const TypePtr& GetBase() const { return base; }
+  // get type's name
+  const TokenPtr& GetName() const;
+  // get struct member based on token.
+  StructPtr GetStructMember(TokenPtr tok);
 
  public:
   // create pointer type.
   static TypePtr CreatePointerType(TypePtr base);
   // create function type.
   static TypePtr CreateFunctionType(TypePtr ret_type, TypePtr params);
-  // create array type
+  // create array type.
   static TypePtr CreateArrayType(TypePtr base, int array_len);
+  // create struct type.
+  static TypePtr CreateStructType(StructPtr mem);
 
  private:
   friend class Parser;
@@ -70,6 +80,8 @@ class Type {
   TypePtr base = nullptr;
   // Array
   int array_len = 0;
+  // Member
+  StructPtr mem = nullptr;
   // Function type.
   TypePtr return_ty = nullptr;
   // function params type list.

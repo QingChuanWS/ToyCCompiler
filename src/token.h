@@ -41,6 +41,8 @@ class Token {
   bool IsEof() { return this->kind == TK_EOF; }
   // Check whether Token string equal special string
   bool Equal(const char* op) const;
+  // Check whether Token string equal special tok
+  bool Equal(const TokenPtr tok) const;
   // Report an error in token list
   void ErrorTok(const char* fmt, ...) const;
   // Get tok name string based copy mode.
@@ -94,6 +96,7 @@ class Token {
   static void VrdicErrorAt(int line_on, const char* loc, const char* fmt, va_list ap);
 
   friend class Parser;
+  friend class Type;
 
  private:
   // Token Kind

@@ -11,6 +11,7 @@
 
 #include "node.h"
 
+#include <cstdarg>
 #include <cstddef>
 #include <cstring>
 #include <memory>
@@ -141,6 +142,18 @@ NodePtr Node::CreateBlockNode(NodeKind kind, TokenPtr node_name, NodePtr body) {
   return res;
 }
 
+// create struct member node.
+NodePtr Node::CreateMemberNode(NodePtr parent, TokenPtr node_name) {
+  parent->TypeInfer();
+  if (!parent->ty->IsStruct()) {
+    node_name->ErrorTok("not a struct.");
+  }
+
+  NodePtr res = CreateUnaryNode(ND_MUMBER, node_name, parent);
+  res->mem = parent->ty->GetStructMember(node_name);
+  return res;
+}
+
 void Node::TypeInfer() {
   if (this->ty != nullptr) {
     return;
@@ -203,6 +216,9 @@ void Node::TypeInfer() {
     case ND_COMMON:
       ty = rhs->ty;
       return;
+    case ND_MUMBER:
+      ty = mem->ty;
+      return;
     case ND_ADDR:
       if (lhs->ty->IsArray()) {
         ty = Type::CreatePointerType(lhs->ty->GetBase());
@@ -217,12 +233,12 @@ void Node::TypeInfer() {
       ty = lhs->ty->GetBase();
       return;
     case ND_STMT_EXPR:
-      if(body != nullptr){
+      if (body != nullptr) {
         NodePtr stmt = body;
-        while(stmt->next != nullptr){
+        while (stmt->next != nullptr) {
           stmt = stmt->next;
         }
-        if(stmt->kind == ND_EXPR_STMT){
+        if (stmt->kind == ND_EXPR_STMT) {
           ty = stmt->lhs->ty;
           return;
         }

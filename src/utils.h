@@ -16,14 +16,13 @@
 #include <memory>
 #include <ostream>
 
-#include "tools.h"
-
 class Token;
 class Object;
 class Node;
 class Type;
 class VarScope;
 class Scope;
+class Struct;
 
 using TokenPtr = std::shared_ptr<Token>;
 using TypePtr = std::shared_ptr<Type>;
@@ -34,6 +33,9 @@ using String = std::string;
 using StringStream = std::stringstream;
 using ScopePtr = std::shared_ptr<Scope>;
 using VarScopePtr = std::shared_ptr<VarScope>;
+using StructPtr = std::shared_ptr<Struct>;
+using String = std::string;
+
 
 extern ObjectPtr locals;
 extern ObjectPtr globals;

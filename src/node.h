@@ -17,6 +17,7 @@
 #include <string>
 
 #include "object.h"
+#include "struct.h"
 #include "token.h"
 #include "tools.h"
 #include "type.h"
@@ -35,6 +36,7 @@ enum NodeKind {
   ND_NUM,        // number
   ND_ASSIGN,     // =
   ND_COMMON,     // ,
+  ND_MUMBER,     // .(struct member asscess)
   ND_ADDR,       // unary &
   ND_DEREF,      // *
   ND_EXPR_STMT,  // expression statement
@@ -83,6 +85,8 @@ class Node {
                                NodePtr then);
   // create block expression node.
   static NodePtr CreateBlockNode(NodeKind kind, TokenPtr node_name, NodePtr body);
+  // create struct member node.
+  static NodePtr CreateMemberNode(NodePtr parent, TokenPtr node_name);
 
  private:
   friend class CodeGenerator;
@@ -113,6 +117,9 @@ class Node {
   // for "for" statement
   NodePtr init = nullptr;
   NodePtr inc = nullptr;
+
+  // struct member access.
+  StructPtr mem = nullptr;
 
   // ------ function ------;
   String call = String();

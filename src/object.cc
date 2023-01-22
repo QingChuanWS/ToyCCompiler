@@ -147,10 +147,14 @@ TokenPtr Object::ParseGlobalVar(TokenPtr tok, TypePtr basety) {
 
 void Object::OffsetCal() {
   for (Object* fn = this; fn != nullptr; fn = fn->next.get()) {
+    if (!fn->IsFunction()){
+      continue;
+    }
+
     int offset = 0;
-    for (ObjectPtr cur = fn->loc_list; cur != nullptr; cur = cur->next) {
-      offset += cur->ty->size;
-      cur->offset = offset;
+    for (ObjectPtr v = fn->loc_list; v != nullptr; v = v->next) {
+      offset += v->ty->size;
+      v->offset = offset;
     }
     fn->stack_size = AlignTo(offset, 16);
   }

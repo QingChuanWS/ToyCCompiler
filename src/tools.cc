@@ -11,9 +11,6 @@
 
 #include "tools.h"
 
-#include <bits/types/FILE.h>
-
-#include <algorithm>
 #include <cstdarg>
 #include <cstdio>
 #include <cstdlib>
@@ -27,7 +24,7 @@ void Error(const char* fmt, ...) {
   exit(0);
 }
 
-void LOG(const char* fmt, ...) {
+void DebugLog(const char* fmt, ...) {
   va_list ap;
   va_start(ap, fmt);
   vfprintf(stderr, fmt, ap);

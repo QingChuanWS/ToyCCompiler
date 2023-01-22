@@ -22,8 +22,8 @@
 
 class CodeGenFunctor {
  public:
-  static CodeGenFunctor& GetInstance(const String& path = "-") {
-    static CodeGenFunctor printor(path);
+  static CodeGenFunctor& GetInstance(const String& input = "-", const String& path = "-") {
+    static CodeGenFunctor printor(input, path);
     return printor;
   }
 
@@ -38,17 +38,17 @@ class CodeGenFunctor {
   }
 
  private:
-  CodeGenFunctor(const String& path) {
+  CodeGenFunctor(const String& input, const String& path) {
     if (path.empty() || path == "-") {
       use_std = true;
-      std::cout << ".file 1 \"" << path << "\"\n";
+      std::cout << ".file 1 \"" << input << "\"\n";
     }
     out = std::ofstream(path);
     if (!out.is_open()) {
       Error("cannot open output file: %s.");
     }
     use_std = false;
-    out << ".file 1 \"" << path << "\"\n";
+    out << ".file 1 \"" << input << "\"\n";
   }
   ~CodeGenFunctor() {
     if (!use_std) {
@@ -64,7 +64,7 @@ class CodeGenFunctor {
 class CodeGenerator {
  public:
   // using specific output stream.
-  CodeGenerator(const String& path) { CodeGenFunctor::GetInstance(path); }
+  CodeGenerator(const String& input, const String& path) { CodeGenFunctor::GetInstance(input, path); }
   // don't allow copy constructor.
   CodeGenerator(const CodeGenerator&) = delete;
   // don't allow assign constructor.

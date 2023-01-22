@@ -66,7 +66,7 @@ int main(int argc, char** argv) {
   TokenPtr cur = Token::TokenizeFile(input_path);
   ObjectPtr prog = Object::Parse(cur);
 
-  CodeGenerator gene(opt_out);
+  CodeGenerator gene(input_path, opt_out);
   gene.CodeGen(prog);
 
   return 0;

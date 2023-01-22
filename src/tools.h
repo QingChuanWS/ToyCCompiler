@@ -13,16 +13,15 @@
 #define TOOLS_GRUAD
 
 #include <cassert>
-#include <cstdarg>
 #include <cstdio>
 #include <cstring>
 #include <iostream>
 #include <sstream>
 
-using String = std::string;
+#include "utils.h"
 
+#define DLOG(...) DebugLog(__VA_ARGS__)
 #define DEBUG(expr) assert(expr)
-#define DLOG(expr) Log(expr)
 
 // recursive over state.
 template <typename F, typename T>
@@ -39,7 +38,7 @@ static void Println(const T first_arg, const Types... args) {
 // Print error message.
 void Error(const char* fmt, ...);
 // Log message.
-void Log(const char* fmt, ...);
+void DebugLog(const char* fmt, ...);
 // compare two string based strncmp.
 bool StrEqual(const char* src, const char* dst, const int src_len);
 // check whether current character is alpha.
