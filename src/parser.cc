@@ -179,7 +179,7 @@ TypePtr Parser::StructDecl(TokenPtr* rest, TokenPtr tok) {
   *rest = tok->next;
   TypePtr ty = Type::CreateStructType(head->next);
   if (tag) {
-    TagScope::PushScope(tag, ty, scope->GetTagScope()); 
+    TagScope::PushScope(tag, ty, scope->GetTagScope());
   }
   return ty;
 }
@@ -378,6 +378,7 @@ NodePtr Parser::Unary(TokenPtr* rest, TokenPtr tok) {
   return Postfix(rest, tok);
 }
 
+// postfix = primary ("[" Expr "]" | "." ident | "->" ident )*
 NodePtr Parser::Postfix(TokenPtr* rest, TokenPtr tok) {
   NodePtr node = Primary(&tok, tok);
 
@@ -393,6 +394,14 @@ NodePtr Parser::Postfix(TokenPtr* rest, TokenPtr tok) {
     }
 
     if (tok->Equal(".")) {
+      node = Node::CreateMemberNode(node, tok->next);
+      tok = tok->next->next;
+      continue;
+    }
+
+    if (tok->Equal("->")) {
+      // x->y is short for (*x).y
+      node = Node::CreateUnaryNode(ND_DEREF, tok, node);
       node = Node::CreateMemberNode(node, tok->next);
       tok = tok->next->next;
       continue;
@@ -453,6 +462,7 @@ NodePtr Parser::Primary(TokenPtr* rest, TokenPtr tok) {
 // function = ident "(" (assign ("," assign)*)? ")"
 NodePtr Parser::Call(TokenPtr* rest, TokenPtr tok) {
   TokenPtr start = tok;
+  // can't optimaze, need start tok.
   tok = tok->next->next;
 
   NodePtr args = std::make_shared<Node>(ND_END, tok);

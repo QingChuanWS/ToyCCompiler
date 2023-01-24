@@ -59,7 +59,7 @@ class Parser {
   static NodePtr Mul(TokenPtr* rest, TokenPtr tok);
   // unary = ("+" | "-" | "*" | "&") ? unary | primary
   static NodePtr Unary(TokenPtr* rest, TokenPtr tok);
-  // postfix = primary ("[" Expr "]")*
+  // postfix = primary ("[" Expr "]" | "." ident | "->" ident )*
   static NodePtr Postfix(TokenPtr* rest, TokenPtr tok);
   // primary = "(" "{" stmt+ "}" ")"
   //          |"(" expr ")" | "sizeof" unary | ident func-args? | str | num

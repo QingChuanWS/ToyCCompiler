@@ -146,7 +146,7 @@ TokenPtr Token::CreateTokens(const String& file_name, const StringPtr& program) 
 }
 
 int Token::ReadPunct(const char* p) const {
-  static const char* ops[] = {">=", "==", "!=", "<="};
+  static const char* ops[] = {">=", "==", "!=", "<=", "->"};
   for (int i = 0; i < sizeof(ops) / sizeof(*ops); i++) {
     if (StrEqual(p, ops[i], 2)) {
       return 2;
