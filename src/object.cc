@@ -27,6 +27,18 @@ ObjectPtr globals = nullptr;
 
 ScopePtr scope = nullptr;
 
+void TagScope::PushScope(TokenPtr tok, TypePtr ty, TagScopePtr& scope) {
+  TagScopePtr sc = std::make_shared<TagScope>(tok->GetIdent(), ty);
+  sc->next = scope;
+  scope = sc;
+}
+
+void VarScope::PushScope(String name, ObjectPtr var, VarScopePtr& scope) {
+  VarScopePtr sc = std::make_shared<VarScope>(name, var);
+  sc->next = scope;
+  scope = sc;
+}
+
 void Scope::EnterScope(ScopePtr& next) {
   ScopePtr sc = std::make_shared<Scope>();
   sc->next = next;
@@ -35,9 +47,31 @@ void Scope::EnterScope(ScopePtr& next) {
 
 void Scope::LevarScope(ScopePtr& next) { next = next->next; }
 
+ObjectPtr Scope::FindVar(const char* p) {
+  for (ScopePtr sc = scope; sc != nullptr; sc = sc->next) {
+    for (VarScopePtr v = sc->vars; v != nullptr; v = v->next) {
+      if (memcmp(v->name.c_str(), p, v->name.size()) == 0) {
+        return v->var;
+      }
+    }
+  }
+  return nullptr;
+}
+
+TypePtr Scope::FindTag(const char* p) {
+  for (ScopePtr sc = scope; sc != nullptr; sc = sc->next) {
+    for (TagScopePtr t = sc->tags; t != nullptr; t = t->next) {
+      if (memcmp(t->name.c_str(), p, t->name.size()) == 0) {
+        return t->ty;
+      }
+    }
+  }
+  return nullptr;
+}
+
 ObjectPtr Object::CreateVar(Objectkind kind, const String& name, const TypePtr& ty) {
   ObjectPtr obj = std::make_shared<Object>(kind, name, ty);
-  VarScope::PushScope(name, obj, scope->vars);
+  VarScope::PushScope(name, obj, scope->GetVarScope());
   return obj;
 }
 
@@ -147,7 +181,7 @@ TokenPtr Object::ParseGlobalVar(TokenPtr tok, TypePtr basety) {
 
 void Object::OffsetCal() {
   for (Object* fn = this; fn != nullptr; fn = fn->next.get()) {
-    if (!fn->IsFunction()){
+    if (!fn->IsFunction()) {
       continue;
     }
 
@@ -159,15 +193,4 @@ void Object::OffsetCal() {
     }
     fn->stack_size = AlignTo(offset, 16);
   }
-}
-
-ObjectPtr Object::Find(const char* p) {
-  for (ScopePtr sc = scope; sc != nullptr; sc = sc->next) {
-    for (VarScopePtr lc_sc = sc->vars; lc_sc != nullptr; lc_sc = lc_sc->next) {
-      if (memcmp(lc_sc->name.c_str(), p, lc_sc->name.size()) == 0) {
-        return lc_sc->var;
-      }
-    }
-  }
-  return nullptr;
 }

@@ -20,6 +20,7 @@ class Token;
 class Object;
 class Node;
 class Type;
+class TagScope;
 class VarScope;
 class Scope;
 class Struct;
@@ -33,6 +34,7 @@ using String = std::string;
 using StringStream = std::stringstream;
 using ScopePtr = std::shared_ptr<Scope>;
 using VarScopePtr = std::shared_ptr<VarScope>;
+using TagScopePtr = std::shared_ptr<TagScope>;
 using StructPtr = std::shared_ptr<Struct>;
 using String = std::string;
 

@@ -14,6 +14,7 @@
 
 #include <memory>
 
+#include "parser.h"
 #include "tools.h"
 #include "type.h"
 #include "utils.h"
@@ -25,19 +26,26 @@ enum Objectkind {
   OB_END,
 };
 
-class VarScope {
-public:
-  VarScope(String name, ObjectPtr var) : name(name), var(var) {}
-
-  static VarScopePtr PushScope(String name, ObjectPtr var, VarScopePtr& scope) {
-    VarScopePtr sc = std::make_shared<VarScope>(name, var);
-    sc->next = scope;
-    scope = sc;
-    return sc;
-  }
+class TagScope {
+ public:
+  TagScope(const String& name, TypePtr& ty) : name(std::move(name)), ty(ty) {}
+  static void PushScope(TokenPtr tok, TypePtr ty, TagScopePtr& scope);
 
  private:
-  friend class Object;
+  friend class Scope;
+  String name = "";
+  TypePtr ty = nullptr;
+  TagScopePtr next = nullptr;
+};
+
+class VarScope {
+ public:
+  VarScope(const String& name, ObjectPtr var) : name(std::move(name)), var(var) {}
+
+  static void PushScope(String name, ObjectPtr var, VarScopePtr& scope);
+
+ private:
+  friend class Scope;
   VarScopePtr next = nullptr;
   String name = String();
   ObjectPtr var = nullptr;
@@ -45,13 +53,25 @@ public:
 
 class Scope {
  public:
+  // get current var scope
+  VarScopePtr& GetVarScope() { return vars; }
+  // get current tag scope
+  TagScopePtr& GetTagScope() { return tags; }
+
+ public:
+  // create a scpoe
   static void EnterScope(ScopePtr& next);
+  // delete a scope
   static void LevarScope(ScopePtr& next);
+  // find a variable by name.
+  static ObjectPtr FindVar(const char* p);
+  // find a teg by name
+  static TypePtr FindTag(const char* p);
 
  private:
-  friend class Object;
   ScopePtr next = nullptr;
   VarScopePtr vars = nullptr;
+  TagScopePtr tags = nullptr;
 };
 
 class Object {
@@ -69,8 +89,6 @@ class Object {
   bool IsFunction() { return kind == OB_FUNCTION; }
   // get the object var type.
   const TypePtr& GetType() const { return ty; }
-  // find a variable by name.
-  static ObjectPtr Find(const char* p);
 
  public:
   // create variable.

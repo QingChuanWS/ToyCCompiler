@@ -307,7 +307,7 @@ long Token::GetNumber() const {
 
 int Token::GetLineNo() const { return line_no; }
 
-ObjectPtr Token::FindVar() { return Object::Find(loc); }
+ObjectPtr Token::FindVar() { return Scope::FindVar(loc); }
 
 bool Token::IsTypename() const { return Equal("int") || Equal("char") || Equal("struct"); }
 

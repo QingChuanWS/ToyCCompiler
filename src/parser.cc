@@ -1,6 +1,8 @@
 
 #include "parser.h"
 
+#include <cstddef>
+
 #include "node.h"
 #include "token.h"
 #include "utils.h"
@@ -139,6 +141,22 @@ TypePtr Parser::FunctionParam(TokenPtr* rest, TokenPtr tok, TypePtr ty) {
 
 // struct-decl = "{" struct-member
 TypePtr Parser::StructDecl(TokenPtr* rest, TokenPtr tok) {
+  // read struct tag.
+  TokenPtr tag = nullptr;
+  if (tok->kind == TK_IDENT) {
+    tag = tok;
+    tok = tok->next;
+  }
+
+  if (tag && !tok->Equal("{")) {
+    TypePtr ty = Scope::FindTag(tag->loc);
+    if (ty == nullptr) {
+      tok->ErrorTok("unknow struct tag.");
+    }
+    *rest = tok;
+    return ty;
+  }
+
   tok = tok->SkipToken("{");
   StructPtr head = std::make_shared<Struct>();
   StructPtr cur = head;
@@ -159,7 +177,11 @@ TypePtr Parser::StructDecl(TokenPtr* rest, TokenPtr tok) {
   }
 
   *rest = tok->next;
-  return Type::CreateStructType(head->next);;
+  TypePtr ty = Type::CreateStructType(head->next);
+  if (tag) {
+    TagScope::PushScope(tag, ty, scope->GetTagScope()); 
+  }
+  return ty;
 }
 
 // stmt = "return" expr ";" |
@@ -370,7 +392,7 @@ NodePtr Parser::Postfix(TokenPtr* rest, TokenPtr tok) {
       continue;
     }
 
-    if(tok->Equal(".")){
+    if (tok->Equal(".")) {
       node = Node::CreateMemberNode(node, tok->next);
       tok = tok->next->next;
       continue;
