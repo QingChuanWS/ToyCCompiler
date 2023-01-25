@@ -14,18 +14,18 @@
 #include "parser.h"
 #include "utils.h"
 
-class Struct {
+class Member {
  public:
-  Struct() = default;
-  Struct(TypePtr type, TokenPtr struct_name) : ty(type), name(struct_name) {}
+  Member() = default;
+  Member(TypePtr type, TokenPtr struct_name) : ty(type), name(struct_name) {}
   // get struct member offset.
   int GetOffset() { return offset; }
 
  public:
   // calculate struct align based on a list of Struct member.
-  static int CalcuAlign(StructPtr mem);
+  static int CalcuStructAlign(MemberPtr mem);
   // init struct member list offset, return the sum of offset.
-  static int CalcuOffset(StructPtr mem);
+  static int CalcuStructOffset(MemberPtr mem);
 
  private:
   friend Node;
@@ -37,7 +37,7 @@ class Struct {
   // member name.
   TokenPtr name = nullptr;
   // next member.
-  StructPtr next = nullptr;
+  MemberPtr next = nullptr;
   // member offset based on the struct head.
   int offset = 0;
 };

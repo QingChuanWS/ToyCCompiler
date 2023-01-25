@@ -39,10 +39,25 @@ TypePtr Type::CreateArrayType(TypePtr base, int array_len) {
   return ty;
 }
 
-TypePtr Type::CreateStructType(StructPtr mem) {
+TypePtr Type::CreateStructType(MemberPtr mem) {
   TypePtr ty = std::make_shared<Type>(TY_STRUCT, 1, 1);
-  ty->align = Struct::CalcuAlign(mem);
-  ty->size = AlignTo(Struct::CalcuOffset(mem), ty->align);
+  ty->align = Member::CalcuStructAlign(mem);
+  ty->size = AlignTo(Member::CalcuStructOffset(mem), ty->align);
+  ty->mem = mem;
+  return ty;
+}
+
+TypePtr Type::CreateUnionType(MemberPtr mem) {
+  TypePtr ty = std::make_shared<Type>(TY_UNION, 1, 1);
+  for (MemberPtr m = mem; m != nullptr; m = m->next) {
+    if (ty->align < m->ty->align) {
+      ty->align = m->ty->align;
+    }
+    if (ty->size < m->ty->size) {
+      ty->size = m->ty->size;
+    }
+  }
+  ty->size = AlignTo(ty->size, ty->align);
   ty->mem = mem;
   return ty;
 }
@@ -55,8 +70,8 @@ const TokenPtr& Type::GetName() const {
 }
 
 // get struct member based on token.
-StructPtr Type::GetStructMember(TokenPtr tok) {
-  for (StructPtr m = mem; m != nullptr; m = m->next) {
+MemberPtr Type::GetStructMember(TokenPtr tok) {
+  for (MemberPtr m = mem; m != nullptr; m = m->next) {
     if (tok->Equal(m->name)) {
       return m;
     }

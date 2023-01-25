@@ -117,7 +117,7 @@ class Node {
   NodePtr inc = nullptr;
 
   // struct member access.
-  StructPtr mem = nullptr;
+  MemberPtr mem = nullptr;
 
   // ------ function ------;
   String call = String();

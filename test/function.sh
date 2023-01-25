@@ -23,8 +23,7 @@ memory_check(){
   
   if [ $ret != 0 ]; then
     echo "test case : "
-    echo "$1"
-    read -p "find memory error, check memory, see tmp.txt for the details." char
+    echo "$1"" find memory error, check memory, see tmp.txt for the details."
   fi
   echo $ut" memory check pass."
   echo "---------------------------------" 

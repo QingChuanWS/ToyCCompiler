@@ -26,22 +26,28 @@ enum Objectkind {
   OB_END,
 };
 
+// for struct or union tag scope.
 class TagScope {
  public:
   TagScope(const String& name, TypePtr& ty) : name(std::move(name)), ty(ty) {}
+  // push tag scope to scope's tags member.
   static void PushScope(TokenPtr tok, TypePtr ty, TagScopePtr& scope);
 
  private:
   friend class Scope;
+  // tag name
   String name = "";
+  // tag type.
   TypePtr ty = nullptr;
+  // tag link list.
   TagScopePtr next = nullptr;
 };
 
+// for var scope.
 class VarScope {
  public:
   VarScope(const String& name, ObjectPtr var) : name(std::move(name)), var(var) {}
-
+  // push a var scope to scope's vars member.
   static void PushScope(String name, ObjectPtr var, VarScopePtr& scope);
 
  private:
@@ -69,8 +75,13 @@ class Scope {
   static TypePtr FindTag(const char* p);
 
  private:
+  // scope link list.
   ScopePtr next = nullptr;
+  // --- C has two black scope; one is for variable and other
+  // is for struct tags. ---
+  // var scope link list.
   VarScopePtr vars = nullptr;
+  // tag scope link list.
   TagScopePtr tags = nullptr;
 };
 
@@ -111,16 +122,15 @@ class Object {
   // create global variable list based on token list.
   static TokenPtr ParseGlobalVar(TokenPtr tok, TypePtr basety);
 
-  friend class CodeGenerator;
-
  private:
+  friend class CodeGenerator;
   // label the object type
   Objectkind kind = OB_END;
   // for object list
   ObjectPtr next = nullptr;
   // variable name
   String obj_name = String();
-  // Type
+  // Object type
   TypePtr ty = nullptr;
 
   // local variable offset

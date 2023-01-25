@@ -18,7 +18,6 @@
 #include <cstring>
 #include <fstream>
 #include <iostream>
-#include <memory>
 #include <ostream>
 
 #include "object.h"
@@ -157,8 +156,8 @@ int Token::ReadPunct(const char* p) const {
 }
 
 void Token::ConvertToReserved(TokenPtr tok) {
-  static const char* kw[] = {"return", "if",     "else", "for",   "while",
-                             "int",    "sizeof", "char", "struct"};
+  static const char* kw[] = {"return", "if",     "else", "for",    "while",
+                             "int",    "sizeof", "char", "struct", "union"};
   for (TokenPtr t = tok; t != nullptr; t = t->next) {
     for (int i = 0; i < sizeof(kw) / sizeof(*kw); i++) {
       if (StrEqual(t->loc, kw[i], t->len)) {
@@ -191,14 +190,14 @@ bool Token::Equal(const TokenPtr tok) const {
 }
 
 TokenPtr Token::SkipToken(const char* op, bool enable_error) {
-  if (!this->Equal(op)) {
+  if (!Equal(op)) {
     if (enable_error) {
       ErrorAt(this->loc, "Expect \'%s\'", op);
     } else {
       return nullptr;
     }
   }
-  return this->next;
+  return next;
 }
 
 int Token::FromHex(const char c) const {
@@ -309,7 +308,7 @@ int Token::GetLineNo() const { return line_no; }
 
 ObjectPtr Token::FindVar() { return Scope::FindVar(loc); }
 
-bool Token::IsTypename() const { return Equal("int") || Equal("char") || Equal("struct"); }
+bool Token::IsTypename() const { return Equal("int") || Equal("char") || Equal("struct") || Equal("union"); }
 
 TokenPtr Token::TokenizeFile(const String& input_file) {
   return CreateTokens(input_file, ReadFile(input_file));

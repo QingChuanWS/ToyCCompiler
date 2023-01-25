@@ -24,6 +24,7 @@ enum TypeKind {
   TY_FUNC,
   TY_ARRAY,
   TY_STRUCT,
+  TY_UNION,
   TY_END,
 };
 
@@ -42,6 +43,8 @@ class Type {
   bool IsArray() const { return kind == TY_ARRAY; }
   // whether the type is struct
   bool IsStruct() const { return kind == TY_STRUCT; }
+  // whether the type is union
+  bool IsUnion() const { return kind == TY_UNION; }
   // whether the type contains the tok name.
   bool HasName() const { return name != nullptr; }
   // get data size.
@@ -53,7 +56,7 @@ class Type {
   // get type's name
   const TokenPtr& GetName() const;
   // get struct member based on token.
-  StructPtr GetStructMember(TokenPtr tok);
+  MemberPtr GetStructMember(TokenPtr tok);
   // get type align
   int GetAlign() const { return align; }
 
@@ -65,7 +68,9 @@ class Type {
   // create array type.
   static TypePtr CreateArrayType(TypePtr base, int array_len);
   // create struct type.
-  static TypePtr CreateStructType(StructPtr mem);
+  static TypePtr CreateStructType(MemberPtr mem);
+  // create union type.
+  static TypePtr CreateUnionType(MemberPtr mem);
 
  private:
   friend class Parser;
@@ -85,7 +90,7 @@ class Type {
   // Array
   int array_len = 0;
   // Member
-  StructPtr mem = nullptr;
+  MemberPtr mem = nullptr;
   // Function type.
   TypePtr return_ty = nullptr;
   // function params type list.

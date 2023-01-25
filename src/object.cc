@@ -22,9 +22,12 @@
 #include "type.h"
 #include "utils.h"
 
+// All local variable instance created during parsing are accumulated to this list.
+// each function has self local variable.
 ObjectPtr locals = nullptr;
+// Likewise, global variable are accumulated to this list.
 ObjectPtr globals = nullptr;
-
+// All variable or tag scope instance are accumulated to this list.
 ScopePtr scope = nullptr;
 
 void TagScope::PushScope(TokenPtr tok, TypePtr ty, TagScopePtr& scope) {

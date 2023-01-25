@@ -23,7 +23,7 @@ class Type;
 class TagScope;
 class VarScope;
 class Scope;
-class Struct;
+class Member;
 
 using TokenPtr = std::shared_ptr<Token>;
 using TypePtr = std::shared_ptr<Type>;
@@ -35,7 +35,7 @@ using StringStream = std::stringstream;
 using ScopePtr = std::shared_ptr<Scope>;
 using VarScopePtr = std::shared_ptr<VarScope>;
 using TagScopePtr = std::shared_ptr<TagScope>;
-using StructPtr = std::shared_ptr<Struct>;
+using MemberPtr = std::shared_ptr<Member>;
 using String = std::string;
 
 extern ObjectPtr locals;

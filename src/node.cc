@@ -145,7 +145,7 @@ NodePtr Node::CreateBlockNode(NodeKind kind, TokenPtr node_name, NodePtr body) {
 // create struct member node.
 NodePtr Node::CreateMemberNode(NodePtr parent, TokenPtr node_name) {
   parent->TypeInfer();
-  if (!parent->ty->IsStruct()) {
+  if (!parent->ty->IsStruct() && !parent->ty->IsUnion()) {
     node_name->ErrorTok("not a struct.");
   }
 

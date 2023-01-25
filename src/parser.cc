@@ -82,6 +82,10 @@ TypePtr Parser::Declspec(TokenPtr* rest, TokenPtr tok) {
     return StructDecl(rest, tok->next);
   }
 
+  if (tok->Equal("union")) {
+    return UnionDecl(rest, tok->next);
+  }
+
   tok->ErrorTok("typename expected.");
   return nullptr;
 }
@@ -139,27 +143,62 @@ TypePtr Parser::FunctionParam(TokenPtr* rest, TokenPtr tok, TypePtr ty) {
   return ty;
 }
 
-// struct-decl = "{" struct-member
 TypePtr Parser::StructDecl(TokenPtr* rest, TokenPtr tok) {
-  // read struct tag.
+  // read struct or union tag.
   TokenPtr tag = nullptr;
   if (tok->kind == TK_IDENT) {
     tag = tok;
-    tok = tok->next;
+    TypePtr ty = StructUnionTagDecl(&tok, tok->next, tag);
+    if (ty != nullptr) {
+      *rest = tok;
+      return ty;
+    }
   }
 
-  if (tag && !tok->Equal("{")) {
-    TypePtr ty = Scope::FindTag(tag->loc);
+  MemberPtr mem = StructUnionDecl(rest, tok);
+  TypePtr ty = Type::CreateStructType(mem);
+  if (tag) {
+    TagScope::PushScope(tag, ty, scope->GetTagScope());
+  }
+  return ty;
+}
+
+TypePtr Parser::UnionDecl(TokenPtr* rest, TokenPtr tok) {
+  // read struct or union tag.
+  TokenPtr tag = nullptr;
+  if (tok->kind == TK_IDENT) {
+    tag = tok;
+    TypePtr ty = StructUnionTagDecl(&tok, tok->next, tag);
+    if (ty != nullptr) {
+      *rest = tok;
+      return ty;
+    }
+  }
+  MemberPtr mem = StructUnionDecl(rest, tok);
+  TypePtr ty = Type::CreateUnionType(mem);
+  if (tag) {
+    TagScope::PushScope(tag, ty, scope->GetTagScope());
+  }
+  return ty;
+}
+
+TypePtr Parser::StructUnionTagDecl(TokenPtr* rest, TokenPtr tok, TokenPtr tag) {
+  TypePtr ty = nullptr;
+  if (!tok->Equal("{")) {
+    ty = Scope::FindTag(tag->loc);
     if (ty == nullptr) {
       tok->ErrorTok("unknow struct tag.");
     }
-    *rest = tok;
-    return ty;
   }
+  *rest = tok;
+  return ty;
+}
 
+// struct-decl = "{" struct-member
+MemberPtr Parser::StructUnionDecl(TokenPtr* rest, TokenPtr tok) {
   tok = tok->SkipToken("{");
-  StructPtr head = std::make_shared<Struct>();
-  StructPtr cur = head;
+  MemberPtr head = std::make_shared<Member>();
+  MemberPtr cur = head;
 
   while (!tok->Equal("}")) {
     TypePtr basety = Parser::Declspec(&tok, tok);
@@ -170,18 +209,13 @@ TypePtr Parser::StructDecl(TokenPtr* rest, TokenPtr tok) {
         tok = tok->SkipToken(",");
       }
       TypePtr ty = Parser::Declarator(&tok, tok, basety);
-      cur->next = std::make_shared<Struct>(ty, ty->GetName());
+      cur->next = std::make_shared<Member>(ty, ty->GetName());
       cur = cur->next;
     }
     tok = tok->SkipToken(";");
   }
-
   *rest = tok->next;
-  TypePtr ty = Type::CreateStructType(head->next);
-  if (tag) {
-    TagScope::PushScope(tag, ty, scope->GetTagScope());
-  }
-  return ty;
+  return head->next;
 }
 
 // stmt = "return" expr ";" |
@@ -413,7 +447,8 @@ NodePtr Parser::Postfix(TokenPtr* rest, TokenPtr tok) {
 }
 
 // primary = "(" "{" stmt+ "}" ")"
-//          |"(" expr ")" | "sizeof" unary | ident func-args? | str | num
+//          |"(" expr ")" | "sizeof" unary
+//          | ident "(" func-args? ")" | str | num
 NodePtr Parser::Primary(TokenPtr* rest, TokenPtr tok) {
   // This is a GNU statement expression.
   if (tok->Equal("(") && tok->next->Equal("{")) {

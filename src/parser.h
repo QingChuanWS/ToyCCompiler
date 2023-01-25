@@ -25,10 +25,17 @@ class Parser {
   //                 declarator ( "=" expr)?
   //                 ("," declarator ("=" expr)? ) * )? ";"
   static NodePtr Declaration(TokenPtr* rest, TokenPtr tok);
+  // ---- TYPE ----
   // declspec = "char" | "int" | struct-decl
   static TypePtr Declspec(TokenPtr* rest, TokenPtr tok);
   // struct-decl = ident? "{" struct-member
   static TypePtr StructDecl(TokenPtr* rest, TokenPtr tok);
+  // union-decl = ident? "{" union-member
+  static TypePtr UnionDecl(TokenPtr* rest, TokenPtr tok);
+  // struct-union tag = ("struct" or "union") ident?
+  static TypePtr StructUnionTagDecl(TokenPtr* rest, TokenPtr tok, TokenPtr tag);
+  // struct-union-decl = "{" struct-member
+  static MemberPtr StructUnionDecl(TokenPtr* rest, TokenPtr tok);
   // declarator = "*"* ident type-suffix
   static TypePtr Declarator(TokenPtr* rest, TokenPtr tok, TypePtr ty);
   // type-suffix = "(" func-params | "[" num "]" | ɛ
@@ -62,7 +69,8 @@ class Parser {
   // postfix = primary ("[" Expr "]" | "." ident | "->" ident )*
   static NodePtr Postfix(TokenPtr* rest, TokenPtr tok);
   // primary = "(" "{" stmt+ "}" ")"
-  //          |"(" expr ")" | "sizeof" unary | ident func-args? | str | num
+  //          | "(" expr ")" | "sizeof" unary
+  //          | ident "(" func-args? ")" | str | num
   static NodePtr Primary(TokenPtr* rest, TokenPtr tok);
   // function = ident "(" (assign ("," assign)*)? ")"
   static NodePtr Call(TokenPtr* rest, TokenPtr tok);

@@ -14,11 +14,14 @@ add_test(
   NAME mem_check
   COMMAND ${BASH_EXECUTABLE} ${CMAKE_SOURCE_DIR}/test/function.sh ${CMAKE_CURRENT_BINARY_DIR} memo #using memory check
   )
+set_tests_properties(mem_check PROPERTIES FAIL_REGULAR_EXPRESSION "memory error")
 
 add_test(
   NAME func_test
   COMMAND ${BASH_EXECUTABLE} ${CMAKE_SOURCE_DIR}/test/function.sh ${CMAKE_CURRENT_BINARY_DIR} func
   )
+set_tests_properties(func_test PROPERTIES FAIL_REGULAR_EXPRESSION "assert")
+
 
 add_test(
   NAME driver_test
