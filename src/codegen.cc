@@ -71,7 +71,7 @@ void CodeGenerator::Pop(const char* arg) {
 }
 
 void CodeGenerator::Load(TypePtr ty) {
-  if (ty->IsArray()) {
+  if (ty->IsArray() || ty->IsStruct() || ty->IsUnion()) {
     // If it is a array, do not attempt to load a value to
     // the register because we can't load entire array to
     // register. As a result, the evaluation's result isn't
@@ -89,6 +89,14 @@ void CodeGenerator::Load(TypePtr ty) {
 
 void CodeGenerator::Store(TypePtr ty) {
   Pop("rdi");
+  if (ty->IsStruct() || ty->IsUnion()) {
+    for (int i = 0; i < ty->Size(); i++) {
+      ASM_GEN("  mov r8b, [rax + ", i, "]");
+      ASM_GEN("  mov [rdi + ", i, "], r8b");
+    }
+    return;
+  }
+
   if (ty->Size() == 1) {
     ASM_GEN("  mov [rdi], al");
   } else {
