@@ -2,9 +2,11 @@
 #include "parser.h"
 
 #include <cstddef>
+#include <memory>
 
 #include "node.h"
 #include "token.h"
+#include "type.h"
 #include "utils.h"
 
 NodePtr Parser::Program(TokenPtr* rest, TokenPtr tok) {
@@ -100,14 +102,23 @@ TypePtr Parser::Declspec(TokenPtr* rest, TokenPtr tok) {
   return nullptr;
 }
 
-// declarator = "*"* ident type-suffix
+// declarator = "*"* ( "(" ident ")" | "(" declarator ")" | ident)
 TypePtr Parser::Declarator(TokenPtr* rest, TokenPtr tok, TypePtr ty) {
   while (tok->Equal("*")) {
     ty = Type::CreatePointerType(ty);
     tok = tok->next;
   }
-  *rest = tok;
 
+  if (tok->Equal("(")) {
+    TokenPtr start = tok;
+    TypePtr head = std::make_shared<Type>(TY_END, 0, 0);
+    Declarator(&tok, start->next, head);
+    tok = tok->SkipToken(")");
+    ty = TypeSuffix(rest, tok, ty);
+    return Declarator(&tok, start->next, ty);
+  }
+
+  *rest = tok;
   if (tok->kind != TK_IDENT) {
     tok->ErrorTok("expected a variable name.");
   }
