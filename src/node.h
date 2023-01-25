@@ -60,7 +60,7 @@ class Node {
 
  public:
   // create const node.
-  static NodePtr CreateConstNode(long val, TokenPtr node_name);
+  static NodePtr CreateConstNode(int64_t val, TokenPtr node_name);
   // create var node.
   static NodePtr CreateVarNode(ObjectPtr var, TokenPtr node_name);
   // create identify node.
@@ -127,7 +127,7 @@ class Node {
   ObjectPtr var = nullptr;
 
   //  ------ for const ------;
-  long val = 0;
+  int64_t val = 0;
 };
 
 #endif  // !NODE_GRUAD

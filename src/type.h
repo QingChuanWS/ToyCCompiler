@@ -19,6 +19,7 @@
 
 enum TypeKind {
   TY_INT,
+  TY_LONG,
   TY_CHAR,
   TY_PRT,
   TY_FUNC,
@@ -34,7 +35,7 @@ class Type {
   // copy construct.
   Type(const Type& ty) = default;
   // whether the type is integer.
-  inline bool IsInteger() const { return kind == TY_INT; }
+  inline bool IsInteger() const { return kind == TY_INT || kind == TY_CHAR || kind == TY_LONG; }
   // whether the type is points.
   inline bool IsPointer() const { return base != nullptr; }
   // whether the type is function.

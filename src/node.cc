@@ -22,7 +22,7 @@
 #include "type.h"
 #include "utils.h"
 
-NodePtr Node::CreateConstNode(long val, TokenPtr tok) {
+NodePtr Node::CreateConstNode(int64_t val, TokenPtr tok) {
   NodePtr node = std::make_shared<Node>(ND_NUM, tok);
   node->val = val;
   return node;
@@ -206,7 +206,7 @@ void Node::TypeInfer() {
     case ND_LT:
     case ND_NUM:
     case ND_CALL:
-      ty = ty_int;
+      ty = ty_long;
       return;
     case ND_VAR:
       ty = var->GetType();

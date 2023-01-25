@@ -104,7 +104,7 @@ class Token {
   // Next Token
   TokenPtr next = nullptr;
   // If kind_ is TK_NUM, its values,
-  long val = 0;
+  int64_t val = 0;
   // Token Location
   const char* loc;
   // Token length

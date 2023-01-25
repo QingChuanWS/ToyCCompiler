@@ -26,7 +26,7 @@ class Parser {
   //                 ("," declarator ("=" expr)? ) * )? ";"
   static NodePtr Declaration(TokenPtr* rest, TokenPtr tok);
   // ---- TYPE ----
-  // declspec = "char" | "int" | struct-decl
+  // declspec = "char" | "int" | "short" | "long" | struct-decl
   static TypePtr Declspec(TokenPtr* rest, TokenPtr tok);
   // struct-decl = ident? "{" struct-member
   static TypePtr StructDecl(TokenPtr* rest, TokenPtr tok);

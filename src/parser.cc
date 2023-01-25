@@ -66,7 +66,7 @@ NodePtr Parser::Declaration(TokenPtr* rest, TokenPtr tok) {
   ;
 }
 
-// declspec = "char" | "int" | struct-decl
+// declspec = "char" | "int" | "short" | "long" | struct-decl
 TypePtr Parser::Declspec(TokenPtr* rest, TokenPtr tok) {
   if (tok->Equal("char")) {
     *rest = tok->SkipToken("char");
@@ -76,6 +76,11 @@ TypePtr Parser::Declspec(TokenPtr* rest, TokenPtr tok) {
   if (tok->Equal("int")) {
     *rest = tok->SkipToken("int");
     return ty_int;
+  }
+
+  if (tok->Equal("long")) {
+    *rest = tok->SkipToken("long");
+    return ty_long;
   }
 
   if (tok->Equal("struct")) {

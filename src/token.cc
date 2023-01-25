@@ -156,8 +156,8 @@ int Token::ReadPunct(const char* p) const {
 }
 
 void Token::ConvertToReserved(TokenPtr tok) {
-  static const char* kw[] = {"return", "if",     "else", "for",    "while",
-                             "int",    "sizeof", "char", "struct", "union"};
+  static const char* kw[] = {"return", "if",   "else",   "for",   "while", "int",
+                             "sizeof", "char", "struct", "union", "short", "long"};
   for (TokenPtr t = tok; t != nullptr; t = t->next) {
     for (int i = 0; i < sizeof(kw) / sizeof(*kw); i++) {
       if (StrEqual(t->loc, kw[i], t->len)) {
@@ -308,7 +308,9 @@ int Token::GetLineNo() const { return line_no; }
 
 ObjectPtr Token::FindVar() { return Scope::FindVar(loc); }
 
-bool Token::IsTypename() const { return Equal("int") || Equal("char") || Equal("struct") || Equal("union"); }
+bool Token::IsTypename() const {
+  return Equal("int") || Equal("char") || Equal("long") || Equal("struct") || Equal("union");
+}
 
 TokenPtr Token::TokenizeFile(const String& input_file) {
   return CreateTokens(input_file, ReadFile(input_file));

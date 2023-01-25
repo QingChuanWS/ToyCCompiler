@@ -1,13 +1,3 @@
-/*
- * This project is exclusively owned by QingChuanWS and shall not be used for
- * commercial and profitting purpose without QingChuanWS's permission.
- * 
- * @Author: bingshan45@163.com
- * Github: https://github.com/QingChuanWS
- * @Description: 
- * 
- * Copyright (c) 2023 by QingChuanWS, All Rights Reserved. 
- */
 #include "test.h"
 
 int g1, g2[4];
@@ -45,6 +35,22 @@ int main() {
 
   ASSERT(4, sizeof(g1));
   ASSERT(16, sizeof(g2));
+
+  ASSERT(1, ({ char x=1; x; }));
+  ASSERT(1, ({ char x=1; char y=2; x; }));
+  ASSERT(2, ({ char x=1; char y=2; y; }));
+
+  ASSERT(1, ({ char x; sizeof(x); }));
+  ASSERT(10, ({ char x[10]; sizeof(x); }));
+
+  ASSERT(2, ({ int x=2; { int x=3; } x; }));
+  ASSERT(2, ({ int x=2; { int x=3; } int y=4; x; }));
+  ASSERT(3, ({ int x=2; { x=3; } x; }));
+
+  ASSERT(7, ({ int x; int y; char z; char *a=&y; char *b=&z; b-a; }));
+  ASSERT(1, ({ int x; char y; int z; char *a=&y; char *b=&z; b-a; }));
+
+  ASSERT(8, ({ long x; sizeof(x); }));
 
   printf("OK\n");
   return 0;

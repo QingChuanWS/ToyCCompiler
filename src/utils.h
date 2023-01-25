@@ -13,6 +13,7 @@
 
 #include <fstream>
 #include <iostream>
+#include <stdint.h>
 #include <memory>
 #include <ostream>
 
@@ -49,8 +50,10 @@ struct Config {
   String input_path = "-";
 };
 
-extern std::shared_ptr<Type> ty_int;
-extern std::shared_ptr<Type> ty_char;
+extern TypePtr ty_int;
+extern TypePtr ty_char;
+extern TypePtr ty_long;
+
 extern Config config;
 
 #endif  // UTILS_GRUAD
