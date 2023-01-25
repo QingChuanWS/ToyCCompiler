@@ -9,3 +9,5 @@
  * Copyright (c) 2023 by QingChuanWS, All Rights Reserved. 
  */
 #define ASSERT(x, y) assert(x, y, #y)
+
+int printf();

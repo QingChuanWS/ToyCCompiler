@@ -97,7 +97,7 @@ class Object {
   // check whether is a global variable
   inline bool IsGlobal() { return kind == OB_GLOBAL; }
   // check whether is a global variable or function
-  inline bool IsFunction() { return kind == OB_FUNCTION; }
+  inline bool IsFunction() { return kind == OB_FUNCTION || is_defination == true; }
   // get the object var type.
   inline const TypePtr& GetType() { return ty; }
 
@@ -149,6 +149,8 @@ class Object {
   ObjectPtr loc_list = nullptr;
   // function variable's stack size
   int stack_size = 0;
+  // function only have defination.
+  bool is_defination = false;
 };
 
 #endif  // OBJECT_GRUAD
