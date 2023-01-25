@@ -23,7 +23,7 @@
 // Code generator pinter.
 class CodeGenPrinter {
  public:
-  static CodeGenPrinter& GetInstance(const Config& config=Config()) {
+  static CodeGenPrinter& GetInstance(const Config& config = Config()) {
     static CodeGenPrinter printor(config);
     return printor;
   }
@@ -74,8 +74,6 @@ class CodeGenerator {
   CodeGenerator(const CodeGenerator&) = delete;
   // don't allow assign constructor.
   CodeGenerator& operator=(const CodeGenerator&) = delete;
-  // deconstructor.
-  ~CodeGenerator() {}
   // generator x86 assemly code.
   void CodeGen(ObjectPtr program);
 

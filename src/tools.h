@@ -49,10 +49,10 @@ bool IsAlnum(const char c);
 // round up `n` to the nearest multiple of `align`.
 int AlignTo(const int n, const int align);
 // create a unique name.
-const String CreateUniqueName();
+String CreateUniqueName();
 // compiler helper function.
 void Usage(int state);
 // parse input arguement.
-void ParseArgs(int argc, char** argv);
+Config ParseArgs(int argc, char** argv);
 
 #endif  // !TOOLS_GRUAD

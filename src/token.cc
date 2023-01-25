@@ -64,7 +64,7 @@ StringStream Token::ReadFromFile(const String& filename) {
 }
 
 StringPtr Token::ReadFile(const String& filename) {
-  String program(ReadFromFile(filename).str());
+  String program = String(ReadFromFile(filename).str());
   // Make sure that the last line is properly terminated with '\n'
   if (program.size() == 0 || program[program.size() - 1] != '\n') {
     program.push_back('\n');

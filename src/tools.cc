@@ -15,6 +15,7 @@
 #include <cstdio>
 #include <cstdlib>
 #include <sstream>
+#include "utils.h"
 
 void Error(const char* fmt, ...) {
   va_list ap;
@@ -54,8 +55,8 @@ class StringFormator {
     static StringFormator printor;
     return printor;
   }
-  static const String GetString() {
-    String res = GetInstance().sprint.str();
+  static String GetString() {
+    String res = String(GetInstance().sprint.str());
     GetInstance().sprint.clear();
     GetInstance().sprint.str("");
     return res;
@@ -69,7 +70,7 @@ class StringFormator {
   std::stringstream sprint;
 };
 
-const String CreateUniqueName() {
+String CreateUniqueName() {
   static int id = 0;
   StringFormat(".L..", id++);
   return StringFormator::GetString();
@@ -82,7 +83,8 @@ void Usage(int state) {
 }
 
 // parse input arguement.
-void ParseArgs(int argc, char** argv) {
+Config ParseArgs(int argc, char** argv) {
+  Config config;
   for (int i = 1; i < argc; i++) {
     if (!strcmp(argv[i], "--help")) {
       Usage(0);
@@ -107,4 +109,5 @@ void ParseArgs(int argc, char** argv) {
   if (config.input_path.empty()) {
     Error("no input files.");
   }
+  return config;
 }

@@ -38,7 +38,7 @@ class Token {
   TokenPtr SkipToken(const char* op, bool enable_error = true);
   // Check whether the current token's kind is EOF,
   // otherwise return false.
-  bool IsEof() { return this->kind == TK_EOF; }
+  inline bool IsEof() { return kind == TK_EOF; }
   // Check whether Token string equal special string
   bool Equal(const char* op) const;
   // Check whether Token string equal special tok
@@ -54,9 +54,9 @@ class Token {
   // Check whether the given token is a typename.
   bool IsTypename() const;
   // get the tok next point
-  const TokenPtr& GetNext() const { return next; }
+  inline const TokenPtr& GetNext() const { return next; }
   // get the tok kind.
-  Tokenkind GetKind() const { return kind; }
+  inline Tokenkind GetKind() const { return kind; }
   // find a variable in scope.
   ObjectPtr FindVar();
 

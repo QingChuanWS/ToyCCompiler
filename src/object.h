@@ -93,13 +93,13 @@ class Object {
   // calculate the function local variable offset.
   void OffsetCal();
   // check whether is a local variable
-  bool IsLocal() { return kind == OB_LOCAL; }
+  inline bool IsLocal() { return kind == OB_LOCAL; }
   // check whether is a global variable
-  bool IsGlobal() { return kind == OB_GLOBAL; }
+  inline bool IsGlobal() { return kind == OB_GLOBAL; }
   // check whether is a global variable or function
-  bool IsFunction() { return kind == OB_FUNCTION; }
+  inline bool IsFunction() { return kind == OB_FUNCTION; }
   // get the object var type.
-  const TypePtr& GetType() const { return ty; }
+  inline const TypePtr& GetType() { return ty; }
 
  public:
   // create variable.

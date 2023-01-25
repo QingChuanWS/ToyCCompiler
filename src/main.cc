@@ -24,11 +24,9 @@
 #include "tools.h"
 #include "utils.h"
 
-Config config;
-
 int main(int argc, char** argv) {
   // parsing input arguement.
-  ParseArgs(argc, argv);
+  Config config = ParseArgs(argc, argv);
   // read source code file and generate token list.
   TokenPtr cur = Token::TokenizeFile(config.input_path);
   // parse token list generate AST.
