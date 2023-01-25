@@ -228,6 +228,9 @@ void Node::TypeInfer() {
       if (!lhs->ty->IsPointer()) {
         name->ErrorTok("invalid pointer reference!");
       }
+      if (lhs->ty->GetBase()->IsVoid()) {
+        name->ErrorTok("dereferencing a void pointer.");
+      }
       ty = lhs->ty->GetBase();
       return;
     case ND_STMT_EXPR:

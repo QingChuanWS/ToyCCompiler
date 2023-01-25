@@ -18,6 +18,7 @@
 #include "utils.h"
 
 enum TypeKind {
+  TY_VOID,
   TY_INT,
   TY_SHORT,
   TY_LONG,
@@ -47,6 +48,8 @@ class Type {
   inline bool IsStruct() const { return kind == TY_STRUCT; }
   // whether the type is union
   inline bool IsUnion() const { return kind == TY_UNION; }
+  // whether the type is void
+  inline bool IsVoid() const { return kind == TY_VOID; }
   // whether the type contains the tok name.
   inline bool HasName() const { return name != nullptr; }
   // get data size.

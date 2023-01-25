@@ -53,6 +53,9 @@ NodePtr Parser::Declaration(TokenPtr* rest, TokenPtr tok) {
       tok = tok->SkipToken(",");
     }
     TypePtr ty = Declarator(&tok, tok, ty_base);
+    if (ty->IsVoid()) {
+      ty->name->ErrorTok("variable declared void.");
+    }
     ObjectPtr var = Object::CreateLocalVar(ty->name->GetIdent(), ty, &locals);
     if (!tok->Equal("=")) {
       continue;
@@ -68,8 +71,13 @@ NodePtr Parser::Declaration(TokenPtr* rest, TokenPtr tok) {
   ;
 }
 
-// declspec = "char" | "int" | "short" | "long" | struct-decl
+// declspec = "void" | "char" | "int" | "short" | "long" | struct-decl
 TypePtr Parser::Declspec(TokenPtr* rest, TokenPtr tok) {
+  if (tok->Equal("void")) {
+    *rest = tok->SkipToken("void");
+    return ty_void;
+  }
+
   if (tok->Equal("char")) {
     *rest = tok->SkipToken("char");
     return ty_char;

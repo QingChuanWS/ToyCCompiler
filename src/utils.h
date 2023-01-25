@@ -11,9 +11,10 @@
 #ifndef UTILS_GRUAD
 #define UTILS_GRUAD
 
+#include <stdint.h>
+
 #include <fstream>
 #include <iostream>
-#include <stdint.h>
 #include <memory>
 #include <ostream>
 
@@ -50,6 +51,7 @@ struct Config {
   String input_path = "-";
 };
 
+extern TypePtr ty_void;
 extern TypePtr ty_char;
 extern TypePtr ty_short;
 extern TypePtr ty_int;
