@@ -28,8 +28,9 @@ static int Count() {
 int depth = 0;
 ObjectPtr cur_fn = nullptr;
 
-const char* argreg8[6] = {"dil", "sil", "dl", "cl", "r8b", "r9b"};
-const char* argreg64[6] = {"rdi", "rsi", "rdx", "rcx", "r8", "r9"};
+const char* argreg8[] = {"dil", "sil", "dl", "cl", "r8b", "r9b"};
+const char* argreg32[] = {"edi", "esi", "edx", "ecx", "r8d", "r9d"};
+const char* argreg64[] = {"rdi", "rsi", "rdx", "rcx", "r8", "r9"};
 
 #define ASM_GEN(...) Println<CodeGenPrinter>(__VA_ARGS__, "\n");
 
@@ -82,6 +83,8 @@ void CodeGenerator::Load(TypePtr ty) {
   }
   if (ty->Size() == 1) {
     ASM_GEN("  movsbq rax, BYTE PTR [rax]");
+  } else if (ty->Size() == 4) {
+    ASM_GEN("  movsxd rax, DWORD PTR [rax]");
   } else {
     ASM_GEN("  mov rax, [rax]");
   }
@@ -99,6 +102,8 @@ void CodeGenerator::Store(TypePtr ty) {
 
   if (ty->Size() == 1) {
     ASM_GEN("  mov [rdi], al");
+  } else if (ty->Size() == 4) {
+    ASM_GEN("  mov [rdi], eax");
   } else {
     ASM_GEN("  mov [rdi], rax");
   }
@@ -128,6 +133,22 @@ void CodeGenerator::EmitData(ObjectPtr prog) {
   }
 }
 
+void CodeGenerator::StoreFunctionParameter(int reg, int offset, int sz) {
+  switch (sz) {
+    case 1:
+      ASM_GEN("  mov [rbp - ", offset, "], ", argreg8[reg]);
+      break;
+    case 4:
+      ASM_GEN("  mov [rbp - ", offset, "], ", argreg32[reg]);
+      break;
+    case 8:
+      ASM_GEN("  mov [rbp - ", offset, "], ", argreg64[reg]);
+      break;
+    default:
+      unreachable();
+  }
+}
+
 void CodeGenerator::EmitText(ObjectPtr prog) {
   // using intel syntax
   // e.g. op dst, src
@@ -149,11 +170,7 @@ void CodeGenerator::EmitText(ObjectPtr prog) {
 
     int i = 0;
     for (ObjectPtr var = fn->params; var != nullptr; var = var->next) {
-      if (var->ty->Size() == 1) {
-        ASM_GEN("  mov [rbp - ", var->offset, "], ", argreg8[i++]);
-      } else {
-        ASM_GEN("  mov [rbp - ", var->offset, "], ", argreg64[i++]);
-      }
+      StoreFunctionParameter(i++, var->offset, var->ty->Size());
     }
 
     // Emit code

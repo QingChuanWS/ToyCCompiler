@@ -22,6 +22,7 @@
 
 #define DLOG(...) DebugLog(__VA_ARGS__)
 #define DEBUG(expr) assert(expr)
+#define unreachable() Error("internal error at %s:%d", __FILE__, __LINE__)
 
 // recursive over state.
 template <typename F, typename T>

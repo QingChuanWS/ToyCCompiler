@@ -54,7 +54,7 @@ class Node {
  public:
   Node(NodeKind kind, TokenPtr tok) : kind(kind), name(tok) {}
   // whether the node is point.
-  bool IsPointerNode();
+  inline bool IsPointerNode()  { return ty->IsPointer(); }
   // inference the node type.
   void TypeInfer();
 

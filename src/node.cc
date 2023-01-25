@@ -22,8 +22,6 @@
 #include "type.h"
 #include "utils.h"
 
-extern ObjectPtr locals;
-
 NodePtr Node::CreateConstNode(long val, TokenPtr tok) {
   NodePtr node = std::make_shared<Node>(ND_NUM, tok);
   node->val = val;
@@ -248,6 +246,3 @@ void Node::TypeInfer() {
       return;
   }
 }
-
-bool Node::IsPointerNode() { return ty->IsPointer(); }
-

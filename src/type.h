@@ -34,23 +34,23 @@ class Type {
   // copy construct.
   Type(const Type& ty) = default;
   // whether the type is integer.
-  bool IsInteger() const { return kind == TY_INT; }
+  inline bool IsInteger() const { return kind == TY_INT; }
   // whether the type is points.
-  bool IsPointer() const { return base != nullptr; }
+  inline bool IsPointer() const { return base != nullptr; }
   // whether the type is function.
-  bool IsFunction() const { return kind == TY_FUNC; }
+  inline bool IsFunction() const { return kind == TY_FUNC; }
   // whether the type is array
-  bool IsArray() const { return kind == TY_ARRAY; }
+  inline bool IsArray() const { return kind == TY_ARRAY; }
   // whether the type is struct
-  bool IsStruct() const { return kind == TY_STRUCT; }
+  inline bool IsStruct() const { return kind == TY_STRUCT; }
   // whether the type is union
-  bool IsUnion() const { return kind == TY_UNION; }
+  inline bool IsUnion() const { return kind == TY_UNION; }
   // whether the type contains the tok name.
-  bool HasName() const { return name != nullptr; }
+  inline bool HasName() const { return name != nullptr; }
   // get data size.
-  int Size() const { return size; }
+  inline int Size() const { return size; }
   // get base pointer size.
-  int GetBaseSize() const { return base->size; }
+  inline int GetBaseSize() const { return base->size; }
   // get type's base type.
   const TypePtr& GetBase() const { return base; }
   // get type's name
@@ -58,7 +58,7 @@ class Type {
   // get struct member based on token.
   MemberPtr GetStructMember(TokenPtr tok);
   // get type align
-  int GetAlign() const { return align; }
+  inline int GetAlign() const { return align; }
 
  public:
   // create pointer type.

@@ -17,7 +17,7 @@
 #include "tools.h"
 #include "utils.h"
 
-TypePtr ty_int = std::make_shared<Type>(TY_INT, 8, 8);
+TypePtr ty_int = std::make_shared<Type>(TY_INT, 4, 4);
 TypePtr ty_char = std::make_shared<Type>(TY_CHAR, 1, 1);
 
 TypePtr Type::CreatePointerType(TypePtr base) {

@@ -98,6 +98,8 @@ class CodeGenerator {
   void Load(TypePtr ty);
   // store a data to memory address based on the type size as ty.
   void Store(TypePtr ty);
+  // store passed-by-register arguments to the stack.
+  void StoreFunctionParameter(int reg, int offset, int sz);
 };
 
 #endif  // !CODEGEN_GRUAD
