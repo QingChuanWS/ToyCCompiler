@@ -43,11 +43,13 @@ void DebugLog(const char* fmt, ...);
 // compare two string based strncmp.
 bool StrEqual(const char* src, const char* dst, const int src_len);
 // check whether current character is alpha.
-bool IsAlpha(const char c);
+inline bool IsAlpha(const char c) {
+  return ('a' <= c && c <= 'z') || ('A' <= c && c <= 'Z') || c == '_';
+}
 // check whether current character is alpha or number.
-bool IsAlnum(const char c);
+inline bool IsAlnum(const char c) { return IsAlpha(c) || ('0' <= c && c <= '9'); }
 // round up `n` to the nearest multiple of `align`.
-int AlignTo(const int n, const int align);
+inline int AlignTo(const int n, const int align) { return (n + align - 1) / align * align; }
 // create a unique name.
 String CreateUniqueName();
 // compiler helper function.

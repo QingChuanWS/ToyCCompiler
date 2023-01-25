@@ -29,6 +29,7 @@ int depth = 0;
 ObjectPtr cur_fn = nullptr;
 
 const char* argreg8[] = {"dil", "sil", "dl", "cl", "r8b", "r9b"};
+const char* argreg16[] = {"di", "si", "dx", "cx", "r8w", "r9w"};
 const char* argreg32[] = {"edi", "esi", "edx", "ecx", "r8d", "r9d"};
 const char* argreg64[] = {"rdi", "rsi", "rdx", "rcx", "r8", "r9"};
 
@@ -83,6 +84,9 @@ void CodeGenerator::Load(TypePtr ty) {
   }
   if (ty->Size() == 1) {
     ASM_GEN("  movsbq rax, BYTE PTR [rax]");
+  } else if (ty->Size() == 2) {
+    ASM_GEN("  movswq rax, WORD PTR [rax]");
+
   } else if (ty->Size() == 4) {
     ASM_GEN("  movsxd rax, DWORD PTR [rax]");
   } else {
@@ -102,6 +106,8 @@ void CodeGenerator::Store(TypePtr ty) {
 
   if (ty->Size() == 1) {
     ASM_GEN("  mov [rdi], al");
+  } else if (ty->Size() == 2) {
+    ASM_GEN("  mov [rdi], ax");
   } else if (ty->Size() == 4) {
     ASM_GEN("  mov [rdi], eax");
   } else {
@@ -137,6 +143,9 @@ void CodeGenerator::StoreFunctionParameter(int reg, int offset, int sz) {
   switch (sz) {
     case 1:
       ASM_GEN("  mov [rbp - ", offset, "], ", argreg8[reg]);
+      break;
+    case 2:
+      ASM_GEN("  mov [rbp - ", offset, "], ", argreg16[reg]);
       break;
     case 4:
       ASM_GEN("  mov [rbp - ", offset, "], ", argreg32[reg]);

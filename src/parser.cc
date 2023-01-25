@@ -73,6 +73,11 @@ TypePtr Parser::Declspec(TokenPtr* rest, TokenPtr tok) {
     return ty_char;
   }
 
+  if (tok->Equal("short")) {
+    *rest = tok->SkipToken("short");
+    return ty_short;
+  }
+
   if (tok->Equal("int")) {
     *rest = tok->SkipToken("int");
     return ty_int;

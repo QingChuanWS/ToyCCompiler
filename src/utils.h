@@ -50,8 +50,9 @@ struct Config {
   String input_path = "-";
 };
 
-extern TypePtr ty_int;
 extern TypePtr ty_char;
+extern TypePtr ty_short;
+extern TypePtr ty_int;
 extern TypePtr ty_long;
 
 extern Config config;

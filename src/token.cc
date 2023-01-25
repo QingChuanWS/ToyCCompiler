@@ -309,7 +309,8 @@ int Token::GetLineNo() const { return line_no; }
 ObjectPtr Token::FindVar() { return Scope::FindVar(loc); }
 
 bool Token::IsTypename() const {
-  return Equal("int") || Equal("char") || Equal("long") || Equal("struct") || Equal("union");
+  return Equal("int") || Equal("char") || Equal("short") || Equal("long") || Equal("struct") ||
+         Equal("union");
 }
 
 TokenPtr Token::TokenizeFile(const String& input_file) {

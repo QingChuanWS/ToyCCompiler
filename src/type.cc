@@ -19,7 +19,12 @@
 
 TypePtr ty_long = std::make_shared<Type>(TY_CHAR, 8, 8);
 TypePtr ty_int = std::make_shared<Type>(TY_INT, 4, 4);
+TypePtr ty_short = std::make_shared<Type>(TY_SHORT, 2, 2);
 TypePtr ty_char = std::make_shared<Type>(TY_CHAR, 1, 1);
+
+bool Type::IsInteger() const {
+  return kind == TY_INT || kind == TY_CHAR || kind == TY_SHORT || kind == TY_LONG;
+}
 
 TypePtr Type::CreatePointerType(TypePtr base) {
   TypePtr ty = std::make_shared<Type>(TY_PRT, 8, 8);
