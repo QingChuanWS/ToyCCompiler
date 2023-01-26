@@ -26,43 +26,12 @@ enum Objectkind {
   OB_END,
 };
 
-// for struct or union tag scope.
-class TagScope {
- public:
-  TagScope(const String& name, TypePtr& ty) : name(std::move(name)), ty(ty) {}
-  // push tag scope to scope's tags member.
-  static void PushScope(TokenPtr tok, TypePtr ty, TagScopePtr& scope);
-
- private:
-  friend class Scope;
-  // tag name
-  String name = "";
-  // tag type.
-  TypePtr ty = nullptr;
-  // tag link list.
-  TagScopePtr next = nullptr;
-};
-
-// for var scope.
-class VarScope {
- public:
-  VarScope(const String& name, ObjectPtr var) : name(std::move(name)), var(var) {}
-  // push a var scope to scope's vars member.
-  static void PushScope(String name, ObjectPtr var, VarScopePtr& scope);
-
- private:
-  friend class Scope;
-  VarScopePtr next = nullptr;
-  String name = String();
-  ObjectPtr var = nullptr;
-};
-
 class Scope {
  public:
   // get current var scope
-  VarScopePtr& GetVarScope() { return vars; }
+  VarScopeMap& GetVarScope() { return vars; }
   // get current tag scope
-  TagScopePtr& GetTagScope() { return tags; }
+  TagScopeMap& GetTagScope() { return tags; }
 
  public:
   // create a scpoe
@@ -70,9 +39,9 @@ class Scope {
   // delete a scope
   static void LevarScope(ScopePtr& next);
   // find a variable by name.
-  static ObjectPtr FindVar(const char* p);
+  static ObjectPtr FindVar(const String& name);
   // find a teg by name
-  static TypePtr FindTag(const char* p);
+  static TypePtr FindTag(const String& name);
 
  private:
   // scope link list.
@@ -80,9 +49,9 @@ class Scope {
   // --- C has two black scope; one is for variable and other
   // is for struct tags. ---
   // var scope link list.
-  VarScopePtr vars = nullptr;
+  VarScopeMap vars = VarScopeMap();
   // tag scope link list.
-  TagScopePtr tags = nullptr;
+  TagScopeMap tags = TagScopeMap();
 };
 
 class Object {

@@ -30,18 +30,6 @@ ObjectPtr globals = nullptr;
 // All variable or tag scope instance are accumulated to this list.
 ScopePtr scope = nullptr;
 
-void TagScope::PushScope(TokenPtr tok, TypePtr ty, TagScopePtr& scope) {
-  TagScopePtr sc = std::make_shared<TagScope>(tok->GetIdent(), ty);
-  sc->next = scope;
-  scope = sc;
-}
-
-void VarScope::PushScope(String name, ObjectPtr var, VarScopePtr& scope) {
-  VarScopePtr sc = std::make_shared<VarScope>(name, var);
-  sc->next = scope;
-  scope = sc;
-}
-
 void Scope::EnterScope(ScopePtr& next) {
   ScopePtr sc = std::make_shared<Scope>();
   sc->next = next;
@@ -50,23 +38,21 @@ void Scope::EnterScope(ScopePtr& next) {
 
 void Scope::LevarScope(ScopePtr& next) { next = next->next; }
 
-ObjectPtr Scope::FindVar(const char* p) {
+ObjectPtr Scope::FindVar(const String& name) {
   for (ScopePtr sc = scope; sc != nullptr; sc = sc->next) {
-    for (VarScopePtr v = sc->vars; v != nullptr; v = v->next) {
-      if (memcmp(v->name.c_str(), p, v->name.size()) == 0) {
-        return v->var;
-      }
+    auto v = sc->vars.find(name);
+    if (v != sc->vars.end()) {
+      return v->second;
     }
   }
   return nullptr;
 }
 
-TypePtr Scope::FindTag(const char* p) {
+TypePtr Scope::FindTag(const String& name) {
   for (ScopePtr sc = scope; sc != nullptr; sc = sc->next) {
-    for (TagScopePtr t = sc->tags; t != nullptr; t = t->next) {
-      if (memcmp(t->name.c_str(), p, t->name.size()) == 0) {
-        return t->ty;
-      }
+    auto t = sc->tags.find(name);
+    if (t != sc->tags.end()) {
+      return t->second;
     }
   }
   return nullptr;
@@ -74,7 +60,7 @@ TypePtr Scope::FindTag(const char* p) {
 
 ObjectPtr Object::CreateVar(Objectkind kind, const String& name, const TypePtr& ty) {
   ObjectPtr obj = std::make_shared<Object>(kind, name, ty);
-  VarScope::PushScope(name, obj, scope->GetVarScope());
+  scope->GetVarScope()[name] = obj;
   return obj;
 }
 
@@ -127,7 +113,7 @@ TokenPtr Object::CreateFunction(TokenPtr tok, TypePtr basety, ObjectPtr* next) {
     fn->next = *next;
     *next = fn;
   }
-  
+
   // leave scope.
   Scope::LevarScope(scope);
   return tok;

@@ -232,7 +232,7 @@ TypePtr Parser::StructDecl(TokenPtr* rest, TokenPtr tok) {
   MemberPtr mem = StructUnionDecl(rest, tok);
   TypePtr ty = Type::CreateStructType(mem);
   if (tag) {
-    TagScope::PushScope(tag, ty, scope->GetTagScope());
+    scope->GetTagScope()[tag->GetIdent()] = ty;
   }
   return ty;
 }
@@ -251,7 +251,7 @@ TypePtr Parser::UnionDecl(TokenPtr* rest, TokenPtr tok) {
   MemberPtr mem = StructUnionDecl(rest, tok);
   TypePtr ty = Type::CreateUnionType(mem);
   if (tag) {
-    TagScope::PushScope(tag, ty, scope->GetTagScope());
+    scope->GetTagScope()[tag->GetIdent()] = ty;
   }
   return ty;
 }
@@ -259,7 +259,7 @@ TypePtr Parser::UnionDecl(TokenPtr* rest, TokenPtr tok) {
 TypePtr Parser::StructUnionTagDecl(TokenPtr* rest, TokenPtr tok, TokenPtr tag) {
   TypePtr ty = nullptr;
   if (!tok->Equal("{")) {
-    ty = Scope::FindTag(tag->loc);
+    ty = Scope::FindTag(tag->GetIdent());
     if (ty == nullptr) {
       tok->ErrorTok("unknow struct tag.");
     }

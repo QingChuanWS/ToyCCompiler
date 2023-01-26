@@ -17,6 +17,7 @@
 #include <iostream>
 #include <memory>
 #include <ostream>
+#include <unordered_map>
 
 class Token;
 class Object;
@@ -39,6 +40,8 @@ using VarScopePtr = std::shared_ptr<VarScope>;
 using TagScopePtr = std::shared_ptr<TagScope>;
 using MemberPtr = std::shared_ptr<Member>;
 using String = std::string;
+using VarScopeMap = std::unordered_map<String, ObjectPtr>;
+using TagScopeMap = std::unordered_map<String, TypePtr>;
 
 extern ObjectPtr locals;
 extern ObjectPtr globals;
