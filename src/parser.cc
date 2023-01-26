@@ -6,6 +6,7 @@
 
 #include "node.h"
 #include "token.h"
+#include "tools.h"
 #include "type.h"
 #include "utils.h"
 
@@ -71,43 +72,85 @@ NodePtr Parser::Declaration(TokenPtr* rest, TokenPtr tok) {
   ;
 }
 
-// declspec = "void" | "char" | "int" | "short" | "long" | struct-decl
+// declspec = ("void" | "char" | "int" | "short" | "long"
+//            | struct-decl | union-decl )+
+//
+// The order of typenames in a type-specifier doesn't matter. For
+// example, `int long static` means the same as `static long int`.
+// That can also be written as `static long` because you can omit
+// `int` if `long` or `short` are specified. However, something like
+// `char int` is not a valid type specifier. We have to accept only a
+// limited combinations of the typenames.
+//
+// In this function, we count the number of occurrences of each typename
+// while keeping the "current" type object that the typenames up
+// until that point represent. When we reach a non-typename token,
+// we returns the current type object.
 TypePtr Parser::Declspec(TokenPtr* rest, TokenPtr tok) {
-  if (tok->Equal("void")) {
-    *rest = tok->SkipToken("void");
-    return ty_void;
-  }
+  // We use a single integer as counters for all typenames.
+  // For example, bits 0 and 1 represents how many times we saw the
+  // keyword "void" so far. With this, we can use a switch statement
+  // as you can see below.
+  enum {
+    VOID = 1 << 0,
+    CHAR = 1 << 2,
+    SHORT = 1 << 4,
+    INT = 1 << 6,
+    LONG = 1 << 8,
+    OTHER = 1 << 10,
+  };
 
-  if (tok->Equal("char")) {
-    *rest = tok->SkipToken("char");
-    return ty_char;
-  }
+  TypePtr ty = ty_int;
+  int counter = 0;
+  while (tok->IsTypename()) {
+    // Handle user-define types.
+    if (tok->Equal("struct") || tok->Equal("union")) {
+      if (tok->Equal("struct")) {
+        ty = StructDecl(&tok, tok->next);
+      } else {
+        ty = UnionDecl(&tok, tok->next);
+      }
+      counter += OTHER;
+      continue;
+    }
 
-  if (tok->Equal("short")) {
-    *rest = tok->SkipToken("short");
-    return ty_short;
-  }
+    if (tok->Equal("void")) {
+      counter += VOID;
+    } else if (tok->Equal("char")) {
+      counter += CHAR;
+    } else if (tok->Equal("short")) {
+      counter += SHORT;
+    } else if (tok->Equal("int")) {
+      counter += INT;
+    } else if (tok->Equal("long")) {
+      counter += LONG;
+    }
 
-  if (tok->Equal("int")) {
-    *rest = tok->SkipToken("int");
-    return ty_int;
+    switch (counter) {
+      case VOID:
+        ty = ty_void;
+        break;
+      case CHAR:
+        ty = ty_char;
+        break;
+      case SHORT:
+      case SHORT + INT:
+        ty = ty_short;
+        break;
+      case INT:
+        ty = ty_int;
+        break;
+      case LONG:
+      case LONG + INT:
+        ty = ty_long;
+        break;
+      default:
+        tok->ErrorTok("invalid type.");
+    }
+    tok = tok->next;
   }
-
-  if (tok->Equal("long")) {
-    *rest = tok->SkipToken("long");
-    return ty_long;
-  }
-
-  if (tok->Equal("struct")) {
-    return StructDecl(rest, tok->next);
-  }
-
-  if (tok->Equal("union")) {
-    return UnionDecl(rest, tok->next);
-  }
-
-  tok->ErrorTok("typename expected.");
-  return nullptr;
+  *rest = tok;
+  return ty;
 }
 
 // declarator = "*"* ( "(" ident ")" | "(" declarator ")" | ident)
