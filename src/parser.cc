@@ -142,6 +142,8 @@ TypePtr Parser::Declspec(TokenPtr* rest, TokenPtr tok) {
         break;
       case LONG:
       case LONG + INT:
+      case LONG + LONG:
+      case LONG + LONG + INT:
         ty = ty_long;
         break;
       default:
