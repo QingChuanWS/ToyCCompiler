@@ -26,6 +26,19 @@ enum Objectkind {
   OB_END,
 };
 
+class VarScope {
+ public:
+  VarScope() = default;
+  ObjectPtr& GetVar() { return var; }
+  void SetVar(ObjectPtr v) { var = v; }
+  TypePtr& GetType() { return tydef; }
+  void SetType(TypePtr t) { tydef = t; }
+
+ private:
+  ObjectPtr var = nullptr;
+  TypePtr tydef = nullptr;
+};
+
 class Scope {
  public:
   // get current var scope
@@ -39,18 +52,22 @@ class Scope {
   // delete a scope
   static void LevarScope(ScopePtr& next);
   // find a variable by name.
-  static ObjectPtr FindVar(const String& name);
-  // find a teg by name
+  static VarScopePtr FindVar(const String& name);
+  // find a tag by name.
   static TypePtr FindTag(const String& name);
+  // find a typedef name by name.
+  static const TypePtr FindTypedef(const TokenPtr& tok);
+  // create a varscope.
+  static VarScopePtr& PushVarScope(const String& name);
 
  private:
   // scope link list.
   ScopePtr next = nullptr;
   // --- C has two black scope; one is for variable and other
   // is for struct tags. ---
-  // var scope link list.
+  // var scope map.
   VarScopeMap vars = VarScopeMap();
-  // tag scope link list.
+  // tag scope map.
   TagScopeMap tags = TagScopeMap();
 };
 

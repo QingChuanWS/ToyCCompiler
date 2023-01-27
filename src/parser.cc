@@ -15,7 +15,7 @@ NodePtr Parser::Program(TokenPtr* rest, TokenPtr tok) {
   return CompoundStmt(rest, tok);
 }
 
-// compound-stmt  = (declaration | stmt)* "}"
+// compound-stmt  = (typedef | declaration | stmt)* "}"
 NodePtr Parser::CompoundStmt(TokenPtr* rest, TokenPtr tok) {
   NodePtr sub_expr = std::make_shared<Node>(ND_END, tok);
   NodePtr cur = sub_expr;
@@ -24,11 +24,18 @@ NodePtr Parser::CompoundStmt(TokenPtr* rest, TokenPtr tok) {
 
   while (!tok->Equal("}")) {
     if (tok->IsTypename()) {
-      cur->next = Declaration(&tok, tok);
+      VarAttrPtr attr = std::make_shared<VarAttr>();
+      TypePtr basety = Declspec(&tok, tok, attr);
+
+      if (attr->is_typedef) {
+        ParseTypedef(&tok, tok, basety);
+        continue;
+      }
+
+      cur = cur->next = Declaration(&tok, tok, basety);
     } else {
-      cur->next = Stmt(&tok, tok);
+      cur = cur->next = Stmt(&tok, tok);
     }
-    cur = cur->next;
     cur->TypeInfer();
   }
 
@@ -42,9 +49,7 @@ NodePtr Parser::CompoundStmt(TokenPtr* rest, TokenPtr tok) {
 // declaration = declspec (
 //                 declarator ( "=" expr)?
 //                 ("," declarator ("=" expr)? ) * )? ";"
-NodePtr Parser::Declaration(TokenPtr* rest, TokenPtr tok) {
-  TypePtr ty_base = Declspec(&tok, tok);
-
+NodePtr Parser::Declaration(TokenPtr* rest, TokenPtr tok, TypePtr basety) {
   NodePtr decl_expr = std::make_shared<Node>(ND_END, tok);
   NodePtr cur = decl_expr;
   int i = 0;
@@ -53,7 +58,7 @@ NodePtr Parser::Declaration(TokenPtr* rest, TokenPtr tok) {
     if (i++ > 0) {
       tok = tok->SkipToken(",");
     }
-    TypePtr ty = Declarator(&tok, tok, ty_base);
+    TypePtr ty = Declarator(&tok, tok, basety);
     if (ty->IsVoid()) {
       ty->name->ErrorTok("variable declared void.");
     }
@@ -69,7 +74,6 @@ NodePtr Parser::Declaration(TokenPtr* rest, TokenPtr tok) {
 
   *rest = tok->next;
   return Node::CreateBlockNode(ND_BLOCK, tok, decl_expr->next);
-  ;
 }
 
 // declspec = ("void" | "char" | "int" | "short" | "long"
@@ -86,7 +90,7 @@ NodePtr Parser::Declaration(TokenPtr* rest, TokenPtr tok) {
 // while keeping the "current" type object that the typenames up
 // until that point represent. When we reach a non-typename token,
 // we returns the current type object.
-TypePtr Parser::Declspec(TokenPtr* rest, TokenPtr tok) {
+TypePtr Parser::Declspec(TokenPtr* rest, TokenPtr tok, VarAttrPtr attr) {
   // We use a single integer as counters for all typenames.
   // For example, bits 0 and 1 represents how many times we saw the
   // keyword "void" so far. With this, we can use a switch statement
@@ -103,12 +107,30 @@ TypePtr Parser::Declspec(TokenPtr* rest, TokenPtr tok) {
   TypePtr ty = ty_int;
   int counter = 0;
   while (tok->IsTypename()) {
+    // handle typedef keyword.
+    if (tok->Equal("typedef")) {
+      if (attr == nullptr) {
+        tok->ErrorTok("storage class specifier is not allow in this context.");
+      }
+      attr->is_typedef = true;
+      tok = tok->next;
+      continue;
+    }
+
     // Handle user-define types.
-    if (tok->Equal("struct") || tok->Equal("union")) {
+    TypePtr tydef = Scope::FindTypedef(tok);
+    if (tok->Equal("struct") || tok->Equal("union") || tydef != nullptr) {
+      if (counter) {
+        break;
+      }
+
       if (tok->Equal("struct")) {
         ty = StructDecl(&tok, tok->next);
-      } else {
+      } else if (tok->Equal("union")) {
         ty = UnionDecl(&tok, tok->next);
+      } else {
+        ty = tydef;
+        tok = tok->next;
       }
       counter += OTHER;
       continue;
@@ -124,6 +146,8 @@ TypePtr Parser::Declspec(TokenPtr* rest, TokenPtr tok) {
       counter += INT;
     } else if (tok->Equal("long")) {
       counter += LONG;
+    } else {
+      unreachable();
     }
 
     switch (counter) {
@@ -171,7 +195,6 @@ TypePtr Parser::Declarator(TokenPtr* rest, TokenPtr tok, TypePtr ty) {
     return Declarator(&tok, start->next, ty);
   }
 
-  *rest = tok;
   if (tok->kind != TK_IDENT) {
     tok->ErrorTok("expected a variable name.");
   }
@@ -196,6 +219,20 @@ TypePtr Parser::TypeSuffix(TokenPtr* rest, TokenPtr tok, TypePtr ty) {
   return ty;
 }
 
+void Parser::ParseTypedef(TokenPtr* rest, TokenPtr tok, TypePtr basety) {
+  bool first = true;
+  while (!tok->Equal(";")) {
+    if (!first) {
+      tok = tok->SkipToken(",");
+    }
+    first = false;
+
+    TypePtr ty = Declarator(&tok, tok, basety);
+    Scope::PushVarScope(ty->name->GetIdent())->SetType(ty);
+  }
+  *rest = tok->SkipToken(";");
+}
+
 // func-param = param ("," param) *
 // param = declspec declarator
 TypePtr Parser::FunctionParam(TokenPtr* rest, TokenPtr tok, TypePtr ty) {
@@ -206,7 +243,7 @@ TypePtr Parser::FunctionParam(TokenPtr* rest, TokenPtr tok, TypePtr ty) {
     if (cur != params) {
       tok = tok->SkipToken(",");
     }
-    TypePtr base_ty = Declspec(&tok, tok);
+    TypePtr base_ty = Declspec(&tok, tok, nullptr);
     TypePtr var_type = Declarator(&tok, tok, base_ty);
     cur->next = std::make_shared<Type>(*var_type);
     cur = cur->next;
@@ -275,7 +312,7 @@ MemberPtr Parser::StructUnionDecl(TokenPtr* rest, TokenPtr tok) {
   MemberPtr cur = head;
 
   while (!tok->Equal("}")) {
-    TypePtr basety = Parser::Declspec(&tok, tok);
+    TypePtr basety = Parser::Declspec(&tok, tok, nullptr);
 
     int i = 0;
     while (!tok->Equal(";")) {

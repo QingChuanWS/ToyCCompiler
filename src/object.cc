@@ -18,6 +18,7 @@
 
 #include "node.h"
 #include "parser.h"
+#include "token.h"
 #include "tools.h"
 #include "type.h"
 #include "utils.h"
@@ -38,7 +39,12 @@ void Scope::EnterScope(ScopePtr& next) {
 
 void Scope::LevarScope(ScopePtr& next) { next = next->next; }
 
-ObjectPtr Scope::FindVar(const String& name) {
+VarScopePtr& Scope::PushVarScope(const String& name) {
+  scope->vars[name] = std::make_shared<VarScope>();
+  return scope->vars[name];
+}
+
+VarScopePtr Scope::FindVar(const String& name) {
   for (ScopePtr sc = scope; sc != nullptr; sc = sc->next) {
     auto v = sc->vars.find(name);
     if (v != sc->vars.end()) {
@@ -58,9 +64,19 @@ TypePtr Scope::FindTag(const String& name) {
   return nullptr;
 }
 
+const TypePtr Scope::FindTypedef(const TokenPtr& tok) {
+  if (tok->GetKind() == TK_IDENT) {
+    VarScopePtr v = FindVar(tok->GetIdent());
+    if (v != nullptr) {
+      return v->GetType();
+    }
+  }
+  return nullptr;
+}
+
 ObjectPtr Object::CreateVar(Objectkind kind, const String& name, const TypePtr& ty) {
   ObjectPtr obj = std::make_shared<Object>(kind, name, ty);
-  scope->GetVarScope()[name] = obj;
+  Scope::PushVarScope(name)->SetVar(obj);
   return obj;
 }
 
@@ -148,7 +164,14 @@ ObjectPtr Object::Parse(TokenPtr tok) {
   // enter scope
   Scope::EnterScope(scope);
   while (!tok->IsEof()) {
-    TypePtr basety = Parser::Declspec(&tok, tok);
+    VarAttrPtr attr = std::make_shared<VarAttr>();
+    TypePtr basety = Parser::Declspec(&tok, tok, attr);
+
+    if (attr->is_typedef) {
+      Parser::ParseTypedef(&tok, tok, basety);
+      continue;
+    }
+
     if (IsFuncToks(tok)) {
       tok = CreateFunction(tok, basety, &globals);
       continue;

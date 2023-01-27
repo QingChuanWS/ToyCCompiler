@@ -18,6 +18,7 @@
 #include <cstring>
 #include <fstream>
 #include <iostream>
+#include <memory>
 #include <ostream>
 
 #include "object.h"
@@ -306,16 +307,23 @@ long Token::GetNumber() const {
 
 int Token::GetLineNo() const { return line_no; }
 
-ObjectPtr Token::FindVar() { return Scope::FindVar(GetIdent()); }
+ObjectPtr Token::FindVar() {
+  VarScopePtr v = Scope::FindVar(GetIdent());
+  if (v != nullptr) {
+    return v->GetVar();
+  }
+  return nullptr;
+}
 
 bool Token::IsTypename() const {
-  static const char* kw[] = {"void", "char", "short", "int", "long", "struct", "union", "struct"};
+  static const char* kw[] = {"void",   "char",  "short",  "int",    "long",
+                             "struct", "union", "struct", "typedef"};
   for (int i = 0; i < sizeof(kw) / sizeof(*kw); i++) {
     if (Equal(kw[i])) {
       return true;
     }
   }
-  return false;
+  return Scope::FindTypedef(std::make_shared<Token>(*this)) != nullptr;
 }
 
 TokenPtr Token::TokenizeFile(const String& input_file) {

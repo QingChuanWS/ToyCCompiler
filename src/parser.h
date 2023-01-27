@@ -19,15 +19,17 @@ class Parser {
   // parsing token list and generate AST.
   // program = stmt*
   static NodePtr Program(TokenPtr* rest, TokenPtr tok);
-  // compound-stmt = (declaration | stmt)* "}"
+  // compound-stmt = (typedef | declaration | stmt)* "}"
   static NodePtr CompoundStmt(TokenPtr* rest, TokenPtr tok);
   // declaration = declspec (
   //                 declarator ( "=" expr)?
   //                 ("," declarator ("=" expr)? ) * )? ";"
-  static NodePtr Declaration(TokenPtr* rest, TokenPtr tok);
+  static NodePtr Declaration(TokenPtr* rest, TokenPtr tok, TypePtr basety);
   // ---- TYPE ----
-  // declspec = "void" | "char" | "int" | "short" | "long" | struct-decl
-  static TypePtr Declspec(TokenPtr* rest, TokenPtr tok);
+  // declspec = ("void" | "char" | "int" | "short" | "long"
+  //            | "typedef"
+  //            | struct-decl | union-def | typedef-name)
+  static TypePtr Declspec(TokenPtr* rest, TokenPtr tok, VarAttrPtr attr);
   // struct-decl = ident? "{" struct-member
   static TypePtr StructDecl(TokenPtr* rest, TokenPtr tok);
   // union-decl = ident? "{" union-member
@@ -38,11 +40,13 @@ class Parser {
   static MemberPtr StructUnionDecl(TokenPtr* rest, TokenPtr tok);
   // declarator = "*"* ident type-suffix
   static TypePtr Declarator(TokenPtr* rest, TokenPtr tok, TypePtr ty);
-  // type-suffix = "(" func-params | "[" num "]" | ɛ
+  // type-suffix = "(" func-params | "[" num "]" | ɛ )
   static TypePtr TypeSuffix(TokenPtr* rest, TokenPtr tok, TypePtr ty);
   // func-param = param ("," param) *
   // param = declspec declarator
   static TypePtr FunctionParam(TokenPtr* rest, TokenPtr tok, TypePtr ty);
+  // typedef = declspec (ident (",")? )+ ";"
+  static void ParseTypedef(TokenPtr* rest, TokenPtr tok, TypePtr basety);
   // stmt = "return" expr ";" |
   // "if" "(" expr ")" stmt ("else" stmt)? |
   // "for" "(" expr-stmt expr? ";" expr? ")" stmt |

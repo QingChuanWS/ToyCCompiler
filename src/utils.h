@@ -27,6 +27,7 @@ class TagScope;
 class VarScope;
 class Scope;
 class Member;
+struct VarAttr;
 
 using TokenPtr = std::shared_ptr<Token>;
 using TypePtr = std::shared_ptr<Type>;
@@ -39,14 +40,22 @@ using ScopePtr = std::shared_ptr<Scope>;
 using VarScopePtr = std::shared_ptr<VarScope>;
 using TagScopePtr = std::shared_ptr<TagScope>;
 using MemberPtr = std::shared_ptr<Member>;
+using VarAttrPtr = std::shared_ptr<VarAttr>;
 using String = std::string;
-using VarScopeMap = std::unordered_map<String, ObjectPtr>;
+using VarScopePtr = std::shared_ptr<VarScope>;
+using VarScopeMap = std::unordered_map<String, VarScopePtr>;
+using TypedefMap = std::unordered_map<String, TypePtr>;
 using TagScopeMap = std::unordered_map<String, TypePtr>;
 
 extern ObjectPtr locals;
 extern ObjectPtr globals;
 
 extern ScopePtr scope;
+
+struct VarAttr {
+  VarAttr() = default;
+  bool is_typedef = false;
+};
 
 struct Config {
   Config() = default;
