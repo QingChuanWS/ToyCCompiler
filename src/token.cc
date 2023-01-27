@@ -2,11 +2,11 @@
  * This project is exclusively owned by QingChuanWS and shall not be used for
  * commercial and profitting purpose without QingChuanWS's permission.
  *
- * @Author: bingshan45@163.com
- * Github: https://github.com/QingChuanWS
- * @Description: Token class defination.
+ * @ Author: bingshan45@163.com
+ * @ Github: https://github.com/QingChuanWS
+ * @ Description:
  *
- * Copyright (c) 2022 by QingChuanWS, All Rights Reserved.
+ * Copyright (c) 2023 by QingChuanWS, All Rights Reserved.
  */
 
 #include "token.h"
@@ -308,7 +308,7 @@ long Token::GetNumber() const {
 int Token::GetLineNo() const { return line_no; }
 
 ObjectPtr Token::FindVar() {
-  VarScopePtr v = Scope::FindVar(GetIdent());
+  VarScopePtr v = Scope::FindVarScope(GetIdent());
   if (v != nullptr) {
     return v->GetVar();
   }

@@ -2,9 +2,9 @@
  * This project is exclusively owned by QingChuanWS and shall not be used for
  * commercial and profitting purpose without QingChuanWS's permission.
  *
- * @Author: bingshan45@163.com
- * Github: https://github.com/QingChuanWS
- * @Description:
+ * @ Author: bingshan45@163.com
+ * @ Github: https://github.com/QingChuanWS
+ * @ Description:
  *
  * Copyright (c) 2023 by QingChuanWS, All Rights Reserved.
  */
@@ -52,7 +52,7 @@ class Scope {
   // delete a scope
   static void LevarScope(ScopePtr& next);
   // find a variable by name.
-  static VarScopePtr FindVar(const String& name);
+  static VarScopePtr FindVarScope(const String& name);
   // find a tag by name.
   static TypePtr FindTag(const String& name);
   // find a typedef name by name.

@@ -2,11 +2,11 @@
  * This project is exclusively owned by QingChuanWS and shall not be used for
  * commercial and profitting purpose without QingChuanWS's permission.
  *
- * @Author: bingshan45@163.com
- * Github: https://github.com/QingChuanWS
- * @Description:
+ * @ Author: bingshan45@163.com
+ * @ Github: https://github.com/QingChuanWS
+ * @ Description:
  *
- * Copyright (c) 2022 by QingChuanWS, All Rights Reserved.
+ * Copyright (c) 2023 by QingChuanWS, All Rights Reserved.
  */
 
 #include "object.h"
@@ -44,7 +44,7 @@ VarScopePtr& Scope::PushVarScope(const String& name) {
   return scope->vars[name];
 }
 
-VarScopePtr Scope::FindVar(const String& name) {
+VarScopePtr Scope::FindVarScope(const String& name) {
   for (ScopePtr sc = scope; sc != nullptr; sc = sc->next) {
     auto v = sc->vars.find(name);
     if (v != sc->vars.end()) {
@@ -66,7 +66,7 @@ TypePtr Scope::FindTag(const String& name) {
 
 const TypePtr Scope::FindTypedef(const TokenPtr& tok) {
   if (tok->GetKind() == TK_IDENT) {
-    VarScopePtr v = FindVar(tok->GetIdent());
+    VarScopePtr v = FindVarScope(tok->GetIdent());
     if (v != nullptr) {
       return v->GetType();
     }

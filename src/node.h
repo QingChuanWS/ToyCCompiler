@@ -2,11 +2,11 @@
  * This project is exclusively owned by QingChuanWS and shall not be used for
  * commercial and profitting purpose without QingChuanWS's permission.
  *
- * @Author: bingshan45@163.com
- * Github: https://github.com/QingChuanWS
- * @Description:
+ * @ Author: bingshan45@163.com
+ * @ Github: https://github.com/QingChuanWS
+ * @ Description:
  *
- * Copyright (c) 2022 by QingChuanWS, All Rights Reserved.
+ * Copyright (c) 2023 by QingChuanWS, All Rights Reserved.
  */
 
 #ifndef NODE_GRUAD
@@ -54,7 +54,7 @@ class Node {
  public:
   Node(NodeKind kind, TokenPtr tok) : kind(kind), name(tok) {}
   // whether the node is point.
-  inline bool IsPointerNode()  { return ty->IsPointer(); }
+  inline bool IsPointerNode() { return ty->IsPointer(); }
   // inference the node type.
   void TypeInfer();
 

@@ -2,9 +2,9 @@
  * This project is exclusively owned by QingChuanWS and shall not be used for
  * commercial and profitting purpose without QingChuanWS's permission.
  *
- * @Author: bingshan45@163.com
- * Github: https://github.com/QingChuanWS
- * @Description:
+ * @ Author: bingshan45@163.com
+ * @ Github: https://github.com/QingChuanWS
+ * @ Description:
  *
  * Copyright (c) 2023 by QingChuanWS, All Rights Reserved.
  */
@@ -26,9 +26,10 @@ class Parser {
   //                 ("," declarator ("=" expr)? ) * )? ";"
   static NodePtr Declaration(TokenPtr* rest, TokenPtr tok, TypePtr basety);
   // ---- TYPE ----
-  // declspec = ("void" | "char" | "int" | "short" | "long"
-  //            | "typedef"
-  //            | struct-decl | union-def | typedef-name)
+  // declspec = ( "void" | "char" | "int"
+  //             | "short" | "long"
+  //             | "typedef" | struct-decl
+  //             | union-def | typedef-name )+
   static TypePtr Declspec(TokenPtr* rest, TokenPtr tok, VarAttrPtr attr);
   // struct-decl = ident? "{" struct-member
   static TypePtr StructDecl(TokenPtr* rest, TokenPtr tok);
@@ -48,10 +49,10 @@ class Parser {
   // typedef = declspec (ident (",")? )+ ";"
   static void ParseTypedef(TokenPtr* rest, TokenPtr tok, TypePtr basety);
   // stmt = "return" expr ";" |
-  // "if" "(" expr ")" stmt ("else" stmt)? |
-  // "for" "(" expr-stmt expr? ";" expr? ")" stmt |
-  // "while" "(" expr ")" stmt |
-  // "{" compuound-stmt |
+  //        "if" "(" expr ")" stmt ("else" stmt)? |
+  //        "for" "(" expr-stmt expr? ";" expr? ")" stmt |
+  //        "while" "(" expr ")" stmt |
+  //        "{" compuound-stmt |
   // expr-stmt
   static NodePtr Stmt(TokenPtr* rest, TokenPtr tok);
   // expr-stmt = expr ";"
