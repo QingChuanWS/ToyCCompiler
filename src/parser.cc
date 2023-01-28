@@ -1,12 +1,12 @@
 /*
  * This project is exclusively owned by QingChuanWS and shall not be used for
  * commercial and profitting purpose without QingChuanWS's permission.
- * 
+ *
  * @ Author: bingshan45@163.com
  * @ Github: https://github.com/QingChuanWS
- * @ Description: 
- * 
- * Copyright (c) 2023 by QingChuanWS, All Rights Reserved. 
+ * @ Description:
+ *
+ * Copyright (c) 2023 by QingChuanWS, All Rights Reserved.
  */
 
 #include "parser.h"
@@ -241,6 +241,31 @@ void Parser::ParseTypedef(TokenPtr* rest, TokenPtr tok, TypePtr basety) {
     Scope::PushVarScope(ty->name->GetIdent())->SetType(ty);
   }
   *rest = tok->SkipToken(";");
+}
+
+// abstract-declarator = "*"* ("(" abstract-declarator ")")? type-suffix
+TypePtr Parser::AbstractDeclarator(TokenPtr* rest, TokenPtr tok, TypePtr ty) {
+  while (tok->Equal("*")) {
+    ty = Type::CreatePointerType(ty);
+    tok = tok->next;
+  }
+
+  if (tok->Equal("(")) {
+    TokenPtr start = tok;
+    TypePtr head = std::make_shared<Type>(TY_END, 0, 0);
+    AbstractDeclarator(&tok, start->next, head);
+    tok = tok->SkipToken(")");
+    ty = TypeSuffix(rest, tok, ty);
+    return AbstractDeclarator(&tok, start->next, ty);
+  }
+
+  return TypeSuffix(rest, tok, ty);
+}
+
+// typename = declspec abstract-declarator
+TypePtr Parser::Typename(TokenPtr* rest, TokenPtr tok) {
+  TypePtr ty = Declspec(&tok, tok, nullptr);
+  return AbstractDeclarator(rest, tok, ty);
 }
 
 // func-param = param ("," param) *
@@ -568,9 +593,13 @@ NodePtr Parser::Postfix(TokenPtr* rest, TokenPtr tok) {
 }
 
 // primary = "(" "{" stmt+ "}" ")"
-//          |"(" expr ")" | "sizeof" unary
+//          |"(" expr ")"
+//          | "sizeof" "(" type-name ")"
+//          | "sizeof" unary
 //          | ident "(" func-args? ")" | str | num
 NodePtr Parser::Primary(TokenPtr* rest, TokenPtr tok) {
+  TokenPtr start = tok;
+
   // This is a GNU statement expression.
   if (tok->Equal("(") && tok->next->Equal("{")) {
     TokenPtr start = tok;
@@ -582,6 +611,12 @@ NodePtr Parser::Primary(TokenPtr* rest, TokenPtr tok) {
     NodePtr node = Expr(&tok, tok->next);
     *rest = tok->SkipToken(")");
     return node;
+  }
+
+  if (tok->Equal("sizeof") && tok->next->Equal("(") && tok->next->next->IsTypename()) {
+    TypePtr ty = Typename(&tok, tok->next->next);
+    *rest = tok->SkipToken(")");
+    return Node::CreateConstNode(ty->Size(), start);
   }
 
   if (tok->Equal("sizeof")) {

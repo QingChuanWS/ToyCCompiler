@@ -48,6 +48,10 @@ class Parser {
   static TypePtr FunctionParam(TokenPtr* rest, TokenPtr tok, TypePtr ty);
   // typedef = declspec (ident (",")? )+ ";"
   static void ParseTypedef(TokenPtr* rest, TokenPtr tok, TypePtr basety);
+  // abstract-declarator = "*"* ("(" abstract-declarator ")")? type-suffix
+  static TypePtr AbstractDeclarator(TokenPtr* rest, TokenPtr tok, TypePtr ty);
+  // typename = declspec abstract-declarator
+  static TypePtr Typename(TokenPtr* rest, TokenPtr tok);
   // stmt = "return" expr ";" |
   //        "if" "(" expr ")" stmt ("else" stmt)? |
   //        "for" "(" expr-stmt expr? ";" expr? ")" stmt |
