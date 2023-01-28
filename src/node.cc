@@ -85,14 +85,13 @@ NodePtr Node::CreateSubNode(TokenPtr node_name, NodePtr op_left, NodePtr op_righ
   op_right->TypeInfer();
   // num - num
   if (!op_left->IsPointerNode() && !op_right->IsPointerNode()) {
-    NodePtr res = CreateBinaryNode(ND_SUB, node_name, op_left, op_right);
-    res->ty = ty_int;
-    return res;
+    return CreateBinaryNode(ND_SUB, node_name, op_left, op_right);;
   }
   // ptr - ptr
   if (op_left->IsPointerNode() && op_right->IsPointerNode()) {
     // careful curisive call.
     NodePtr sub = CreateBinaryNode(ND_SUB, node_name, op_left, op_right);
+    sub->ty = ty_long;
     NodePtr factor = CreateConstNode(op_left->ty->GetBase()->Size(), node_name);
     NodePtr res = CreateBinaryNode(ND_DIV, node_name, sub, factor);
     res->ty = ty_int;

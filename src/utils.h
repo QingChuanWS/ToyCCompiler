@@ -16,6 +16,7 @@
 
 #include <fstream>
 #include <iostream>
+#include <vector>
 #include <memory>
 #include <ostream>
 #include <unordered_map>
@@ -47,6 +48,7 @@ using VarScopePtr = std::shared_ptr<VarScope>;
 using VarScopeMap = std::unordered_map<String, VarScopePtr>;
 using TypedefMap = std::unordered_map<String, TypePtr>;
 using TagScopeMap = std::unordered_map<String, TypePtr>;
+using ObjectList = std::vector<ObjectPtr>;
 
 extern ObjectPtr locals;
 extern ObjectPtr globals;

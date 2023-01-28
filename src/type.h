@@ -39,6 +39,8 @@ class Type {
   Type(const Type& ty) = default;
   // whether the type is integer.
   inline bool IsInteger() const;
+  // whether the type is long.
+  inline bool IsLong() const { return kind == TY_LONG; }
   // whether the type is points.
   inline bool IsPointer() const { return base != nullptr; }
   // whether the type is function.

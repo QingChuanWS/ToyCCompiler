@@ -72,7 +72,7 @@ void CodeGenerator::Pop(const char* arg) {
   depth--;
 }
 
-void CodeGenerator::Load(TypePtr ty) {
+void CodeGenerator::Load(TypePtr& ty) {
   if (ty->IsArray() || ty->IsStruct() || ty->IsUnion()) {
     // If it is a array, do not attempt to load a value to
     // the register because we can't load entire array to
@@ -94,7 +94,7 @@ void CodeGenerator::Load(TypePtr ty) {
   }
 }
 
-void CodeGenerator::Store(TypePtr ty) {
+void CodeGenerator::Store(TypePtr& ty) {
   Pop("rdi");
   if (ty->IsStruct() || ty->IsUnion()) {
     for (int i = 0; i < ty->Size(); i++) {
@@ -309,37 +309,50 @@ void CodeGenerator::ExprGen(NodePtr& node) {
   ExprGen(node->lhs);
   Pop("rdi");
 
+  const char *ax, *di;
+  if (node->lhs->ty->IsLong() || node->lhs->IsPointerNode()) {
+    ax = "rax";
+    di = "rdi";
+  } else {
+    ax = "eax";
+    di = "edi";
+  }
+
   switch (node->kind) {
     case ND_ADD:
-      ASM_GEN("  add rax, rdi");
+      ASM_GEN("  add ", ax, ", ", di);
       return;
     case ND_SUB:
-      ASM_GEN("  sub rax, rdi");
+      ASM_GEN("  sub  ", ax, ", ", di);
       return;
     case ND_MUL:
-      ASM_GEN("  imul rax, rdi");
+      ASM_GEN("  imul  ", ax, ", ", di);
       return;
     case ND_DIV:
-      ASM_GEN("  cqo");
-      ASM_GEN("  idiv rdi");
+      if(node->lhs->ty->Size() == 8){
+        ASM_GEN("  cqo");
+      }else{
+        ASM_GEN("  cdq");
+      }
+      ASM_GEN("  idiv ", di);
       return;
     case ND_EQ:
-      ASM_GEN("  cmp rax, rdi");
+      ASM_GEN("  cmp ", ax, ", ", di);
       ASM_GEN("  sete al");
       ASM_GEN("  movzb rax, al");
       return;
     case ND_NE:
-      ASM_GEN("  cmp rax, rdi");
+      ASM_GEN("  cmp ", ax, ", ", di);
       ASM_GEN("  setne al");
       ASM_GEN("  movzb rax, al");
       return;
     case ND_LT:
-      ASM_GEN("  cmp rax, rdi");
+      ASM_GEN("  cmp ", ax, ", ", di);
       ASM_GEN("  setl al");
       ASM_GEN("  movzb rax, al");
       return;
     case ND_LE:
-      ASM_GEN("  cmp rax, rdi");
+      ASM_GEN("  cmp ", ax, ", ", di);
       ASM_GEN("  setle al");
       ASM_GEN("  movzb rax, al");
       return;
