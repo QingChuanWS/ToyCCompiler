@@ -46,7 +46,7 @@ NodePtr Parser::CompoundStmt(TokenPtr* rest, TokenPtr tok) {
     } else {
       cur = cur->next = Stmt(&tok, tok);
     }
-    cur->TypeInfer();
+    Node::TypeInfer(cur);
   }
 
   Scope::LevarScope(scope);
@@ -621,7 +621,7 @@ NodePtr Parser::Primary(TokenPtr* rest, TokenPtr tok) {
 
   if (tok->Equal("sizeof")) {
     NodePtr node = Unary(rest, tok->next);
-    node->TypeInfer();
+    Node::TypeInfer(node);
     long size = node->ty->size;
     return Node::CreateConstNode(size, tok);
   }

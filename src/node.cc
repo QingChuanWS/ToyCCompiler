@@ -22,6 +22,12 @@
 #include "type.h"
 #include "utils.h"
 
+void Node::Error(const char* fmt, ...) const {
+  va_list ap;
+  va_start(ap, fmt);
+  name->ErrorTok(fmt, ap);
+}
+
 NodePtr Node::CreateConstNode(int64_t val, TokenPtr tok) {
   NodePtr node = std::make_shared<Node>(ND_NUM, tok);
   node->val = val;
@@ -56,8 +62,8 @@ NodePtr Node::CreateUnaryNode(NodeKind kind, TokenPtr node_name, NodePtr op) {
 }
 
 NodePtr Node::CreateAddNode(TokenPtr node_name, NodePtr op_left, NodePtr op_right) {
-  op_left->TypeInfer();
-  op_right->TypeInfer();
+  TypeInfer(op_left);
+  TypeInfer(op_right);
   if (!op_left->IsPointerNode() && !op_right->IsPointerNode()) {
     NodePtr res = CreateBinaryNode(ND_ADD, node_name, op_left, op_right);
     res->ty = ty_int;
@@ -81,11 +87,12 @@ NodePtr Node::CreateAddNode(TokenPtr node_name, NodePtr op_left, NodePtr op_righ
 }
 
 NodePtr Node::CreateSubNode(TokenPtr node_name, NodePtr op_left, NodePtr op_right) {
-  op_left->TypeInfer();
-  op_right->TypeInfer();
+  TypeInfer(op_left);
+  TypeInfer(op_right);
   // num - num
   if (!op_left->IsPointerNode() && !op_right->IsPointerNode()) {
-    return CreateBinaryNode(ND_SUB, node_name, op_left, op_right);;
+    return CreateBinaryNode(ND_SUB, node_name, op_left, op_right);
+    ;
   }
   // ptr - ptr
   if (op_left->IsPointerNode() && op_right->IsPointerNode()) {
@@ -94,7 +101,7 @@ NodePtr Node::CreateSubNode(TokenPtr node_name, NodePtr op_left, NodePtr op_righ
     sub->ty = ty_long;
     NodePtr factor = CreateConstNode(op_left->ty->GetBase()->Size(), node_name);
     NodePtr res = CreateBinaryNode(ND_DIV, node_name, sub, factor);
-    res->ty = ty_int;
+    res->ty = ty_long;
     return res;
   }
   if (!op_left->IsPointerNode() && op_right->IsPointerNode()) {
@@ -141,7 +148,7 @@ NodePtr Node::CreateBlockNode(NodeKind kind, TokenPtr node_name, NodePtr body) {
 
 // create struct member node.
 NodePtr Node::CreateMemberNode(NodePtr parent, TokenPtr node_name) {
-  parent->TypeInfer();
+  TypeInfer(parent);
   if (!parent->ty->IsStruct() && !parent->ty->IsUnion()) {
     node_name->ErrorTok("not a struct.");
   }
@@ -151,53 +158,39 @@ NodePtr Node::CreateMemberNode(NodePtr parent, TokenPtr node_name) {
   return res;
 }
 
-void Node::TypeInfer() {
-  if (this->ty != nullptr) {
+void Node::TypeInfer(NodePtr node) {
+  if (node == nullptr || node->ty != nullptr) {
     return;
   }
 
-  if (lhs != nullptr) {
-    lhs->TypeInfer();
+  TypeInfer(node->lhs);
+  TypeInfer(node->rhs);
+  TypeInfer(node->cond);
+  TypeInfer(node->then);
+  TypeInfer(node->els);
+  TypeInfer(node->init);
+  TypeInfer(node->inc);
+
+  for (NodePtr n = node->body; n != nullptr; n = n->next) {
+    TypeInfer(n);
   }
-  if (rhs != nullptr) {
-    rhs->TypeInfer();
-  }
-  if (cond != nullptr) {
-    cond->TypeInfer();
-  }
-  if (then != nullptr) {
-    then->TypeInfer();
-  }
-  if (els != nullptr) {
-    els->TypeInfer();
-  }
-  if (init != nullptr) {
-    init->TypeInfer();
-  }
-  if (inc != nullptr) {
-    inc->TypeInfer();
+  for (NodePtr n = node->args; n != nullptr; n = n->next) {
+    TypeInfer(n);
   }
 
-  for (NodePtr n = body; n != nullptr; n = n->next) {
-    n->TypeInfer();
-  }
-  for (NodePtr n = args; n != nullptr; n = n->next) {
-    n->TypeInfer();
-  }
-
-  switch (kind) {
+  switch (node->kind) {
     case ND_ADD:
     case ND_SUB:
     case ND_MUL:
     case ND_DIV:
     case ND_NEG:
-      ty = lhs->ty;
+      node->ty = node->lhs->ty;
       return;
     case ND_ASSIGN:
-      if (lhs->ty->IsArray()) {
-        lhs->name->ErrorTok("not an lvalue");
+      if (node->lhs->IsArray()) {
+        node->lhs->Error("not an lvalue");
       }
-      ty = lhs->ty;
+      node->ty = node->lhs->ty;
       return;
     case ND_EQ:
     case ND_NE:
@@ -205,45 +198,45 @@ void Node::TypeInfer() {
     case ND_LT:
     case ND_NUM:
     case ND_CALL:
-      ty = ty_long;
+      node->ty = ty_long;
       return;
     case ND_VAR:
-      ty = var->GetType();
+      node->ty = node->var->GetType();
       return;
     case ND_COMMON:
-      ty = rhs->ty;
+      node->ty = node->rhs->ty;
       return;
     case ND_MUMBER:
-      ty = mem->ty;
+      node->ty = node->mem->ty;
       return;
     case ND_ADDR:
-      if (lhs->ty->IsArray()) {
-        ty = Type::CreatePointerType(lhs->ty->GetBase());
+      if (node->lhs->IsArray()) {
+        node->ty = Type::CreatePointerType(node->lhs->ty->GetBase());
       } else {
-        ty = Type::CreatePointerType(lhs->ty);
+        node->ty = Type::CreatePointerType(node->lhs->ty);
       }
       return;
     case ND_DEREF:
-      if (!lhs->ty->IsPointer()) {
-        name->ErrorTok("invalid pointer reference!");
+      if (!node->lhs->IsPointerNode()) {
+        node->Error("invalid pointer reference!");
       }
-      if (lhs->ty->GetBase()->IsVoid()) {
-        name->ErrorTok("dereferencing a void pointer.");
+      if (node->lhs->ty->GetBase()->IsVoid()) {
+        node->Error("dereferencing a void pointer.");
       }
-      ty = lhs->ty->GetBase();
+      node->ty = node->lhs->ty->GetBase();
       return;
     case ND_STMT_EXPR:
-      if (body != nullptr) {
-        NodePtr stmt = body;
+      if (node->body != nullptr) {
+        NodePtr stmt = node->body;
         while (stmt->next != nullptr) {
           stmt = stmt->next;
         }
         if (stmt->kind == ND_EXPR_STMT) {
-          ty = stmt->lhs->ty;
+          node->ty = stmt->lhs->ty;
           return;
         }
       }
-      name->ErrorTok("statement expression return void is not supported.");
+      node->Error("statement expression return void is not supported.");
     default:
       return;
   }

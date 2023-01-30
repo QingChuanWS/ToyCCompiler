@@ -54,9 +54,11 @@ class Node {
  public:
   Node(NodeKind kind, TokenPtr tok) : kind(kind), name(tok) {}
   // whether the node is point.
-  inline bool IsPointerNode() { return ty->IsPointer(); }
-  // inference the node type.
-  void TypeInfer();
+  inline bool IsPointerNode() const { return ty->IsPointer(); }
+  // whether the node is array node.
+  inline bool IsArray() const { return ty->IsArray(); }
+  // error print
+  inline void Error(const char* fmt, ...) const;
 
  public:
   // create const node.
@@ -85,6 +87,8 @@ class Node {
   static NodePtr CreateBlockNode(NodeKind kind, TokenPtr node_name, NodePtr body);
   // create struct member node.
   static NodePtr CreateMemberNode(NodePtr parent, TokenPtr node_name);
+  // inference the node type.
+  static void TypeInfer(NodePtr node);
 
  private:
   friend class CodeGenerator;
