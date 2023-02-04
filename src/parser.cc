@@ -106,11 +106,12 @@ TypePtr Parser::Declspec(TokenPtr* rest, TokenPtr tok, VarAttrPtr attr) {
   // as you can see below.
   enum {
     VOID = 1 << 0,
-    CHAR = 1 << 2,
-    SHORT = 1 << 4,
-    INT = 1 << 6,
-    LONG = 1 << 8,
-    OTHER = 1 << 10,
+    BOOL = 1 << 2,
+    CHAR = 1 << 4,
+    SHORT = 1 << 6,
+    INT = 1 << 8,
+    LONG = 1 << 10,
+    OTHER = 1 << 12,
   };
 
   TypePtr ty = ty_int;
@@ -147,6 +148,8 @@ TypePtr Parser::Declspec(TokenPtr* rest, TokenPtr tok, VarAttrPtr attr) {
 
     if (tok->Equal("void")) {
       counter += VOID;
+    } else if (tok->Equal("_Bool")) {
+      counter += BOOL;
     } else if (tok->Equal("char")) {
       counter += CHAR;
     } else if (tok->Equal("short")) {
@@ -162,6 +165,9 @@ TypePtr Parser::Declspec(TokenPtr* rest, TokenPtr tok, VarAttrPtr attr) {
     switch (counter) {
       case VOID:
         ty = ty_void;
+        break;
+      case BOOL:
+        ty = ty_bool;
         break;
       case CHAR:
         ty = ty_char;

@@ -20,10 +20,11 @@
 
 enum TypeKind {
   TY_VOID,
+  TY_BOOL,
+  TY_CHAR,
   TY_INT,
   TY_SHORT,
   TY_LONG,
-  TY_CHAR,
   TY_PRT,
   TY_FUNC,
   TY_ARRAY,
@@ -38,7 +39,7 @@ class Type {
   // copy construct.
   Type(const Type& ty) = default;
   // whether the type is integer.
-  inline bool IsInteger() const;
+  bool IsInteger() const;
   // whether the type is T.
   template <TypeKind T>
   inline bool Is() {

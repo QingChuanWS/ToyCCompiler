@@ -1,12 +1,12 @@
 /*
  * This project is exclusively owned by QingChuanWS and shall not be used for
  * commercial and profitting purpose without QingChuanWS's permission.
- * 
+ *
  * @ Author: bingshan45@163.com
  * @ Github: https://github.com/QingChuanWS
- * @ Description: 
- * 
- * Copyright (c) 2023 by QingChuanWS, All Rights Reserved. 
+ * @ Description:
+ *
+ * Copyright (c) 2023 by QingChuanWS, All Rights Reserved.
  */
 
 #ifndef UTILS_GRUAD
@@ -16,10 +16,10 @@
 
 #include <fstream>
 #include <iostream>
-#include <vector>
 #include <memory>
 #include <ostream>
 #include <unordered_map>
+#include <vector>
 
 class Token;
 class Object;
@@ -75,6 +75,7 @@ extern TypePtr ty_char;
 extern TypePtr ty_short;
 extern TypePtr ty_int;
 extern TypePtr ty_long;
+extern TypePtr ty_bool;
 
 extern Config config;
 

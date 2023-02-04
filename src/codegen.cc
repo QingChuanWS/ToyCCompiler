@@ -136,8 +136,22 @@ void CodeGenerator::Cast(TypePtr from, TypePtr to) {
       return I64;
     }
   };
+  auto cmp_zero = [](const TypePtr& ty) {
+    if (ty->IsInteger() && ty->Size() <= 4) {
+      ASM_GEN("  cmp eax, 0");
+    } else {
+      ASM_GEN("  cmp rax, 0");
+    }
+  };
 
   if (to->Is<TY_VOID>()) {
+    return;
+  }
+
+  if (to->Is<TY_BOOL>()) {
+    cmp_zero(from);
+    ASM_GEN("  setne al");
+    ASM_GEN("  movzx eax, al");
     return;
   }
 

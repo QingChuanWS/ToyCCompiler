@@ -158,7 +158,7 @@ int Token::ReadPunct(const char* p) const {
 
 void Token::ConvertToReserved(TokenPtr tok) {
   static const char* kw[] = {"return", "if",     "else",  "for",   "while", "int",  "sizeof",
-                             "char",   "struct", "union", "short", "long",  "void", "typedef"};
+                             "char",   "struct", "union", "short", "long",  "void", "typedef", "_Bool"};
   for (TokenPtr t = tok; t != nullptr; t = t->next) {
     for (int i = 0; i < sizeof(kw) / sizeof(*kw); i++) {
       if (StrEqual(t->loc, kw[i], t->len)) {
@@ -317,7 +317,7 @@ ObjectPtr Token::FindVar() {
 
 bool Token::IsTypename() const {
   static const char* kw[] = {"void",   "char",  "short",  "int",    "long",
-                             "struct", "union", "struct", "typedef"};
+                             "struct", "union", "struct", "typedef", "_Bool"};
   for (int i = 0; i < sizeof(kw) / sizeof(*kw); i++) {
     if (Equal(kw[i])) {
       return true;
