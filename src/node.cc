@@ -149,7 +149,7 @@ NodePtr Node::CreateBlockNode(NodeKind kind, TokenPtr node_name, NodePtr body) {
 // create struct member node.
 NodePtr Node::CreateMemberNode(NodePtr parent, TokenPtr node_name) {
   TypeInfer(parent);
-  if (!parent->ty->IsStruct() && !parent->ty->IsUnion()) {
+  if (!parent->ty->Is<TY_STRUCT>() && !parent->ty->Is<TY_UNION>()) {
     node_name->ErrorTok("not a struct.");
   }
 
@@ -196,7 +196,7 @@ void Node::TypeInfer(NodePtr node) {
       node->ty = node->lhs->ty;
       return;
     case ND_ASSIGN:
-      if (node->lhs->IsArray()) {
+      if (node->lhs->IsArrayNode()) {
         node->lhs->Error("not an lvalue");
       }
       node->ty = node->lhs->ty;
@@ -219,7 +219,7 @@ void Node::TypeInfer(NodePtr node) {
       node->ty = node->mem->ty;
       return;
     case ND_ADDR:
-      if (node->lhs->IsArray()) {
+      if (node->lhs->IsArrayNode()) {
         node->ty = Type::CreatePointerType(node->lhs->ty->GetBase());
       } else {
         node->ty = Type::CreatePointerType(node->lhs->ty);
@@ -229,7 +229,7 @@ void Node::TypeInfer(NodePtr node) {
       if (!node->lhs->IsPointerNode()) {
         node->Error("invalid pointer reference!");
       }
-      if (node->lhs->ty->GetBase()->IsVoid()) {
+      if (node->lhs->ty->GetBase()->Is<TY_VOID>()) {
         node->Error("dereferencing a void pointer.");
       }
       node->ty = node->lhs->ty->GetBase();

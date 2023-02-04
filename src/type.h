@@ -39,26 +39,13 @@ class Type {
   Type(const Type& ty) = default;
   // whether the type is integer.
   inline bool IsInteger() const;
-    // whether the type is char.
-  inline bool IsChar() const { return kind == TY_CHAR; }
-    // whether the type is short.
-  inline bool IsShort() const { return kind == TY_SHORT; }
-    // whether the type is int.
-  inline bool IsInt() const { return kind == TY_INT; }
-  // whether the type is long.
-  inline bool IsLong() const { return kind == TY_LONG; }
+  // whether the type is T.
+  template <TypeKind T>
+  inline bool Is() {
+    return kind == T;
+  }
   // whether the type is points.
   inline bool IsPointer() const { return base != nullptr; }
-  // whether the type is function.
-  inline bool IsFunction() const { return kind == TY_FUNC; }
-  // whether the type is array
-  inline bool IsArray() const { return kind == TY_ARRAY; }
-  // whether the type is struct
-  inline bool IsStruct() const { return kind == TY_STRUCT; }
-  // whether the type is union
-  inline bool IsUnion() const { return kind == TY_UNION; }
-  // whether the type is void
-  inline bool IsVoid() const { return kind == TY_VOID; }
   // whether the type contains the tok name.
   inline bool HasName() const { return name != nullptr; }
   // get data size.

@@ -73,7 +73,7 @@ void CodeGenerator::Pop(const char* arg) {
 }
 
 void CodeGenerator::Load(TypePtr& ty) {
-  if (ty->IsArray() || ty->IsStruct() || ty->IsUnion()) {
+  if (ty->Is<TY_ARRAY>() || ty->Is<TY_STRUCT>() || ty->Is<TY_UNION>()) {
     // If it is a array, do not attempt to load a value to
     // the register because we can't load entire array to
     // register. As a result, the evaluation's result isn't
@@ -96,7 +96,7 @@ void CodeGenerator::Load(TypePtr& ty) {
 
 void CodeGenerator::Store(TypePtr& ty) {
   Pop("rdi");
-  if (ty->IsStruct() || ty->IsUnion()) {
+  if (ty->Is<TY_STRUCT>() || ty->Is<TY_UNION>()) {
     for (int i = 0; i < ty->Size(); i++) {
       ASM_GEN("  mov r8b, [rax + ", i, "]");
       ASM_GEN("  mov [rdi + ", i, "], r8b");
@@ -127,18 +127,18 @@ void CodeGenerator::Cast(TypePtr from, TypePtr to) {
 
   auto GetTypeId = [](TypePtr& t) -> int {
     enum { I8 = 0, I16, I32, I64 };
-    if (t->IsChar()) {
+    if (t->Is<TY_CHAR>()) {
       return I8;
-    } else if (t->IsShort()) {
+    } else if (t->Is<TY_SHORT>()) {
       return I16;
-    } else if (t->IsInt()) {
+    } else if (t->Is<TY_INT>()) {
       return I32;
     } else {
       return I64;
     }
   };
 
-  if (to->IsVoid()) {
+  if (to->Is<TY_VOID>()) {
     return;
   }
 
@@ -348,7 +348,7 @@ void CodeGenerator::ExprGen(NodePtr& node) {
   Pop("rdi");
 
   const char *ax, *di;
-  if (node->lhs->ty->IsLong() || node->lhs->IsPointerNode()) {
+  if (node->lhs->ty->Is<TY_LONG>() || node->lhs->IsPointerNode()) {
     ax = "rax";
     di = "rdi";
   } else {

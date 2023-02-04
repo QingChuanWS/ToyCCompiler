@@ -57,7 +57,7 @@ class Node {
   // whether the node is point.
   inline bool IsPointerNode() const { return ty->IsPointer(); }
   // whether the node is array node.
-  inline bool IsArray() const { return ty->IsArray(); }
+  inline bool IsArrayNode() const { return ty->Is<TY_ARRAY>(); }
   // error print
   inline void Error(const char* fmt, ...) const;
 

@@ -69,7 +69,7 @@ NodePtr Parser::Declaration(TokenPtr* rest, TokenPtr tok, TypePtr basety) {
       tok = tok->SkipToken(",");
     }
     TypePtr ty = Declarator(&tok, tok, basety);
-    if (ty->IsVoid()) {
+    if (ty->Is<TY_VOID>()) {
       ty->name->ErrorTok("variable declared void.");
     }
     ObjectPtr var = Object::CreateLocalVar(ty->name->GetIdent(), ty, &locals);
