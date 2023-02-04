@@ -34,6 +34,12 @@ NodePtr Node::CreateConstNode(int64_t val, TokenPtr tok) {
   return node;
 }
 
+NodePtr Node::CreateLongConstNode(int64_t val, TokenPtr node_name) {
+  NodePtr res = CreateConstNode(val, node_name);
+  res->ty = ty_long;
+  return res;
+}
+
 NodePtr Node::CreateVarNode(ObjectPtr var, TokenPtr tok) {
   NodePtr node = std::make_shared<Node>(ND_VAR, tok);
   node->var = var;
@@ -62,12 +68,10 @@ NodePtr Node::CreateUnaryNode(NodeKind kind, TokenPtr node_name, NodePtr op) {
 }
 
 NodePtr Node::CreateAddNode(TokenPtr node_name, NodePtr op_left, NodePtr op_right) {
-  TypeInfer(op_left);
-  TypeInfer(op_right);
+  Type::TypeInfer(op_left);
+  Type::TypeInfer(op_right);
   if (!op_left->IsPointerNode() && !op_right->IsPointerNode()) {
-    NodePtr res = CreateBinaryNode(ND_ADD, node_name, op_left, op_right);
-    res->ty = ty_int;
-    return res;
+    return CreateBinaryNode(ND_ADD, node_name, op_left, op_right);
   }
   // ptr + ptr
   if (op_left->IsPointerNode() && op_right->IsPointerNode()) {
@@ -80,38 +84,38 @@ NodePtr Node::CreateAddNode(TokenPtr node_name, NodePtr op_left, NodePtr op_righ
     op_right = tmp;
   }
   // ptr + num
-  NodePtr factor = CreateConstNode(op_left->ty->GetBase()->Size(), node_name);
+  NodePtr factor = CreateLongConstNode(op_left->ty->GetBase()->Size(), node_name);
   NodePtr real_num = CreateBinaryNode(ND_MUL, node_name, op_right, factor);
   NodePtr res = CreateBinaryNode(ND_ADD, node_name, op_left, real_num);
   return res;
 }
 
 NodePtr Node::CreateSubNode(TokenPtr node_name, NodePtr op_left, NodePtr op_right) {
-  TypeInfer(op_left);
-  TypeInfer(op_right);
+  Type::TypeInfer(op_left);
+  Type::TypeInfer(op_right);
   // num - num
   if (!op_left->IsPointerNode() && !op_right->IsPointerNode()) {
     return CreateBinaryNode(ND_SUB, node_name, op_left, op_right);
-    ;
   }
   // ptr - ptr
-  if (op_left->IsPointerNode() && op_right->IsPointerNode()) {
+  else if (op_left->IsPointerNode() && op_right->IsPointerNode()) {
     // careful curisive call.
     NodePtr sub = CreateBinaryNode(ND_SUB, node_name, op_left, op_right);
     sub->ty = ty_long;
-    NodePtr factor = CreateConstNode(op_left->ty->GetBase()->Size(), node_name);
-    NodePtr res = CreateBinaryNode(ND_DIV, node_name, sub, factor);
-    res->ty = ty_long;
+    NodePtr factor = CreateLongConstNode(op_left->ty->GetBase()->Size(), node_name);
+    return CreateBinaryNode(ND_DIV, node_name, sub, factor);
+  } else if (!op_left->IsPointerNode() && op_right->IsPointerNode()) {
+    node_name->ErrorTok("Invalid Operands.");
+  } else {
+    // ptr - num
+    NodePtr factor = CreateLongConstNode(op_left->ty->GetBase()->Size(), node_name);
+    NodePtr real_num = CreateBinaryNode(ND_MUL, node_name, op_right, factor);
+    Type::TypeInfer(real_num);
+    NodePtr res = CreateBinaryNode(ND_SUB, node_name, op_left, real_num);
     return res;
   }
-  if (!op_left->IsPointerNode() && op_right->IsPointerNode()) {
-    node_name->ErrorTok("Invalid Operands.");
-  }
-  // ptr - num
-  NodePtr factor = CreateConstNode(op_left->ty->GetBase()->Size(), node_name);
-  NodePtr real_num = CreateBinaryNode(ND_MUL, node_name, op_right, factor);
-  NodePtr res = CreateBinaryNode(ND_SUB, node_name, op_left, real_num);
-  return res;
+  node_name->ErrorTok("Invalid Operands.");
+  return nullptr;
 }
 
 NodePtr Node::CreateBinaryNode(NodeKind kind, TokenPtr node_name, NodePtr op_left,
@@ -148,7 +152,7 @@ NodePtr Node::CreateBlockNode(NodeKind kind, TokenPtr node_name, NodePtr body) {
 
 // create struct member node.
 NodePtr Node::CreateMemberNode(NodePtr parent, TokenPtr node_name) {
-  TypeInfer(parent);
+  Type::TypeInfer(parent);
   if (!parent->ty->Is<TY_STRUCT>() && !parent->ty->Is<TY_UNION>()) {
     node_name->ErrorTok("not a struct.");
   }
@@ -159,94 +163,10 @@ NodePtr Node::CreateMemberNode(NodePtr parent, TokenPtr node_name) {
 }
 
 NodePtr Node::CreateCastNode(TokenPtr node_name, NodePtr expr, TypePtr ty) {
-  TypeInfer(expr);
+  Type::TypeInfer(expr);
 
   NodePtr res = std::make_shared<Node>(ND_CAST, node_name);
   res->lhs = expr;
   res->ty = ty;
   return res;
-}
-
-void Node::TypeInfer(NodePtr node) {
-  if (node == nullptr || node->ty != nullptr) {
-    return;
-  }
-
-  TypeInfer(node->lhs);
-  TypeInfer(node->rhs);
-  TypeInfer(node->cond);
-  TypeInfer(node->then);
-  TypeInfer(node->els);
-  TypeInfer(node->init);
-  TypeInfer(node->inc);
-
-  for (NodePtr n = node->body; n != nullptr; n = n->next) {
-    TypeInfer(n);
-  }
-  for (NodePtr n = node->args; n != nullptr; n = n->next) {
-    TypeInfer(n);
-  }
-
-  switch (node->kind) {
-    case ND_ADD:
-    case ND_SUB:
-    case ND_MUL:
-    case ND_DIV:
-    case ND_NEG:
-      node->ty = node->lhs->ty;
-      return;
-    case ND_ASSIGN:
-      if (node->lhs->IsArrayNode()) {
-        node->lhs->Error("not an lvalue");
-      }
-      node->ty = node->lhs->ty;
-      return;
-    case ND_EQ:
-    case ND_NE:
-    case ND_LE:
-    case ND_LT:
-    case ND_NUM:
-    case ND_CALL:
-      node->ty = ty_long;
-      return;
-    case ND_VAR:
-      node->ty = node->var->GetType();
-      return;
-    case ND_COMMON:
-      node->ty = node->rhs->ty;
-      return;
-    case ND_MUMBER:
-      node->ty = node->mem->ty;
-      return;
-    case ND_ADDR:
-      if (node->lhs->IsArrayNode()) {
-        node->ty = Type::CreatePointerType(node->lhs->ty->GetBase());
-      } else {
-        node->ty = Type::CreatePointerType(node->lhs->ty);
-      }
-      return;
-    case ND_DEREF:
-      if (!node->lhs->IsPointerNode()) {
-        node->Error("invalid pointer reference!");
-      }
-      if (node->lhs->ty->GetBase()->Is<TY_VOID>()) {
-        node->Error("dereferencing a void pointer.");
-      }
-      node->ty = node->lhs->ty->GetBase();
-      return;
-    case ND_STMT_EXPR:
-      if (node->body != nullptr) {
-        NodePtr stmt = node->body;
-        while (stmt->next != nullptr) {
-          stmt = stmt->next;
-        }
-        if (stmt->kind == ND_EXPR_STMT) {
-          node->ty = stmt->lhs->ty;
-          return;
-        }
-      }
-      node->Error("statement expression return void is not supported.");
-    default:
-      return;
-  }
 }

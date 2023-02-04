@@ -72,11 +72,19 @@ class Type {
   static TypePtr CreateStructType(MemberPtr mem);
   // create union type.
   static TypePtr CreateUnionType(MemberPtr mem);
+  // Inference Node Type
+  static void TypeInfer(NodePtr node);
 
  private:
   friend class Parser;
   friend class Object;
 
+  // helper func: get ty1, ty2 common type.
+  static TypePtr GetCommonType(const TypePtr& ty1, const TypePtr& ty2);
+  // usual arithmetic convert
+  static void UsualArithConvert(NodePtr& lhs, NodePtr& rhs);
+
+ private:
   // type kind
   TypeKind kind = TY_END;
   // Declaration.

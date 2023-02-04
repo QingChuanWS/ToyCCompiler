@@ -83,9 +83,9 @@ void CodeGenerator::Load(TypePtr& ty) {
     return;
   }
   if (ty->Size() == 1) {
-    ASM_GEN("  movsbq rax, BYTE PTR [rax]");
+    ASM_GEN("  movsbl eax, BYTE PTR [rax]");
   } else if (ty->Size() == 2) {
-    ASM_GEN("  movswq rax, WORD PTR [rax]");
+    ASM_GEN("  movswl eax, WORD PTR [rax]");
 
   } else if (ty->Size() == 4) {
     ASM_GEN("  movsxd rax, DWORD PTR [rax]");

@@ -59,9 +59,11 @@ class Node {
   // whether the node is array node.
   inline bool IsArrayNode() const { return ty->Is<TY_ARRAY>(); }
   // error print
-  inline void Error(const char* fmt, ...) const;
+  void Error(const char* fmt, ...) const;
 
  public:
+  // create const node with type == ty_long.
+  static NodePtr CreateLongConstNode(int64_t val, TokenPtr node_name);
   // create const node.
   static NodePtr CreateConstNode(int64_t val, TokenPtr node_name);
   // create var node.
@@ -90,12 +92,11 @@ class Node {
   static NodePtr CreateMemberNode(NodePtr parent, TokenPtr node_name);
   // create cast node.
   static NodePtr CreateCastNode(TokenPtr node_name, NodePtr expr, TypePtr ty);
-  // inference the node type.
-  static void TypeInfer(NodePtr node);
 
  private:
   friend class CodeGenerator;
   friend class Parser;
+  friend class Type;
 
   // Node kind
   NodeKind kind = ND_END;

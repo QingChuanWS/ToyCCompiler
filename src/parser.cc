@@ -46,7 +46,7 @@ NodePtr Parser::CompoundStmt(TokenPtr* rest, TokenPtr tok) {
     } else {
       cur = cur->next = Stmt(&tok, tok);
     }
-    Node::TypeInfer(cur);
+    Type::TypeInfer(cur);
   }
 
   Scope::LevarScope(scope);
@@ -629,14 +629,13 @@ NodePtr Parser::Primary(TokenPtr* rest, TokenPtr tok) {
   if (tok->Equal("sizeof") && tok->next->Equal("(") && tok->next->next->IsTypename()) {
     TypePtr ty = Typename(&tok, tok->next->next);
     *rest = tok->SkipToken(")");
-    return Node::CreateConstNode(ty->Size(), start);
+    return Node::CreateLongConstNode(ty->Size(), start);
   }
 
   if (tok->Equal("sizeof")) {
     NodePtr node = Unary(rest, tok->next);
-    Node::TypeInfer(node);
-    long size = node->ty->size;
-    return Node::CreateConstNode(size, tok);
+    Type::TypeInfer(node);
+    return Node::CreateConstNode(node->ty->size, tok);
   }
 
   if (tok->kind == TK_IDENT) {
