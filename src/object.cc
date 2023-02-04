@@ -31,6 +31,8 @@ ObjectPtr globals = nullptr;
 // All variable or tag scope instance are accumulated to this list.
 ScopePtr scope = nullptr;
 
+ObjectPtr cur_fn = nullptr;
+
 void Scope::EnterScope(ScopePtr& next) {
   ScopePtr sc = std::make_shared<Scope>();
   sc->next = next;
@@ -109,9 +111,7 @@ ObjectPtr Object::CreateStringVar(const String& name) {
 }
 
 TokenPtr Object::CreateFunction(TokenPtr tok, TypePtr basety, ObjectPtr* next) {
-  locals = nullptr;
   TypePtr ty = Parser::Declarator(&tok, tok, basety);
-
   ObjectPtr fn = CreateVar(OB_FUNCTION, ty->name->GetIdent(), ty);
 
   // function declaration
@@ -120,8 +120,11 @@ TokenPtr Object::CreateFunction(TokenPtr tok, TypePtr basety, ObjectPtr* next) {
     tok = tok->SkipToken(";");
     return tok;
   }
+  cur_fn = fn;
+  locals = nullptr;
   // create scope.
   Scope::EnterScope(scope);
+
   // funtion defination.
   CreateParamVar(ty->params);
   fn->params = locals;

@@ -55,6 +55,7 @@ using Matrix = std::vector<std::vector<T>>;
 
 extern ObjectPtr locals;
 extern ObjectPtr globals;
+extern ObjectPtr cur_fn;
 
 extern ScopePtr scope;
 

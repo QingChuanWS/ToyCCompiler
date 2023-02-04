@@ -41,7 +41,6 @@ NodePtr Parser::CompoundStmt(TokenPtr* rest, TokenPtr tok) {
         ParseTypedef(&tok, tok, basety);
         continue;
       }
-
       cur = cur->next = Declaration(&tok, tok, basety);
     } else {
       cur = cur->next = Stmt(&tok, tok);
@@ -371,8 +370,11 @@ MemberPtr Parser::StructUnionDecl(TokenPtr* rest, TokenPtr tok) {
 // expr-stmt
 NodePtr Parser::Stmt(TokenPtr* rest, TokenPtr tok) {
   if (tok->Equal("return")) {
-    NodePtr node = Node::CreateUnaryNode(ND_RETURN, tok, Expr(&tok, tok->next));
+    NodePtr expr = Expr(&tok, tok->next);
     *rest = tok->SkipToken(";");
+    Type::TypeInfer(expr);
+    NodePtr cast = Node::CreateCastNode(expr->name, expr, cur_fn->GetType()->return_ty);
+    NodePtr node = Node::CreateUnaryNode(ND_RETURN, tok, cast);
     return node;
   }
 

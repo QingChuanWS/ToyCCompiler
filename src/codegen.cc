@@ -25,8 +25,7 @@ static int Count() {
   return count++;
 }
 
-int depth = 0;
-ObjectPtr cur_fn = nullptr;
+static int depth = 0;
 
 static const char* argreg8[] = {"dil", "sil", "dl", "cl", "r8b", "r9b"};
 static const char* argreg16[] = {"di", "si", "dx", "cx", "r8w", "r9w"};
