@@ -71,9 +71,11 @@ class Parser {
   static NodePtr Relational(TokenPtr* rest, TokenPtr tok);
   // add = mul ("+"mul | "-" mul)
   static NodePtr Add(TokenPtr* rest, TokenPtr tok);
-  // mul = unary ("*" unary | "/" unary)
+  // mul = cast ("*" cast | "/" cast)
   static NodePtr Mul(TokenPtr* rest, TokenPtr tok);
-  // unary = ("+" | "-" | "*" | "&") ? unary | primary
+  // cast = "(" type-name ")" cast | unary
+  static NodePtr Cast(TokenPtr* rest, TokenPtr tok);
+  // unary = ("+" | "-" | "*" | "&") ? cast | postfix
   static NodePtr Unary(TokenPtr* rest, TokenPtr tok);
   // postfix = primary ("[" Expr "]" | "." ident | "->" ident )*
   static NodePtr Postfix(TokenPtr* rest, TokenPtr tok);

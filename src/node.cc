@@ -158,6 +158,15 @@ NodePtr Node::CreateMemberNode(NodePtr parent, TokenPtr node_name) {
   return res;
 }
 
+NodePtr Node::CreateCastNode(TokenPtr node_name, NodePtr expr, TypePtr ty) {
+  TypeInfer(expr);
+
+  NodePtr res = std::make_shared<Node>(ND_CAST, node_name);
+  res->lhs = expr;
+  res->ty = ty;
+  return res;
+}
+
 void Node::TypeInfer(NodePtr node) {
   if (node == nullptr || node->ty != nullptr) {
     return;

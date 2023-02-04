@@ -14,7 +14,7 @@ add_test(
   NAME mem_check
   COMMAND ${BASH_EXECUTABLE} ${CMAKE_SOURCE_DIR}/test/function.sh ${CMAKE_CURRENT_BINARY_DIR} memo #using memory check
   )
-set_tests_properties(mem_check PROPERTIES FAIL_REGULAR_EXPRESSION "memory error|Segmentation fault")
+set_tests_properties(mem_check PROPERTIES FAIL_REGULAR_EXPRESSION "memory error|Segmentation fault |Aborted")
 
 add_test(
   NAME func_test

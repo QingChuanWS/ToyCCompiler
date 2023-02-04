@@ -28,10 +28,10 @@ static int Count() {
 int depth = 0;
 ObjectPtr cur_fn = nullptr;
 
-const char* argreg8[] = {"dil", "sil", "dl", "cl", "r8b", "r9b"};
-const char* argreg16[] = {"di", "si", "dx", "cx", "r8w", "r9w"};
-const char* argreg32[] = {"edi", "esi", "edx", "ecx", "r8d", "r9d"};
-const char* argreg64[] = {"rdi", "rsi", "rdx", "rcx", "r8", "r9"};
+static const char* argreg8[] = {"dil", "sil", "dl", "cl", "r8b", "r9b"};
+static const char* argreg16[] = {"di", "si", "dx", "cx", "r8w", "r9w"};
+static const char* argreg32[] = {"edi", "esi", "edx", "ecx", "r8d", "r9d"};
+static const char* argreg64[] = {"rdi", "rsi", "rdx", "rcx", "r8", "r9"};
 
 #define ASM_GEN(...) Println<CodeGenPrinter>(__VA_ARGS__, "\n");
 
@@ -112,6 +112,40 @@ void CodeGenerator::Store(TypePtr& ty) {
     ASM_GEN("  mov [rdi], eax");
   } else {
     ASM_GEN("  mov [rdi], rax");
+  }
+}
+
+void CodeGenerator::Cast(TypePtr from, TypePtr to) {
+  static const char* i32i8 = "movsbl eax, al";
+  static const char* i32i16 = "movswl eax, ax";
+  static const char* i32i64 = "movsxd rax, eax";
+
+  static Matrix<const char*> cast_table = {{nullptr, nullptr, nullptr, i32i64},
+                                           {i32i8, nullptr, nullptr, i32i64},
+                                           {i32i8, i32i16, nullptr, i32i64},
+                                           {i32i8, i32i16, nullptr, nullptr}};
+
+  auto GetTypeId = [](TypePtr& t) -> int {
+    enum { I8 = 0, I16, I32, I64 };
+    if (t->IsChar()) {
+      return I8;
+    } else if (t->IsShort()) {
+      return I16;
+    } else if (t->IsInt()) {
+      return I32;
+    } else {
+      return I64;
+    }
+  };
+
+  if (to->IsVoid()) {
+    return;
+  }
+
+  auto t1 = GetTypeId(from);
+  auto t2 = GetTypeId(to);
+  if (cast_table[t1][t2]) {
+    ASM_GEN("  ", cast_table[t1][t2]);
   }
 }
 
@@ -285,6 +319,10 @@ void CodeGenerator::ExprGen(NodePtr& node) {
       ExprGen(node->lhs);
       ExprGen(node->rhs);
       return;
+    case ND_CAST:
+      ExprGen(node->lhs);
+      Cast(node->lhs->ty, node->ty);
+      return;
     case ND_CALL: {
       int nargs = 0;
       for (NodePtr& arg = node->args; arg != nullptr; arg = arg->next) {
@@ -329,9 +367,9 @@ void CodeGenerator::ExprGen(NodePtr& node) {
       ASM_GEN("  imul  ", ax, ", ", di);
       return;
     case ND_DIV:
-      if(node->lhs->ty->Size() == 8){
+      if (node->lhs->ty->Size() == 8) {
         ASM_GEN("  cqo");
-      }else{
+      } else {
         ASM_GEN("  cdq");
       }
       ASM_GEN("  idiv ", di);

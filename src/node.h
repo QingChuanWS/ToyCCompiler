@@ -47,6 +47,7 @@ enum NodeKind {
   ND_IF,         // if
   ND_FOR,        // for and while
   ND_VAR,        // variable
+  ND_CAST,       // type cast
   ND_END,
 };
 
@@ -87,6 +88,8 @@ class Node {
   static NodePtr CreateBlockNode(NodeKind kind, TokenPtr node_name, NodePtr body);
   // create struct member node.
   static NodePtr CreateMemberNode(NodePtr parent, TokenPtr node_name);
+  // create cast node.
+  static NodePtr CreateCastNode(TokenPtr node_name, NodePtr expr, TypePtr ty);
   // inference the node type.
   static void TypeInfer(NodePtr node);
 

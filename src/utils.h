@@ -50,6 +50,9 @@ using TypedefMap = std::unordered_map<String, TypePtr>;
 using TagScopeMap = std::unordered_map<String, TypePtr>;
 using ObjectList = std::vector<ObjectPtr>;
 
+template <typename T>
+using Matrix = std::vector<std::vector<T>>;
+
 extern ObjectPtr locals;
 extern ObjectPtr globals;
 

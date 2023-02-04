@@ -98,6 +98,8 @@ class CodeGenerator {
   void Store(TypePtr& ty);
   // store passed-by-register arguments to the stack.
   void StoreFunctionParameter(int reg, int offset, int sz);
+  // cast type
+  void Cast(TypePtr from, TypePtr to);
 };
 
 #endif  // !CODEGEN_GRUAD

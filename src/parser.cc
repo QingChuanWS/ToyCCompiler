@@ -523,17 +523,18 @@ NodePtr Parser::Add(TokenPtr* rest, TokenPtr tok) {
   }
 }
 
+// mul = cast ("*" cast | "/" cast)
 NodePtr Parser::Mul(TokenPtr* rest, TokenPtr tok) {
-  NodePtr node = Unary(&tok, tok);
+  NodePtr node = Cast(&tok, tok);
 
   for (;;) {
     TokenPtr node_name = tok;
     if (tok->Equal("*")) {
-      node = Node::CreateBinaryNode(ND_MUL, node_name, node, Primary(&tok, tok->next));
+      node = Node::CreateBinaryNode(ND_MUL, node_name, node, Cast(&tok, tok->next));
       continue;
     }
     if (tok->Equal("/")) {
-      node = Node::CreateBinaryNode(ND_DIV, node_name, node, Primary(&tok, tok->next));
+      node = Node::CreateBinaryNode(ND_DIV, node_name, node, Cast(&tok, tok->next));
       continue;
     }
     *rest = tok;
@@ -541,19 +542,31 @@ NodePtr Parser::Mul(TokenPtr* rest, TokenPtr tok) {
   }
 }
 
-// unary = ("+" | "-" | "*" | "&") ? unary | primary
+// cast = "(" type-name ")" cast | unary
+NodePtr Parser::Cast(TokenPtr* rest, TokenPtr tok) {
+  if (tok->Equal("(") && tok->next->IsTypename()) {
+    TokenPtr start = tok;
+    TypePtr ty = Typename(&tok, tok->next);
+    tok = tok->SkipToken(")");
+    return Node::CreateCastNode(start, Cast(rest, tok), ty);
+  }
+
+  return Unary(rest, tok);
+}
+
+// unary = ("+" | "-" | "*" | "&") ? cast | postfix
 NodePtr Parser::Unary(TokenPtr* rest, TokenPtr tok) {
   if (tok->Equal("+")) {
-    return Unary(rest, tok->next);
+    return Cast(rest, tok->next);
   }
   if (tok->Equal("-")) {
-    return Node::CreateUnaryNode(ND_NEG, tok, Unary(rest, tok->next));
+    return Node::CreateUnaryNode(ND_NEG, tok, Cast(rest, tok->next));
   }
   if (tok->Equal("&")) {
-    return Node::CreateUnaryNode(ND_ADDR, tok, Unary(rest, tok->next));
+    return Node::CreateUnaryNode(ND_ADDR, tok, Cast(rest, tok->next));
   }
   if (tok->Equal("*")) {
-    return Node::CreateUnaryNode(ND_DEREF, tok, Unary(rest, tok->next));
+    return Node::CreateUnaryNode(ND_DEREF, tok, Cast(rest, tok->next));
   }
   return Postfix(rest, tok);
 }
