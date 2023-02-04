@@ -129,6 +129,7 @@ class Node {
 
   // ------ function ------;
   String call = String();
+  TypePtr fun_ty = nullptr;
   NodePtr args = nullptr;
 
   //  ------ for Var ------;

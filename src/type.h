@@ -78,6 +78,7 @@ class Type {
  private:
   friend class Parser;
   friend class Object;
+  friend class Node;
 
   // helper func: get ty1, ty2 common type.
   static TypePtr GetCommonType(const TypePtr& ty1, const TypePtr& ty2);
@@ -89,23 +90,29 @@ class Type {
   TypeKind kind = TY_END;
   // Declaration.
   TokenPtr name = nullptr;
+  // for params type list.
+  TypePtr next = nullptr;
   // sizeof() value.
   int size = 0;
   // alignment
   int align = 0;
+
+  // ---- pointer ----
   // Pointer-to or array type. Using a same member to
   // represent pointer/array duality in C.
   TypePtr base = nullptr;
-  // Array
+
+  // ---- Array ----
   int array_len = 0;
-  // Member
+
+  // ---- Member---
   MemberPtr mem = nullptr;
+
+  // --- function ---
   // Function type.
   TypePtr return_ty = nullptr;
   // function params type list.
   TypePtr params = nullptr;
-  // for params type list.
-  TypePtr next = nullptr;
 };
 
 #endif  // !TYPE_GRUAD

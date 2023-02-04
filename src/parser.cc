@@ -678,19 +678,29 @@ NodePtr Parser::Call(TokenPtr* rest, TokenPtr tok) {
     start->ErrorTok("not a function.");
   }
 
-  TypePtr ret_ty = sc->GetVar()->GetType()->return_ty;
-  NodePtr args = std::make_shared<Node>(ND_END, tok);
-  NodePtr cur = args;
+  TypePtr ty = sc->GetVar()->GetType();
+  TypePtr param_ty = ty->params;
+
+  NodePtr head = std::make_shared<Node>(ND_END, tok);
+  NodePtr cur = head;
 
   while (!tok->Equal(")")) {
-    if (cur != args) {
+    if (cur != head) {
       tok = tok->SkipToken(",");
     }
-    cur->next = Assign(&tok, tok);
-    cur = cur->next;
-    Type::TypeInfer(cur);
-  }
+    NodePtr arg = Assign(&tok, tok);
+    Type::TypeInfer(arg);
 
+    if (param_ty) {
+      if (param_ty->Is<TY_STRUCT>() || param_ty->Is<TY_UNION>()) {
+        arg->name->ErrorTok("passing struct or union is not support yet");
+      }
+      arg = Node::CreateCastNode(arg->name, arg, param_ty);
+      param_ty = param_ty->next;
+    }
+
+    cur = cur->next = arg;
+  }
   *rest = tok->SkipToken(")");
-  return Node::CreateCallNode(start, args->next, ret_ty);
+  return Node::CreateCallNode(start, head->next, ty);
 }

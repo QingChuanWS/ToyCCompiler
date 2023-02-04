@@ -54,11 +54,12 @@ NodePtr Node::CreateIdentNode(TokenPtr tok) {
   return CreateVarNode(var, tok);
 }
 
-NodePtr Node::CreateCallNode(TokenPtr call_name, NodePtr args, TypePtr ret_ty) {
+NodePtr Node::CreateCallNode(TokenPtr call_name, NodePtr args, TypePtr func_ty) {
   NodePtr call_node = std::make_shared<Node>(ND_CALL, call_name);
   call_node->call = call_name->GetIdent();
   call_node->args = args;
-  call_node->ty = ret_ty;
+  call_node->fun_ty = func_ty;
+  call_node->ty = func_ty->return_ty;
   return call_node;
 }
 
@@ -107,6 +108,7 @@ NodePtr Node::CreateSubNode(TokenPtr node_name, NodePtr op_left, NodePtr op_righ
     return CreateBinaryNode(ND_DIV, node_name, sub, factor);
   } else if (!op_left->IsPointerNode() && op_right->IsPointerNode()) {
     node_name->ErrorTok("Invalid Operands.");
+    return nullptr;
   } else {
     // ptr - num
     NodePtr factor = CreateLongConstNode(op_left->ty->GetBase()->Size(), node_name);
@@ -115,8 +117,6 @@ NodePtr Node::CreateSubNode(TokenPtr node_name, NodePtr op_left, NodePtr op_righ
     NodePtr res = CreateBinaryNode(ND_SUB, node_name, op_left, real_num);
     return res;
   }
-  node_name->ErrorTok("Invalid Operands.");
-  return nullptr;
 }
 
 NodePtr Node::CreateBinaryNode(NodeKind kind, TokenPtr node_name, NodePtr op_left,
