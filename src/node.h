@@ -71,7 +71,7 @@ class Node {
   // create identify node.
   static NodePtr CreateIdentNode(TokenPtr node_name);
   // create call node
-  static NodePtr CreateCallNode(TokenPtr call_name, NodePtr args);
+  static NodePtr CreateCallNode(TokenPtr call_name, NodePtr args, TypePtr ret_ty);
   // create unary expration node.
   static NodePtr CreateUnaryNode(NodeKind kind, TokenPtr node_name, NodePtr op);
   // create binary expration node.

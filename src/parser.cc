@@ -668,6 +668,15 @@ NodePtr Parser::Call(TokenPtr* rest, TokenPtr tok) {
   // can't optimaze, need start tok.
   tok = tok->next->next;
 
+  VarScopePtr sc = Scope::FindVarScope(start->GetIdent());
+  if (!sc) {
+    start->ErrorTok("implicit declaration of a function");
+  }
+  if (!sc->GetVar() || !sc->GetVar()->IsFunction()) {
+    start->ErrorTok("not a function.");
+  }
+
+  TypePtr ret_ty = sc->GetVar()->GetType()->return_ty;
   NodePtr args = std::make_shared<Node>(ND_END, tok);
   NodePtr cur = args;
 
@@ -677,8 +686,9 @@ NodePtr Parser::Call(TokenPtr* rest, TokenPtr tok) {
     }
     cur->next = Assign(&tok, tok);
     cur = cur->next;
+    Type::TypeInfer(cur);
   }
 
   *rest = tok->SkipToken(")");
-  return Node::CreateCallNode(start, args->next);
+  return Node::CreateCallNode(start, args->next, ret_ty);
 }

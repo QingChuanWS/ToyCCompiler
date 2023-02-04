@@ -334,6 +334,7 @@ void Token::ErrorTok(const char* fmt, ...) const {
   va_list ap;
   va_start(ap, fmt);
   VrdicErrorAt(this->line_no, this->loc, fmt, ap);
+  exit(1);
 }
 
 void Token::ErrorAt(const char* loc, const char* fmt, ...) {
@@ -347,6 +348,7 @@ void Token::ErrorAt(const char* loc, const char* fmt, ...) {
   va_list ap;
   va_start(ap, fmt);
   VrdicErrorAt(line_no, loc, fmt, ap);
+  exit(1);
 }
 
 void Token::VrdicErrorAt(int line_no, const char* loc, const char* fmt, va_list ap) {
@@ -370,5 +372,4 @@ void Token::VrdicErrorAt(int line_no, const char* loc, const char* fmt, va_list 
   fprintf(stderr, "^ ");
   vfprintf(stderr, fmt, ap);
   fprintf(stderr, "\n");
-  exit(1);
 }

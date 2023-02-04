@@ -89,7 +89,7 @@ class Token {
   static void InitLineNumInfo(TokenPtr tok);
   // Reports an error location and exit.
   static void ErrorAt(const char* loc, const char* fmt, ...);
-  // Reports an error message in the follow format and exit.
+  // Reports an error message in the follow format.
   //
   // foo.c:10: x = y + 1;
   //               ^ <error message here>

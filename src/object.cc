@@ -112,24 +112,23 @@ TokenPtr Object::CreateFunction(TokenPtr tok, TypePtr basety, ObjectPtr* next) {
   locals = nullptr;
   TypePtr ty = Parser::Declarator(&tok, tok, basety);
 
-  // create scope.
-  Scope::EnterScope(scope);
-
   ObjectPtr fn = CreateVar(OB_FUNCTION, ty->name->GetIdent(), ty);
+
   // function declaration
   if (tok->Equal(";")) {
     fn->is_defination = true;
     tok = tok->SkipToken(";");
-  } else {
-    // funtion defination.
-    CreateParamVar(ty->params);
-    fn->params = locals;
-    fn->body = Parser::Program(&tok, tok);
-    fn->loc_list = locals;
-    fn->next = *next;
-    *next = fn;
+    return tok;
   }
-
+  // create scope.
+  Scope::EnterScope(scope);
+  // funtion defination.
+  CreateParamVar(ty->params);
+  fn->params = locals;
+  fn->body = Parser::Program(&tok, tok);
+  fn->loc_list = locals;
+  fn->next = *next;
+  *next = fn;
   // leave scope.
   Scope::LevarScope(scope);
   return tok;

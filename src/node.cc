@@ -54,10 +54,11 @@ NodePtr Node::CreateIdentNode(TokenPtr tok) {
   return CreateVarNode(var, tok);
 }
 
-NodePtr Node::CreateCallNode(TokenPtr call_name, NodePtr args) {
+NodePtr Node::CreateCallNode(TokenPtr call_name, NodePtr args, TypePtr ret_ty) {
   NodePtr call_node = std::make_shared<Node>(ND_CALL, call_name);
   call_node->call = call_name->GetIdent();
   call_node->args = args;
+  call_node->ty = ret_ty;
   return call_node;
 }
 
