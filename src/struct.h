@@ -27,6 +27,8 @@ class Member {
   static int CalcuStructAlign(MemberPtr mem);
   // init struct member list offset, return the sum of offset.
   static int CalcuStructOffset(MemberPtr mem);
+  // struct-decl = "{" struct-member
+  static MemberPtr StructUnionDecl(TokenPtr* rest, TokenPtr tok);
 
  private:
   friend Node;

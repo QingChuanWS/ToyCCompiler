@@ -33,16 +33,22 @@ NodePtr Parser::CompoundStmt(TokenPtr* rest, TokenPtr tok) {
   Scope::EnterScope(scope);
 
   while (!tok->Equal("}")) {
+    // parser declaration.
     if (tok->IsTypename()) {
       VarAttrPtr attr = std::make_shared<VarAttr>();
       TypePtr basety = Declspec(&tok, tok, attr);
 
       if (attr->is_typedef) {
-        ParseTypedef(&tok, tok, basety);
+        TypePtr ty_list = ParseTypedef(&tok, tok, basety);
+        for (TypePtr t = ty_list; t; t = t->next) {
+          Scope::PushVarScope(t->name->GetIdent())->SetType(t);
+        }
         continue;
       }
       cur = cur->next = Declaration(&tok, tok, basety);
-    } else {
+    }
+    // parser statement.
+    else {
       cur = cur->next = Stmt(&tok, tok);
     }
     Type::TypeInfer(cur);
@@ -52,7 +58,6 @@ NodePtr Parser::CompoundStmt(TokenPtr* rest, TokenPtr tok) {
 
   *rest = tok->next;
   return Node::CreateBlockNode(ND_BLOCK, tok, sub_expr->next);
-  ;
 }
 
 // declaration = declspec (
@@ -234,37 +239,38 @@ TypePtr Parser::TypeSuffix(TokenPtr* rest, TokenPtr tok, TypePtr ty) {
   return ty;
 }
 
-void Parser::ParseTypedef(TokenPtr* rest, TokenPtr tok, TypePtr basety) {
+TypePtr Parser::ParseTypedef(TokenPtr* rest, TokenPtr tok, TypePtr basety) {
+  TypePtr head = std::make_shared<Type>(TY_END, 1, 1);
+  TypePtr cur = head;
   bool first = true;
   while (!tok->Equal(";")) {
     if (!first) {
       tok = tok->SkipToken(",");
     }
     first = false;
-
-    TypePtr ty = Declarator(&tok, tok, basety);
-    Scope::PushVarScope(ty->name->GetIdent())->SetType(ty);
+    cur = cur->next = Declarator(&tok, tok, basety);
   }
   *rest = tok->SkipToken(";");
+  return head->next;
 }
 
 // abstract-declarator = "*"* ("(" abstract-declarator ")")? type-suffix
-TypePtr Parser::AbstractDeclarator(TokenPtr* rest, TokenPtr tok, TypePtr ty) {
+TypePtr AbstractDeclarator(TokenPtr* rest, TokenPtr tok, TypePtr ty) {
   while (tok->Equal("*")) {
     ty = Type::CreatePointerType(ty);
-    tok = tok->next;
+    tok = tok->GetNext();
   }
 
   if (tok->Equal("(")) {
     TokenPtr start = tok;
     TypePtr head = std::make_shared<Type>(TY_END, 0, 0);
-    AbstractDeclarator(&tok, start->next, head);
+    AbstractDeclarator(&tok, start->GetNext(), head);
     tok = tok->SkipToken(")");
-    ty = TypeSuffix(rest, tok, ty);
-    return AbstractDeclarator(&tok, start->next, ty);
+    ty = Parser::TypeSuffix(rest, tok, ty);
+    return AbstractDeclarator(&tok, start->GetNext(), ty);
   }
 
-  return TypeSuffix(rest, tok, ty);
+  return Parser::TypeSuffix(rest, tok, ty);
 }
 
 // typename = declspec abstract-declarator
@@ -306,7 +312,7 @@ TypePtr Parser::StructDecl(TokenPtr* rest, TokenPtr tok) {
     }
   }
 
-  MemberPtr mem = StructUnionDecl(rest, tok);
+  MemberPtr mem = Member::StructUnionDecl(rest, tok);
   TypePtr ty = Type::CreateStructType(mem);
   if (tag) {
     scope->GetTagScope()[tag->GetIdent()] = ty;
@@ -325,7 +331,7 @@ TypePtr Parser::UnionDecl(TokenPtr* rest, TokenPtr tok) {
       return ty;
     }
   }
-  MemberPtr mem = StructUnionDecl(rest, tok);
+  MemberPtr mem = Member::StructUnionDecl(rest, tok);
   TypePtr ty = Type::CreateUnionType(mem);
   if (tag) {
     scope->GetTagScope()[tag->GetIdent()] = ty;
@@ -333,6 +339,7 @@ TypePtr Parser::UnionDecl(TokenPtr* rest, TokenPtr tok) {
   return ty;
 }
 
+// struct-union tag = ("struct" or "union") ident?
 TypePtr Parser::StructUnionTagDecl(TokenPtr* rest, TokenPtr tok, TokenPtr tag) {
   TypePtr ty = nullptr;
   if (!tok->Equal("{")) {
@@ -343,30 +350,6 @@ TypePtr Parser::StructUnionTagDecl(TokenPtr* rest, TokenPtr tok, TokenPtr tag) {
   }
   *rest = tok;
   return ty;
-}
-
-// struct-decl = "{" struct-member
-MemberPtr Parser::StructUnionDecl(TokenPtr* rest, TokenPtr tok) {
-  tok = tok->SkipToken("{");
-  MemberPtr head = std::make_shared<Member>();
-  MemberPtr cur = head;
-
-  while (!tok->Equal("}")) {
-    TypePtr basety = Parser::Declspec(&tok, tok, nullptr);
-
-    int i = 0;
-    while (!tok->Equal(";")) {
-      if (i++) {
-        tok = tok->SkipToken(",");
-      }
-      TypePtr ty = Parser::Declarator(&tok, tok, basety);
-      cur->next = std::make_shared<Member>(ty, ty->GetName());
-      cur = cur->next;
-    }
-    tok = tok->SkipToken(";");
-  }
-  *rest = tok->next;
-  return head->next;
 }
 
 // stmt = "return" expr ";" |

@@ -170,7 +170,10 @@ ObjectPtr Object::Parse(TokenPtr tok) {
     TypePtr basety = Parser::Declspec(&tok, tok, attr);
 
     if (attr->is_typedef) {
-      Parser::ParseTypedef(&tok, tok, basety);
+      TypePtr ty_list = Parser::ParseTypedef(&tok, tok, basety);
+      for (TypePtr t = ty_list; t; t = t->next) {
+        Scope::PushVarScope(t->name->GetIdent())->SetType(t);
+      }
       continue;
     }
 

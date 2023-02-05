@@ -37,3 +37,27 @@ int Member::CalcuStructOffset(MemberPtr mem) {
   }
   return offset;
 }
+
+// struct-decl = "{" struct-member
+MemberPtr Member::StructUnionDecl(TokenPtr* rest, TokenPtr tok) {
+  tok = tok->SkipToken("{");
+  MemberPtr head = std::make_shared<Member>();
+  MemberPtr cur = head;
+
+  while (!tok->Equal("}")) {
+    TypePtr basety = Parser::Declspec(&tok, tok, nullptr);
+
+    int i = 0;
+    while (!tok->Equal(";")) {
+      if (i++) {
+        tok = tok->SkipToken(",");
+      }
+      TypePtr ty = Parser::Declarator(&tok, tok, basety);
+      cur->next = std::make_shared<Member>(ty, ty->GetName());
+      cur = cur->next;
+    }
+    tok = tok->SkipToken(";");
+  }
+  *rest = tok->GetNext();
+  return head->next;
+}

@@ -14,18 +14,10 @@
 
 #include "utils.h"
 
+// parsing token list and generate AST.
 class Parser {
  public:
-  // parsing token list and generate AST.
-  // program = stmt*
-  static NodePtr Program(TokenPtr* rest, TokenPtr tok);
-  // compound-stmt = (typedef | declaration | stmt)* "}"
-  static NodePtr CompoundStmt(TokenPtr* rest, TokenPtr tok);
-  // declaration = declspec (
-  //                 declarator ( "=" expr)?
-  //                 ("," declarator ("=" expr)? ) * )? ";"
-  static NodePtr Declaration(TokenPtr* rest, TokenPtr tok, TypePtr basety);
-  // ---- TYPE ----
+  // ---- parse TYPE ----
   // declspec = ( "_Bool" | "void" | "char" | "int"
   //             | "short" | "long"
   //             | "typedef" | struct-decl
@@ -37,8 +29,6 @@ class Parser {
   static TypePtr UnionDecl(TokenPtr* rest, TokenPtr tok);
   // struct-union tag = ("struct" or "union") ident?
   static TypePtr StructUnionTagDecl(TokenPtr* rest, TokenPtr tok, TokenPtr tag);
-  // struct-union-decl = "{" struct-member
-  static MemberPtr StructUnionDecl(TokenPtr* rest, TokenPtr tok);
   // declarator = "*"* ident type-suffix
   static TypePtr Declarator(TokenPtr* rest, TokenPtr tok, TypePtr ty);
   // type-suffix = "(" func-params | "[" num "]" | ɛ )
@@ -46,12 +36,20 @@ class Parser {
   // func-param = param ("," param) *
   // param = declspec declarator
   static TypePtr FunctionParam(TokenPtr* rest, TokenPtr tok, TypePtr ty);
-  // typedef = declspec (ident (",")? )+ ";"
-  static void ParseTypedef(TokenPtr* rest, TokenPtr tok, TypePtr basety);
-  // abstract-declarator = "*"* ("(" abstract-declarator ")")? type-suffix
-  static TypePtr AbstractDeclarator(TokenPtr* rest, TokenPtr tok, TypePtr ty);
+  // typedef = declspec (ident (",")? ) + ";"
+  static TypePtr ParseTypedef(TokenPtr* rest, TokenPtr tok, TypePtr basety);
   // typename = declspec abstract-declarator
   static TypePtr Typename(TokenPtr* rest, TokenPtr tok);
+
+  // ---- parse Statemet ----
+  // program = stmt*
+  static NodePtr Program(TokenPtr* rest, TokenPtr tok);
+  // compound-stmt = (typedef | declaration | stmt)* "}"
+  static NodePtr CompoundStmt(TokenPtr* rest, TokenPtr tok);
+  // declaration = declspec (
+  //                 declarator ( "=" expr)?
+  //                 ("," declarator ("=" expr)? ) * )? ";"
+  static NodePtr Declaration(TokenPtr* rest, TokenPtr tok, TypePtr basety);
   // stmt = "return" expr ";" |
   //        "if" "(" expr ")" stmt ("else" stmt)? |
   //        "for" "(" expr-stmt expr? ";" expr? ")" stmt |
