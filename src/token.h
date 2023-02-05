@@ -64,13 +64,15 @@ class Token {
   // find a closing double-quote.
   const char* StringLiteralEnd(const char* start);
   // read the escaped char
-  int ReadEscapeedChar(const char** new_pos, const char* p);
+  static int ReadEscapeedChar(const char** new_pos, const char* p);
   // convert char c to hex format
-  int FromHex(const char c) const;
+  static int FromHex(const char c);
   // matching punction.
   int ReadPunct(const char* p) const;
   // read a string literal for source pargram char.
   TokenPtr ReadStringLiteral(const char* start);
+  // read character literal
+  static TokenPtr ReadCharacterLiteral(const char* start);
 
  public:
   // Create

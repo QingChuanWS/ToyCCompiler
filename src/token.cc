@@ -75,6 +75,27 @@ StringPtr Token::ReadFile(const String& filename) {
   return std::make_shared<String>(std::move(program));
 }
 
+TokenPtr Token::ReadCharacterLiteral(const char* start) {
+  const char* p = start + 1;
+  if (*p == '\0') {
+    ErrorAt(start, "uncloser character literal.");
+  }
+  char c;
+  if (*p == '\\') {
+    c = ReadEscapeedChar(&p, p + 1);
+  } else {
+    c = *p++;
+  }
+
+  const char* end = std::strchr(p, '\'');
+  if (!end) {
+    ErrorAt(p, "uncloser character literal.");
+  }
+  TokenPtr res = std::make_shared<Token>(TK_NUM, start, end - start + 1);
+  res->val = c;
+  return res;
+}
+
 TokenPtr Token::CreateTokens(const String& file_name, const StringPtr& program) {
   current_filename = file_name;
   prg = program;
@@ -120,6 +141,12 @@ TokenPtr Token::CreateTokens(const String& file_name, const StringPtr& program) 
       continue;
     }
 
+    if (*p == '\'') {
+      cur = cur->next = ReadCharacterLiteral(p);
+      p += cur->len;
+      continue;
+    }
+
     // indentifier or keyword
     if (IsAlpha(*p)) {
       char* q = p++;
@@ -157,8 +184,9 @@ int Token::ReadPunct(const char* p) const {
 }
 
 void Token::ConvertToReserved(TokenPtr tok) {
-  static const char* kw[] = {"return", "if",     "else",  "for",   "while", "int",  "sizeof",
-                             "char",   "struct", "union", "short", "long",  "void", "typedef", "_Bool"};
+  static const char* kw[] = {"return", "if",     "else", "for",     "while",
+                             "int",    "sizeof", "char", "struct",  "union",
+                             "short",  "long",   "void", "typedef", "_Bool"};
   for (TokenPtr t = tok; t != nullptr; t = t->next) {
     for (int i = 0; i < sizeof(kw) / sizeof(*kw); i++) {
       if (StrEqual(t->loc, kw[i], t->len)) {
@@ -201,7 +229,7 @@ TokenPtr Token::SkipToken(const char* op, bool enable_error) {
   return next;
 }
 
-int Token::FromHex(const char c) const {
+int Token::FromHex(const char c) {
   if ('0' <= c && c <= '9') {
     return c - '0';
   }
@@ -316,7 +344,7 @@ ObjectPtr Token::FindVar() {
 }
 
 bool Token::IsTypename() const {
-  static const char* kw[] = {"void",   "char",  "short",  "int",    "long",
+  static const char* kw[] = {"void",   "char",  "short",  "int",     "long",
                              "struct", "union", "struct", "typedef", "_Bool"};
   for (int i = 0; i < sizeof(kw) / sizeof(*kw); i++) {
     if (Equal(kw[i])) {
