@@ -219,12 +219,10 @@ bool Token::Equal(const TokenPtr tok) const {
   return tok->len == len && !std::strncmp(loc, tok->loc, len);
 }
 
-TokenPtr Token::SkipToken(const char* op, bool enable_error) {
+const TokenPtr& Token::SkipToken(const char* op, bool enable_error) {
   if (!Equal(op)) {
     if (enable_error) {
       ErrorAt(this->loc, "Expect \'%s\'", op);
-    } else {
-      return nullptr;
     }
   }
   return next;
@@ -394,3 +392,8 @@ void Token::VrdicErrorAt(int line_no, const char* loc, const char* fmt, va_list 
   vfprintf(stderr, fmt, ap);
   fprintf(stderr, "\n");
 }
+
+template <>
+const TokenPtr& Token::GetNext<1>(TokenPtr& tok) {
+  return tok->next;
+};

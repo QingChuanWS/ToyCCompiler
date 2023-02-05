@@ -57,7 +57,7 @@ NodePtr Parser::CompoundStmt(TokenPtr* rest, TokenPtr tok) {
 
   Scope::LevarScope(scope);
 
-  *rest = tok->next;
+  *rest = Token::GetNext<1>(tok);
   return Node::CreateBlockNode(ND_BLOCK, tok, sub_expr->next);
 }
 
@@ -82,12 +82,12 @@ NodePtr Parser::Declaration(TokenPtr* rest, TokenPtr tok, TypePtr basety) {
       continue;
     }
     NodePtr lhs = Node::CreateVarNode(var, tok);
-    NodePtr rhs = Assign(&tok, tok->next);
+    NodePtr rhs = Assign(&tok, Token::GetNext<1>(tok));
     NodePtr assgin_node = Node::CreateBinaryNode(ND_ASSIGN, tok, lhs, rhs);
     cur = cur->next = Node::CreateUnaryNode(ND_EXPR_STMT, tok, assgin_node);
   }
 
-  *rest = tok->next;
+  *rest = Token::GetNext<1>(tok);
   return Node::CreateBlockNode(ND_BLOCK, tok, decl_expr->next);
 }
 
@@ -129,7 +129,7 @@ TypePtr Parser::Declspec(TokenPtr* rest, TokenPtr tok, VarAttrPtr attr) {
         tok->ErrorTok("storage class specifier is not allow in this context.");
       }
       attr->is_typedef = true;
-      tok = tok->next;
+      tok = Token::GetNext<1>(tok);
       continue;
     }
 
@@ -141,14 +141,14 @@ TypePtr Parser::Declspec(TokenPtr* rest, TokenPtr tok, VarAttrPtr attr) {
       }
 
       if (tok->Equal("struct")) {
-        ty = StructDecl(&tok, tok->GetNext());
+        ty = StructDecl(&tok, Token::GetNext<1>(tok));
       } else if (tok->Equal("union")) {
-        ty = UnionDecl(&tok, tok->GetNext());
+        ty = UnionDecl(&tok, Token::GetNext<1>(tok));
       } else if (tok->Equal("enum")) {
-        ty = EnumDecl(&tok, tok->GetNext());
+        ty = EnumDecl(&tok, Token::GetNext<1>(tok));
       } else {
         ty = tydef;
-        tok = tok->next;
+        tok = Token::GetNext<1>(tok);
       }
       counter += OTHER;
       continue;
@@ -196,7 +196,7 @@ TypePtr Parser::Declspec(TokenPtr* rest, TokenPtr tok, VarAttrPtr attr) {
       default:
         tok->ErrorTok("invalid type.");
     }
-    tok = tok->next;
+    tok = Token::GetNext<1>(tok);
   }
   *rest = tok;
   return ty;
@@ -206,22 +206,22 @@ TypePtr Parser::Declspec(TokenPtr* rest, TokenPtr tok, VarAttrPtr attr) {
 TypePtr Parser::Declarator(TokenPtr* rest, TokenPtr tok, TypePtr ty) {
   while (tok->Equal("*")) {
     ty = Type::CreatePointerType(ty);
-    tok = tok->next;
+    tok = Token::GetNext<1>(tok);
   }
 
   if (tok->Equal("(")) {
     TokenPtr start = tok;
     TypePtr head = std::make_shared<Type>(TY_END, 0, 0);
-    Declarator(&tok, start->next, head);
+    Declarator(&tok, Token::GetNext<1>(start), head);
     tok = tok->SkipToken(")");
     ty = TypeSuffix(rest, tok, ty);
-    return Declarator(&tok, start->next, ty);
+    return Declarator(&tok, Token::GetNext<1>(start), ty);
   }
 
-  if (tok->kind != TK_IDENT) {
+  if (!tok->Is<TK_IDENT>()) {
     tok->ErrorTok("expected a variable name.");
   }
-  ty = TypeSuffix(rest, tok->next, ty);
+  ty = TypeSuffix(rest, Token::GetNext<1>(tok), ty);
   ty->name = tok;
   return ty;
 }
@@ -229,11 +229,11 @@ TypePtr Parser::Declarator(TokenPtr* rest, TokenPtr tok, TypePtr ty) {
 // type-suffix = "(" func-params ")" | "[" num "]" type-suffix | ɛ
 TypePtr Parser::TypeSuffix(TokenPtr* rest, TokenPtr tok, TypePtr ty) {
   if (tok->Equal("(")) {
-    return FunctionParam(rest, tok->next, ty);
+    return FunctionParam(rest, Token::GetNext<1>(tok), ty);
   }
   if (tok->Equal("[")) {
-    int len = tok->next->GetNumber();
-    tok = tok->next->next->SkipToken("]");
+    int len = Token::GetNext<1>(tok)->GetNumber();
+    tok = Token::GetNext<2>(tok)->SkipToken("]");
     ty = TypeSuffix(rest, tok, ty);
     return Type::CreateArrayType(ty, len);
   }
@@ -261,16 +261,16 @@ TypePtr Parser::TypedefDecl(TokenPtr* rest, TokenPtr tok, TypePtr basety) {
 static TypePtr AbstractDeclarator(TokenPtr* rest, TokenPtr tok, TypePtr ty) {
   while (tok->Equal("*")) {
     ty = Type::CreatePointerType(ty);
-    tok = tok->GetNext();
+    tok = Token::GetNext<1>(tok);
   }
 
   if (tok->Equal("(")) {
     TokenPtr start = tok;
     TypePtr head = std::make_shared<Type>(TY_END, 0, 0);
-    AbstractDeclarator(&tok, start->GetNext(), head);
+    AbstractDeclarator(&tok, Token::GetNext<1>(start), head);
     tok = tok->SkipToken(")");
     ty = Parser::TypeSuffix(rest, tok, ty);
-    return AbstractDeclarator(&tok, start->GetNext(), ty);
+    return AbstractDeclarator(&tok, Token::GetNext<1>(start), ty);
   }
 
   return Parser::TypeSuffix(rest, tok, ty);
@@ -299,7 +299,7 @@ TypePtr Parser::FunctionParam(TokenPtr* rest, TokenPtr tok, TypePtr ty) {
   }
   ty = Type::CreateFunctionType(ty, params->next);
 
-  *rest = tok->next;
+  *rest = Token::GetNext<1>(tok);
   return ty;
 }
 
@@ -310,7 +310,7 @@ static TypePtr StructOrUnionDecl(TypeKind kind, TokenPtr* rest, TokenPtr tok) {
   TypePtr ty = nullptr;
   if (tok->Is<TK_IDENT>() == TK_IDENT) {
     tag = tok;
-    tok = tok->GetNext();
+    tok = Token::GetNext<1>(tok);
     if (!tok->Equal("{")) {
       ty = Scope::FindTag(tag->GetIdent());
       if (!ty) {
@@ -346,9 +346,9 @@ TypePtr Parser::EnumDecl(TokenPtr* rest, TokenPtr tok) {
 
   TokenPtr tag = nullptr;
   // read a struct tag.
-  if (tok->kind == TK_IDENT) {
+  if (tok->Is<TK_IDENT>()) {
     tag = tok;
-    tok = tok->GetNext();
+    tok = Token::GetNext<1>(tok);
     if (tag && !tok->Equal("{")) {
       TypePtr res = Scope::FindTag(tag->GetIdent());
       if (!res) {
@@ -370,10 +370,10 @@ TypePtr Parser::EnumDecl(TokenPtr* rest, TokenPtr tok) {
     }
 
     const String& name = tok->GetIdent();
-    tok = tok->GetNext();
+    tok = Token::GetNext<1>(tok);
     if (tok->Equal("=")) {
-      val = tok->GetNext()->GetNumber();
-      tok = tok->GetNext()->GetNext();
+      val = Token::GetNext<1>(tok)->GetNumber();
+      tok = Token::GetNext<2>(tok);
     }
 
     Scope::PushVarScope(name)->SetEnumList(val++, ty);
@@ -392,7 +392,7 @@ TypePtr Parser::EnumDecl(TokenPtr* rest, TokenPtr tok) {
 // expr-stmt
 NodePtr Parser::Stmt(TokenPtr* rest, TokenPtr tok) {
   if (tok->Equal("return")) {
-    NodePtr expr = Expr(&tok, tok->next);
+    NodePtr expr = Expr(&tok, Token::GetNext<1>(tok));
     *rest = tok->SkipToken(";");
     Type::TypeInfer(expr);
     NodePtr cast = Node::CreateCastNode(expr->name, expr, cur_fn->GetType()->return_ty);
@@ -402,12 +402,12 @@ NodePtr Parser::Stmt(TokenPtr* rest, TokenPtr tok) {
 
   if (tok->Equal("if")) {
     TokenPtr node_name = tok;
-    tok = tok->next;
+    tok = Token::GetNext<1>(tok);
     NodePtr cond = Expr(&tok, tok->SkipToken("("));
     NodePtr then = Stmt(&tok, tok->SkipToken(")"));
     NodePtr els = nullptr;
     if (tok->Equal("else")) {
-      els = Stmt(&tok, tok->next);
+      els = Stmt(&tok, Token::GetNext<1>(tok));
     }
     *rest = tok;
     return Node::CreateIfNode(node_name, cond, then, els);
@@ -415,7 +415,7 @@ NodePtr Parser::Stmt(TokenPtr* rest, TokenPtr tok) {
 
   if (tok->Equal("for")) {
     TokenPtr node_name = tok;
-    tok = tok->next->SkipToken("(");
+    tok = Token::GetNext<1>(tok)->SkipToken("(");
 
     NodePtr init = ExprStmt(&tok, tok);
     NodePtr cond = nullptr;
@@ -434,7 +434,7 @@ NodePtr Parser::Stmt(TokenPtr* rest, TokenPtr tok) {
 
   if (tok->Equal("while")) {
     TokenPtr node_name = tok;
-    tok = tok->next->SkipToken("(");
+    tok = Token::GetNext<1>(tok)->SkipToken("(");
 
     NodePtr cond = Expr(&tok, tok);
     tok = tok->SkipToken(")");
@@ -443,7 +443,7 @@ NodePtr Parser::Stmt(TokenPtr* rest, TokenPtr tok) {
   }
 
   if (tok->Equal("{")) {
-    return CompoundStmt(rest, tok->next);
+    return CompoundStmt(rest, Token::GetNext<1>(tok));
   }
 
   return ExprStmt(rest, tok);
@@ -452,7 +452,7 @@ NodePtr Parser::Stmt(TokenPtr* rest, TokenPtr tok) {
 // expr-stmt = expr ";"
 NodePtr Parser::ExprStmt(TokenPtr* rest, TokenPtr tok) {
   if (tok->Equal(";")) {
-    *rest = tok->next;
+    *rest = Token::GetNext<1>(tok);
     return Node::CreateBlockNode(ND_BLOCK, tok, nullptr);
   }
   NodePtr node = Node::CreateUnaryNode(ND_EXPR_STMT, tok, Expr(&tok, tok));
@@ -465,7 +465,7 @@ NodePtr Parser::Expr(TokenPtr* rest, TokenPtr tok) {
   NodePtr node = Assign(&tok, tok);
 
   if (tok->Equal(",")) {
-    return Node::CreateBinaryNode(ND_COMMON, tok, node, Expr(rest, tok->next));
+    return Node::CreateBinaryNode(ND_COMMON, tok, node, Expr(rest, Token::GetNext<1>(tok)));
   }
   *rest = tok;
   return node;
@@ -475,7 +475,7 @@ NodePtr Parser::Expr(TokenPtr* rest, TokenPtr tok) {
 NodePtr Parser::Assign(TokenPtr* rest, TokenPtr tok) {
   NodePtr node = Equality(&tok, tok);
   if (tok->Equal("=")) {
-    return Node::CreateBinaryNode(ND_ASSIGN, tok, node, Assign(rest, tok->next));
+    return Node::CreateBinaryNode(ND_ASSIGN, tok, node, Assign(rest, Token::GetNext<1>(tok)));
   }
   *rest = tok;
   return node;
@@ -488,11 +488,11 @@ NodePtr Parser::Equality(TokenPtr* rest, TokenPtr tok) {
   for (;;) {
     TokenPtr node_name = tok;
     if (tok->Equal("==")) {
-      node = Node::CreateBinaryNode(ND_EQ, node_name, node, Relational(&tok, tok->next));
+      node = Node::CreateBinaryNode(ND_EQ, node_name, node, Relational(&tok, Token::GetNext<1>(tok)));
       continue;
     }
     if (tok->Equal("!=")) {
-      node = Node::CreateBinaryNode(ND_NE, node_name, node, Relational(&tok, tok->next));
+      node = Node::CreateBinaryNode(ND_NE, node_name, node, Relational(&tok, Token::GetNext<1>(tok)));
       continue;
     }
 
@@ -508,19 +508,19 @@ NodePtr Parser::Relational(TokenPtr* rest, TokenPtr tok) {
   for (;;) {
     TokenPtr node_name = tok;
     if (tok->Equal("<")) {
-      node = Node::CreateBinaryNode(ND_LT, node_name, node, Add(&tok, tok->next));
+      node = Node::CreateBinaryNode(ND_LT, node_name, node, Add(&tok, Token::GetNext<1>(tok)));
       continue;
     }
     if (tok->Equal("<=")) {
-      node = Node::CreateBinaryNode(ND_LE, node_name, node, Add(&tok, tok->next));
+      node = Node::CreateBinaryNode(ND_LE, node_name, node, Add(&tok, Token::GetNext<1>(tok)));
       continue;
     }
     if (tok->Equal(">")) {
-      node = Node::CreateBinaryNode(ND_LT, node_name, Add(&tok, tok->next), node);
+      node = Node::CreateBinaryNode(ND_LT, node_name, Add(&tok, Token::GetNext<1>(tok)), node);
       continue;
     }
     if (tok->Equal(">=")) {
-      node = Node::CreateBinaryNode(ND_LE, node_name, Add(&tok, tok->next), node);
+      node = Node::CreateBinaryNode(ND_LE, node_name, Add(&tok, Token::GetNext<1>(tok)), node);
       continue;
     }
     *rest = tok;
@@ -535,11 +535,11 @@ NodePtr Parser::Add(TokenPtr* rest, TokenPtr tok) {
   for (;;) {
     TokenPtr node_name = tok;
     if (tok->Equal("+")) {
-      node = Node::CreateAddNode(node_name, node, Mul(&tok, tok->next));
+      node = Node::CreateAddNode(node_name, node, Mul(&tok, Token::GetNext<1>(tok)));
       continue;
     }
     if (tok->Equal("-")) {
-      node = Node::CreateSubNode(node_name, node, Mul(&tok, tok->next));
+      node = Node::CreateSubNode(node_name, node, Mul(&tok, Token::GetNext<1>(tok)));
       continue;
     }
     *rest = tok;
@@ -554,11 +554,11 @@ NodePtr Parser::Mul(TokenPtr* rest, TokenPtr tok) {
   for (;;) {
     TokenPtr node_name = tok;
     if (tok->Equal("*")) {
-      node = Node::CreateBinaryNode(ND_MUL, node_name, node, Cast(&tok, tok->next));
+      node = Node::CreateBinaryNode(ND_MUL, node_name, node, Cast(&tok, Token::GetNext<1>(tok)));
       continue;
     }
     if (tok->Equal("/")) {
-      node = Node::CreateBinaryNode(ND_DIV, node_name, node, Cast(&tok, tok->next));
+      node = Node::CreateBinaryNode(ND_DIV, node_name, node, Cast(&tok, Token::GetNext<1>(tok)));
       continue;
     }
     *rest = tok;
@@ -568,9 +568,9 @@ NodePtr Parser::Mul(TokenPtr* rest, TokenPtr tok) {
 
 // cast = "(" type-name ")" cast | unary
 NodePtr Parser::Cast(TokenPtr* rest, TokenPtr tok) {
-  if (tok->Equal("(") && tok->next->IsTypename()) {
+  if (tok->Equal("(") && Token::GetNext<1>(tok)->IsTypename()) {
     TokenPtr start = tok;
-    TypePtr ty = Typename(&tok, tok->next);
+    TypePtr ty = Typename(&tok, Token::GetNext<1>(tok));
     tok = tok->SkipToken(")");
     return Node::CreateCastNode(start, Cast(rest, tok), ty);
   }
@@ -581,16 +581,16 @@ NodePtr Parser::Cast(TokenPtr* rest, TokenPtr tok) {
 // unary = ("+" | "-" | "*" | "&") ? cast | postfix
 NodePtr Parser::Unary(TokenPtr* rest, TokenPtr tok) {
   if (tok->Equal("+")) {
-    return Cast(rest, tok->next);
+    return Cast(rest, Token::GetNext<1>(tok));
   }
   if (tok->Equal("-")) {
-    return Node::CreateUnaryNode(ND_NEG, tok, Cast(rest, tok->next));
+    return Node::CreateUnaryNode(ND_NEG, tok, Cast(rest, Token::GetNext<1>(tok)));
   }
   if (tok->Equal("&")) {
-    return Node::CreateUnaryNode(ND_ADDR, tok, Cast(rest, tok->next));
+    return Node::CreateUnaryNode(ND_ADDR, tok, Cast(rest, Token::GetNext<1>(tok)));
   }
   if (tok->Equal("*")) {
-    return Node::CreateUnaryNode(ND_DEREF, tok, Cast(rest, tok->next));
+    return Node::CreateUnaryNode(ND_DEREF, tok, Cast(rest, Token::GetNext<1>(tok)));
   }
   return Postfix(rest, tok);
 }
@@ -603,7 +603,7 @@ NodePtr Parser::Postfix(TokenPtr* rest, TokenPtr tok) {
     if (tok->Equal("[")) {
       // x[y] is short for *(x + y)
       TokenPtr node_name = tok;
-      NodePtr idx = Expr(&tok, tok->next);
+      NodePtr idx = Expr(&tok, Token::GetNext<1>(tok));
       tok = tok->SkipToken("]");
       NodePtr op = Node::CreateAddNode(node_name, node, idx);
       node = Node::CreateUnaryNode(ND_DEREF, node_name, op);
@@ -611,16 +611,16 @@ NodePtr Parser::Postfix(TokenPtr* rest, TokenPtr tok) {
     }
 
     if (tok->Equal(".")) {
-      node = Node::CreateMemberNode(node, tok->next);
-      tok = tok->next->next;
+      node = Node::CreateMemberNode(node, Token::GetNext<1>(tok));
+      tok = Token::GetNext<2>(tok);
       continue;
     }
 
     if (tok->Equal("->")) {
       // x->y is short for (*x).y
       node = Node::CreateUnaryNode(ND_DEREF, tok, node);
-      node = Node::CreateMemberNode(node, tok->next);
-      tok = tok->next->next;
+      node = Node::CreateMemberNode(node, Token::GetNext<1>(tok));
+      tok = Token::GetNext<2>(tok);
       continue;
     }
 
@@ -638,47 +638,48 @@ NodePtr Parser::Primary(TokenPtr* rest, TokenPtr tok) {
   TokenPtr start = tok;
 
   // This is a GNU statement expression.
-  if (tok->Equal("(") && tok->next->Equal("{")) {
+  if (tok->Equal("(") && Token::GetNext<1>(tok)->Equal("{")) {
     TokenPtr start = tok;
-    NodePtr stmt = CompoundStmt(&tok, tok->next->next);
+    NodePtr stmt = CompoundStmt(&tok, Token::GetNext<2>(tok));
     *rest = tok->SkipToken(")");
     return Node::CreateBlockNode(ND_STMT_EXPR, start, stmt->body);
   }
   if (tok->Equal("(")) {
-    NodePtr node = Expr(&tok, tok->next);
+    NodePtr node = Expr(&tok, Token::GetNext<1>(tok));
     *rest = tok->SkipToken(")");
     return node;
   }
 
-  if (tok->Equal("sizeof") && tok->next->Equal("(") && tok->next->next->IsTypename()) {
-    TypePtr ty = Typename(&tok, tok->next->next);
+  if (tok->Equal("sizeof") && Token::GetNext<1>(tok)->Equal("(") &&
+      Token::GetNext<2>(tok)->IsTypename()) {
+    TypePtr ty = Typename(&tok, Token::GetNext<2>(tok));
     *rest = tok->SkipToken(")");
     return Node::CreateLongConstNode(ty->Size(), start);
   }
 
   if (tok->Equal("sizeof")) {
-    NodePtr node = Unary(rest, tok->next);
+    NodePtr node = Unary(rest, Token::GetNext<1>(tok));
     Type::TypeInfer(node);
     return Node::CreateConstNode(node->ty->size, tok);
   }
 
-  if (tok->kind == TK_IDENT) {
-    if (tok->next->Equal("(")) {
+  if (tok->Is<TK_IDENT>()) {
+    if (Token::GetNext<1>(tok)->Equal("(")) {
       return Call(rest, tok);
     }
-    *rest = tok->next;
+    *rest = Token::GetNext<1>(tok);
     return Node::CreateIdentNode(tok);
   }
 
-  if (tok->kind == TK_STR) {
-    ObjectPtr var = Object::CreateStringVar(String(tok->str_literal));
-    *rest = tok->next;
+  if (tok->Is<TK_STR>()) {
+    ObjectPtr var = Object::CreateStringVar(String(tok->GetStringLiteral()));
+    *rest = Token::GetNext<1>(tok);
     return Node::CreateVarNode(var, tok);
   }
 
-  if (tok->kind == TK_NUM) {
-    NodePtr node = Node::CreateConstNode(tok->val, tok);
-    *rest = tok->next;
+  if (tok->Is<TK_NUM>()) {
+    NodePtr node = Node::CreateConstNode(tok->GetNumber(), tok);
+    *rest = Token::GetNext<1>(tok);
     return node;
   }
 
@@ -690,7 +691,7 @@ NodePtr Parser::Primary(TokenPtr* rest, TokenPtr tok) {
 NodePtr Parser::Call(TokenPtr* rest, TokenPtr tok) {
   TokenPtr start = tok;
   // can't optimaze, need start tok.
-  tok = tok->next->next;
+  tok = Token::GetNext<2>(tok);
 
   VarScopePtr sc = Scope::FindVarScope(start->GetIdent());
   if (!sc) {

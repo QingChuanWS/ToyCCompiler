@@ -13,6 +13,7 @@
 #define TOKEN_GRUAD
 
 #include <cctype>
+#include <cstddef>
 #include <cstring>
 #include <memory>
 
@@ -40,10 +41,7 @@ class Token {
   TokenPtr CreateStringToken(const char* start, const char* end);
   // Check the current token->str is char op or not.
   // If the token's str is equal with op, return ture.
-  TokenPtr SkipToken(const char* op, bool enable_error = true);
-  // Check whether the current token's kind is EOF,
-  // otherwise return false.
-  inline bool IsEof() { return kind == TK_EOF; }
+  const TokenPtr& SkipToken(const char* op, bool enable_error = true);
   // Check whether Token string equal special string
   bool Equal(const char* op) const;
   // Check whether Token string equal special tok
@@ -56,12 +54,13 @@ class Token {
   long GetNumber() const;
   // Get tok line number.
   int GetLineNo() const;
+  // Get string literal.
+  const String& GetStringLiteral() { return str_literal; }
   // Check whether the given token is a typename.
   bool IsTypename() const;
-  // get the tok next point
-  inline const TokenPtr& GetNext() const { return next; }
-  // get the tok kind.
-  inline Tokenkind GetKind() const { return kind; }
+  // get the tok i th next point.
+  template <const int nth>
+  static const TokenPtr& GetNext(TokenPtr& tok);
 
  private:
   // find a closing double-quote.
@@ -100,7 +99,6 @@ class Token {
   //               ^ <error message here>
   static void VrdicErrorAt(int line_on, const char* loc, const char* fmt, va_list ap);
 
-  friend class Parser;
   friend class Type;
 
  private:
@@ -118,6 +116,14 @@ class Token {
   String str_literal = "";
   // token line number
   int line_no = -1;
+};
+
+template <>
+const TokenPtr& Token::GetNext<1>(TokenPtr& tok);
+
+template <const int nth>
+const TokenPtr& Token::GetNext(TokenPtr& tok) {
+  return GetNext<nth - 1>(tok->next);
 };
 
 #endif  //  TOKEN_GRUAD

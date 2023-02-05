@@ -105,12 +105,12 @@ bool Object::IsFuncToks(TokenPtr tok) {
     return false;
   }
   while (tok->Equal("*")) {
-    tok = tok->GetNext();
+    tok = Token::GetNext<1>(tok);
   }
-  if (tok->GetKind() != TK_IDENT) {
+  if (!tok->Is<TK_IDENT>()) {
     tok->ErrorTok("expected a variable name.");
   }
-  tok = tok->GetNext();
+  tok = Token::GetNext<1>(tok);
   if (tok->Equal("(")) {
     return true;
   }
@@ -121,7 +121,7 @@ ObjectPtr Object::Parse(TokenPtr tok) {
   globals = nullptr;
   // enter scope
   Scope::EnterScope(scope);
-  while (!tok->IsEof()) {
+  while (!tok->Is<TK_EOF>()) {
     VarAttrPtr attr = std::make_shared<VarAttr>();
     TypePtr basety = Parser::Declspec(&tok, tok, attr);
 

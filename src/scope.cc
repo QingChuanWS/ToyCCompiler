@@ -48,7 +48,7 @@ TypePtr Scope::FindTag(const String& name) {
 }
 
 const TypePtr Scope::FindTypedef(const TokenPtr& tok) {
-  if (tok->GetKind() == TK_IDENT) {
+  if (tok->Is<TK_IDENT>()) {
     VarScopePtr v = FindVarScope(tok->GetIdent());
     if (v != nullptr) {
       return v->tydef;

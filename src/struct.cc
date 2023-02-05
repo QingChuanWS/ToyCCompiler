@@ -58,6 +58,6 @@ MemberPtr Member::MemberDecl(TokenPtr* rest, TokenPtr tok) {
     }
     tok = tok->SkipToken(";");
   }
-  *rest = tok->GetNext();
+  *rest = Token::GetNext<1>(tok);
   return head->next;
 }
