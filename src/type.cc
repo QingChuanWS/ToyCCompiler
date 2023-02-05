@@ -32,26 +32,26 @@ bool Type::IsInteger() const {
 }
 
 TypePtr Type::CreatePointerType(TypePtr base) {
-  TypePtr ty = std::make_shared<Type>(TY_PRT, 8, 8);
+  auto ty = std::make_shared<Type>(TY_PRT, 8, 8);
   ty->base = base;
   return ty;
 }
 
 TypePtr Type::CreateFunctionType(TypePtr ret_type, TypePtr params) {
-  TypePtr ty = std::make_shared<Type>(TY_FUNC, ret_type->size, 0);
+  auto ty = std::make_shared<Type>(TY_FUNC, ret_type->size, 0);
   ty->return_ty = ret_type;
   ty->params = params;
   return ty;
 }
 
 TypePtr Type::CreateArrayType(TypePtr base, int array_len) {
-  TypePtr ty = std::make_shared<Type>(TY_ARRAY, base->size * array_len, base->align);
+  auto ty = std::make_shared<Type>(TY_ARRAY, base->size * array_len, base->align);
   ty->base = base;
   return ty;
 }
 
 TypePtr Type::CreateStructType(MemberPtr mem) {
-  TypePtr ty = std::make_shared<Type>(TY_STRUCT, 1, 1);
+  auto ty = std::make_shared<Type>(TY_STRUCT, 1, 1);
   ty->align = Member::CalcuStructAlign(mem);
   ty->size = AlignTo(Member::CalcuStructOffset(mem), ty->align);
   ty->mem = mem;
@@ -59,7 +59,7 @@ TypePtr Type::CreateStructType(MemberPtr mem) {
 }
 
 TypePtr Type::CreateUnionType(MemberPtr mem) {
-  TypePtr ty = std::make_shared<Type>(TY_UNION, 1, 1);
+  auto ty = std::make_shared<Type>(TY_UNION, 1, 1);
   for (MemberPtr m = mem; m != nullptr; m = m->next) {
     if (ty->align < m->ty->align) {
       ty->align = m->ty->align;
@@ -81,7 +81,7 @@ const TokenPtr& Type::GetName() const {
 }
 
 // get struct member based on token.
-MemberPtr Type::GetStructMember(TokenPtr tok) {
+MemberPtr Type::GetStructMember(TokenPtr tok) const {
   for (MemberPtr m = mem; m != nullptr; m = m->next) {
     if (tok->Equal(m->name)) {
       return m;

@@ -43,7 +43,7 @@ class Type {
   bool IsInteger() const;
   // whether the type is T.
   template <TypeKind T>
-  inline bool Is() {
+  inline bool Is() const {
     return kind == T;
   }
   // whether the type is points.
@@ -59,7 +59,7 @@ class Type {
   // get type's name
   const TokenPtr& GetName() const;
   // get struct member based on token.
-  MemberPtr GetStructMember(TokenPtr tok);
+  MemberPtr GetStructMember(TokenPtr tok) const;
   // get type align
   inline int GetAlign() const { return align; }
 

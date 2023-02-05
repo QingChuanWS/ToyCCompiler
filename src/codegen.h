@@ -23,53 +23,46 @@
 // Code generator pinter.
 class CodeGenPrinter {
  public:
-  static CodeGenPrinter& GetInstance(const Config& config = Config()) {
-    static CodeGenPrinter printor(config);
+  static CodeGenPrinter& GetInstance(const Config& cfg = Config()) {
+    static CodeGenPrinter printor(cfg);
     return printor;
   }
 
   template <typename T>
   static void Print(T t) {
-    bool use_std = CodeGenPrinter::GetInstance().use_std;
-    if (use_std) {
+    if (CodeGenPrinter::GetInstance().use_std) {
       std::cout << t;
     } else {
-      CodeGenPrinter::GetInstance().out << t;
+      *CodeGenPrinter::GetInstance().out << t;
     }
   }
 
  private:
-  CodeGenPrinter(const Config& config) {
-    const String& input = config.input_path;
-    const String& output = config.output_path;
+  explicit CodeGenPrinter(const Config& cfg) {
+    const String& input = cfg.input_path;
+    const String& output = cfg.output_path;
     if (output.empty() || output == "-") {
-      use_std = true;
       std::cout << ".file 1 \"" << input << "\"\n";
+      use_std = true;
     }
-    out = std::ofstream(output);
-    if (!out.is_open()) {
+    out = std::unique_ptr<std::ofstream>(new std::ofstream(output));
+    if (!out->is_open()) {
       Error("cannot open output file: %s.");
     }
-    use_std = false;
-    out << ".file 1 \"" << input << "\"\n";
+    *out << ".file 1 \"" << input << "\"\n";
   }
 
-  ~CodeGenPrinter() {
-    if (!use_std) {
-      out.close();
-    }
-  }
   CodeGenPrinter(const CodeGenPrinter&) = delete;
   CodeGenPrinter operator=(const CodeGenPrinter&) = delete;
-  std::ofstream out;
-  bool use_std;
+  std::unique_ptr<std::ofstream> out;
+  bool use_std = false;
 };
 
 // code generator.
 class CodeGenerator {
  public:
   // using specific output stream.
-  CodeGenerator(const Config& config) { CodeGenPrinter::GetInstance(config); }
+  explicit CodeGenerator(const Config& cfg) { CodeGenPrinter::GetInstance(cfg); }
   // don't allow copy constructor.
   CodeGenerator(const CodeGenerator&) = delete;
   // don't allow assign constructor.

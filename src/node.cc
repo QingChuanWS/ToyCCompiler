@@ -30,19 +30,19 @@ void Node::Error(const char* fmt, ...) const {
 }
 
 NodePtr Node::CreateConstNode(int64_t val, TokenPtr tok) {
-  NodePtr node = std::make_shared<Node>(ND_NUM, tok);
+  auto node = std::make_shared<Node>(NodeKind::ND_NUM, tok);
   node->val = val;
   return node;
 }
 
 NodePtr Node::CreateLongConstNode(int64_t val, TokenPtr node_name) {
-  NodePtr res = CreateConstNode(val, node_name);
+  auto res = CreateConstNode(val, node_name);
   res->ty = ty_long;
   return res;
 }
 
 NodePtr Node::CreateVarNode(ObjectPtr var, TokenPtr tok) {
-  NodePtr node = std::make_shared<Node>(ND_VAR, tok);
+  auto node = std::make_shared<Node>(NodeKind::ND_VAR, tok);
   node->var = var;
   return node;
 }
@@ -62,7 +62,7 @@ NodePtr Node::CreateIdentNode(TokenPtr tok) {
 }
 
 NodePtr Node::CreateCallNode(TokenPtr call_name, NodePtr args, TypePtr func_ty) {
-  NodePtr call_node = std::make_shared<Node>(ND_CALL, call_name);
+  auto call_node = std::make_shared<Node>(NodeKind::ND_CALL, call_name);
   call_node->call = call_name->GetIdent();
   call_node->args = args;
   call_node->fun_ty = func_ty;
@@ -71,7 +71,7 @@ NodePtr Node::CreateCallNode(TokenPtr call_name, NodePtr args, TypePtr func_ty) 
 }
 
 NodePtr Node::CreateUnaryNode(NodeKind kind, TokenPtr node_name, NodePtr op) {
-  NodePtr res = std::make_shared<Node>(kind, node_name);
+  auto res = std::make_shared<Node>(kind, node_name);
   res->lhs = op;
   return res;
 }
@@ -80,7 +80,7 @@ NodePtr Node::CreateAddNode(TokenPtr node_name, NodePtr op_left, NodePtr op_righ
   Type::TypeInfer(op_left);
   Type::TypeInfer(op_right);
   if (!op_left->IsPointerNode() && !op_right->IsPointerNode()) {
-    return CreateBinaryNode(ND_ADD, node_name, op_left, op_right);
+    return CreateBinaryNode(NodeKind::ND_ADD, node_name, op_left, op_right);
   }
   // ptr + ptr
   if (op_left->IsPointerNode() && op_right->IsPointerNode()) {
@@ -94,8 +94,8 @@ NodePtr Node::CreateAddNode(TokenPtr node_name, NodePtr op_left, NodePtr op_righ
   }
   // ptr + num
   NodePtr factor = CreateLongConstNode(op_left->ty->GetBase()->Size(), node_name);
-  NodePtr real_num = CreateBinaryNode(ND_MUL, node_name, op_right, factor);
-  NodePtr res = CreateBinaryNode(ND_ADD, node_name, op_left, real_num);
+  NodePtr real_num = CreateBinaryNode(NodeKind::ND_MUL, node_name, op_right, factor);
+  NodePtr res = CreateBinaryNode(NodeKind::ND_ADD, node_name, op_left, real_num);
   return res;
 }
 
@@ -104,38 +104,38 @@ NodePtr Node::CreateSubNode(TokenPtr node_name, NodePtr op_left, NodePtr op_righ
   Type::TypeInfer(op_right);
   // num - num
   if (!op_left->IsPointerNode() && !op_right->IsPointerNode()) {
-    return CreateBinaryNode(ND_SUB, node_name, op_left, op_right);
+    return CreateBinaryNode(NodeKind::ND_SUB, node_name, op_left, op_right);
   }
   // ptr - ptr
   else if (op_left->IsPointerNode() && op_right->IsPointerNode()) {
     // careful curisive call.
-    NodePtr sub = CreateBinaryNode(ND_SUB, node_name, op_left, op_right);
+    NodePtr sub = CreateBinaryNode(NodeKind::ND_SUB, node_name, op_left, op_right);
     sub->ty = ty_long;
     NodePtr factor = CreateLongConstNode(op_left->ty->GetBase()->Size(), node_name);
-    return CreateBinaryNode(ND_DIV, node_name, sub, factor);
+    return CreateBinaryNode(NodeKind::ND_DIV, node_name, sub, factor);
   } else if (!op_left->IsPointerNode() && op_right->IsPointerNode()) {
     node_name->ErrorTok("Invalid Operands.");
     return nullptr;
   } else {
     // ptr - num
     NodePtr factor = CreateLongConstNode(op_left->ty->GetBase()->Size(), node_name);
-    NodePtr real_num = CreateBinaryNode(ND_MUL, node_name, op_right, factor);
+    NodePtr real_num = CreateBinaryNode(NodeKind::ND_MUL, node_name, op_right, factor);
     Type::TypeInfer(real_num);
-    NodePtr res = CreateBinaryNode(ND_SUB, node_name, op_left, real_num);
+    NodePtr res = CreateBinaryNode(NodeKind::ND_SUB, node_name, op_left, real_num);
     return res;
   }
 }
 
 NodePtr Node::CreateBinaryNode(NodeKind kind, TokenPtr node_name, NodePtr op_left,
                                NodePtr op_right) {
-  NodePtr res = std::make_shared<Node>(kind, node_name);
+  auto res = std::make_shared<Node>(kind, node_name);
   res->lhs = op_left;
   res->rhs = op_right;
   return res;
 }
 
 NodePtr Node::CreateIfNode(TokenPtr node_name, NodePtr cond, NodePtr then, NodePtr els) {
-  NodePtr res = std::make_shared<Node>(ND_IF, node_name);
+  auto res = std::make_shared<Node>(NodeKind::ND_IF, node_name);
   res->cond = cond;
   res->then = then;
   res->els = els;
@@ -144,7 +144,7 @@ NodePtr Node::CreateIfNode(TokenPtr node_name, NodePtr cond, NodePtr then, NodeP
 
 NodePtr Node::CreateForNode(TokenPtr node_name, NodePtr init, NodePtr cond, NodePtr inc,
                             NodePtr then) {
-  NodePtr res = std::make_shared<Node>(ND_FOR, node_name);
+  auto res = std::make_shared<Node>(NodeKind::ND_FOR, node_name);
   res->init = init;
   res->cond = cond;
   res->inc = inc;
@@ -153,7 +153,7 @@ NodePtr Node::CreateForNode(TokenPtr node_name, NodePtr init, NodePtr cond, Node
 }
 
 NodePtr Node::CreateBlockNode(NodeKind kind, TokenPtr node_name, NodePtr body) {
-  NodePtr res = std::make_shared<Node>(kind, node_name);
+  auto res = std::make_shared<Node>(kind, node_name);
   res->body = body;
   return res;
 }
@@ -165,7 +165,7 @@ NodePtr Node::CreateMemberNode(NodePtr parent, TokenPtr node_name) {
     node_name->ErrorTok("not a struct.");
   }
 
-  NodePtr res = CreateUnaryNode(ND_MUMBER, node_name, parent);
+  NodePtr res = CreateUnaryNode(NodeKind::ND_MUMBER, node_name, parent);
   res->mem = parent->ty->GetStructMember(node_name);
   return res;
 }
@@ -173,7 +173,7 @@ NodePtr Node::CreateMemberNode(NodePtr parent, TokenPtr node_name) {
 NodePtr Node::CreateCastNode(TokenPtr node_name, NodePtr expr, TypePtr ty) {
   Type::TypeInfer(expr);
 
-  NodePtr res = std::make_shared<Node>(ND_CAST, node_name);
+  auto res = std::make_shared<Node>(NodeKind::ND_CAST, node_name);
   res->lhs = expr;
   res->ty = ty;
   return res;

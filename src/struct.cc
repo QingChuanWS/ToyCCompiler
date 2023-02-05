@@ -41,7 +41,7 @@ int Member::CalcuStructOffset(MemberPtr mem) {
 // struct-decl = "{" struct or union member
 MemberPtr Member::MemberDecl(TokenPtr* rest, TokenPtr tok) {
   tok = tok->SkipToken("{");
-  MemberPtr head = std::make_shared<Member>();
+  auto head = std::make_shared<Member>();
   MemberPtr cur = head;
 
   while (!tok->Equal("}")) {

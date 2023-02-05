@@ -51,15 +51,15 @@ class StringFormator {
     return printor;
   }
   static String GetString() {
-    String res = String(GetInstance().sprint.str());
+    auto res = String(GetInstance().sprint.str());
     GetInstance().sprint.clear();
     GetInstance().sprint.str("");
     return res;
   }
 
  private:
-  StringFormator() {}
-  ~StringFormator() {}
+  StringFormator() = default;
+  ~StringFormator() = default;
   StringFormator(const StringFormator&) = delete;
   StringFormator operator=(const StringFormator&) = delete;
   std::stringstream sprint;
@@ -78,8 +78,9 @@ void Usage(int state) {
 }
 
 // parse input arguement.
+// TODO: fix no any input.
 Config ParseArgs(int argc, char** argv) {
-  Config config;
+  auto cg = Config();
   for (int i = 1; i < argc; i++) {
     if (!strcmp(argv[i], "--help")) {
       Usage(0);
@@ -88,21 +89,21 @@ Config ParseArgs(int argc, char** argv) {
       if (!argv[++i]) {
         Usage(1);
       }
-      config.output_path = String(argv[i]);
+      cg.output_path = String(argv[i]);
       continue;
     }
     if (!strncmp(argv[i], "-o", 2)) {
-      config.output_path = String(argv[i] + 2);
+      cg.output_path = String(argv[i] + 2);
       continue;
     }
     if (argv[i][0] == '-' && argv[i][1] != '\0') {
       Error("unknow argument: %s", argv[i]);
     }
 
-    config.input_path = argv[i];
+    cg.input_path = argv[i];
   }
-  if (config.input_path.empty()) {
+  if (cg.input_path.empty()) {
     Error("no input files.");
   }
-  return config;
+  return cg;
 }

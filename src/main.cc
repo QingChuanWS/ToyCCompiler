@@ -26,13 +26,13 @@
 
 int main(int argc, char** argv) {
   // parsing input arguement.
-  Config config = ParseArgs(argc, argv);
+  Config cfg = ParseArgs(argc, argv);
   // read source code file and generate token list.
-  TokenPtr cur = Token::TokenizeFile(config.input_path);
+  TokenPtr cur = Token::TokenizeFile(cfg.input_path);
   // parse token list generate AST.
   ObjectPtr prog = Object::Parse(cur);
   // config code generator.
-  CodeGenerator gene(config);
+  CodeGenerator gene(cfg);
   // generate source code.
   gene.CodeGen(prog);
 

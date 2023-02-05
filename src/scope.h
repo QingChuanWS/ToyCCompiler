@@ -16,6 +16,7 @@
 #include "utils.h"
 
 struct VarScope {
+ public:
   VarScope() = default;
   // for variable
   ObjectPtr var{nullptr};
@@ -49,7 +50,6 @@ class Scope {
   // get current tag scope
   TagScopeMap& GetTagScope() { return tags; }
 
- public:
   // create a scpoe
   static void EnterScope(ScopePtr& next);
   // delete a scope

@@ -20,9 +20,8 @@ class Member {
   Member() = default;
   Member(TypePtr type, TokenPtr struct_name) : ty(type), name(struct_name) {}
   // get struct member offset.
-  inline int GetOffset() { return offset; }
+  inline int GetOffset() const { return offset; }
 
- public:
   // calculate struct align based on a list of Struct member.
   static int CalcuStructAlign(MemberPtr mem);
   // init struct member list offset, return the sum of offset.

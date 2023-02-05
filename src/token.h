@@ -34,14 +34,14 @@ class Token {
   Token(Tokenkind kind, const char* str, const int len) : kind(kind), loc(str), len(len) {}
   // whether the tok kind is the T.
   template <Tokenkind T>
-  bool Is() {
+  bool Is() const {
     return kind == T;
   }
   // create string token.
-  TokenPtr CreateStringToken(const char* start, const char* end);
+  TokenPtr CreateStringToken(const char* start, const char* end) const;
   // Check the current token->str is char op or not.
   // If the token's str is equal with op, return ture.
-  const TokenPtr& SkipToken(const char* op, bool enable_error = true);
+  const TokenPtr& SkipToken(const char* op, bool enable_error = true) const;
   // Check whether Token string equal special string
   bool Equal(const char* op) const;
   // Check whether Token string equal special tok
@@ -55,7 +55,7 @@ class Token {
   // Get tok line number.
   int GetLineNo() const;
   // Get string literal.
-  const String& GetStringLiteral() { return str_literal; }
+  const String& GetStringLiteral() const { return str_literal; }
   // Check whether the given token is a typename.
   bool IsTypename() const;
   // get the tok i th next point.
@@ -64,7 +64,7 @@ class Token {
 
  private:
   // find a closing double-quote.
-  const char* StringLiteralEnd(const char* start);
+  const char* StringLiteralEnd(const char* start) const;
   // read the escaped char
   static int ReadEscapeedChar(const char** new_pos, const char* p);
   // convert char c to hex format
@@ -72,7 +72,7 @@ class Token {
   // matching punction.
   int ReadPunct(const char* p) const;
   // read a string literal for source pargram char.
-  TokenPtr ReadStringLiteral(const char* start);
+  TokenPtr ReadStringLiteral(const char* start) const;
   // read character literal
   static TokenPtr ReadCharacterLiteral(const char* start);
 
@@ -101,7 +101,6 @@ class Token {
 
   friend class Type;
 
- private:
   // Token Kind
   Tokenkind kind = TK_EOF;
   // Next Token

@@ -29,19 +29,20 @@ class Object {
  public:
   // construct a Object object based on kind.
   Object(Objectkind kind, const String& name, const TypePtr& ty)
-      : kind(kind), ty(ty), obj_name(name) {}
+      : kind(kind), obj_name(name), ty(ty) {}
   // calculate the function local variable offset.
   void OffsetCal();
   // check whether is a local variable
-  inline bool IsLocal() { return kind == OB_LOCAL; }
+  inline bool IsLocal() const { return kind == Objectkind::OB_LOCAL; }
   // check whether is a global variable
-  inline bool IsGlobal() { return kind == OB_GLOBAL; }
+  inline bool IsGlobal() const { return kind == Objectkind::OB_GLOBAL; }
   // check whether is a global variable or function
-  inline bool IsFunction() { return kind == OB_FUNCTION || is_defination == true; }
+  inline bool IsFunction() const {
+    return kind == Objectkind::OB_FUNCTION || is_defination == true;
+  }
   // get the object var type.
-  inline const TypePtr& GetType() { return ty; }
+  inline const TypePtr& GetType() const { return ty; }
 
- public:
   // create variable.
   static ObjectPtr CreateVar(Objectkind kind, const String& name, const TypePtr& ty);
   // create global varibal
@@ -65,7 +66,7 @@ class Object {
  private:
   friend class CodeGenerator;
   // label the object type
-  Objectkind kind = OB_END;
+  Objectkind kind = Objectkind::OB_END;
   // for object list
   ObjectPtr next = nullptr;
   // variable name

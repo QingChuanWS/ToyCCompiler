@@ -20,6 +20,7 @@
 #include <iostream>
 #include <memory>
 #include <ostream>
+#include <vector>
 
 #include "object.h"
 #include "scope.h"
@@ -32,18 +33,18 @@ String current_filename;
 // input string.
 StringPtr prg;
 
-TokenPtr Token::CreateStringToken(const char* start, const char* end) {
-  int max_len = static_cast<int>(end - start);
-  String new_str = String(max_len, '\0');
-  int len = 0;
+TokenPtr Token::CreateStringToken(const char* start, const char* end) const {
+  auto max_len = static_cast<int>(end - start);
+  auto new_str = String(max_len, '\0');
+  int str_litral_len = 0;
   for (const char* p = start + 1; p < end;) {
     if (*p == '\\') {
-      new_str[len++] = ReadEscapeedChar(&p, p + 1);
+      new_str[str_litral_len++] = ReadEscapeedChar(&p, p + 1);
     } else {
-      new_str[len++] = *p++;
+      new_str[str_litral_len++] = *p++;
     }
   }
-  TokenPtr res = std::make_shared<Token>(TK_STR, start, end - start + 1);
+  auto res = std::make_shared<Token>(TK_STR, start, end - start + 1);
   res->str_literal = std::move(new_str);
   return res;
 }
@@ -66,7 +67,7 @@ StringStream Token::ReadFromFile(const String& filename) {
 }
 
 StringPtr Token::ReadFile(const String& filename) {
-  String program = String(ReadFromFile(filename).str());
+  auto program = String(ReadFromFile(filename).str());
   // Make sure that the last line is properly terminated with '\n'
   if (program.size() == 0 || program[program.size() - 1] != '\n') {
     program.push_back('\n');
@@ -92,7 +93,7 @@ TokenPtr Token::ReadCharacterLiteral(const char* start) {
   if (!end) {
     ErrorAt(p, "uncloser character literal.");
   }
-  TokenPtr res = std::make_shared<Token>(TK_NUM, start, end - start + 1);
+  auto res = std::make_shared<Token>(TK_NUM, start, end - start + 1);
   res->val = c;
   return res;
 }
@@ -100,7 +101,7 @@ TokenPtr Token::ReadCharacterLiteral(const char* start) {
 TokenPtr Token::CreateTokens(const String& file_name, const StringPtr& program) {
   current_filename = file_name;
   prg = program;
-  TokenPtr tok_list = std::make_shared<Token>(TK_EOF, nullptr, 0);
+  auto tok_list = std::make_shared<Token>(TK_EOF, nullptr, 0);
   TokenPtr cur = tok_list;
   char* p = &(*prg)[0];
   while (*p != '\0') {
@@ -174,23 +175,23 @@ TokenPtr Token::CreateTokens(const String& file_name, const StringPtr& program) 
 }
 
 int Token::ReadPunct(const char* p) const {
-  static const char* ops[] = {">=", "==", "!=", "<=", "->"};
-  for (int i = 0; i < sizeof(ops) / sizeof(*ops); i++) {
-    if (StrEqual(p, ops[i], 2)) {
+  static std::vector<const char*> ops = {">=", "==", "!=", "<=", "->"};
+  for (auto& op : ops) {
+    if (StrEqual(p, op, 2)) {
       return 2;
     }
   }
 
-  return std::strchr("+-*/()<>;=,{}[]&.", *p) != 0 ? 1 : 0;
+  return std::strchr("+-*/()<>;=,{}[]&.", *p) != nullptr ? 1 : 0;
 }
 
 void Token::ConvertToReserved(TokenPtr tok) {
-  static const char* kw[] = {"return", "if",      "else",   "for",   "while", "int",
-                             "sizeof", "char",    "struct", "union", "short", "long",
-                             "void",   "typedef", "_Bool",  "enum"};
+  static std::vector<const char*> keyword = {
+      "return", "if",    "else",  "for",  "while", "int",     "sizeof", "char",
+      "struct", "union", "short", "long", "void",  "typedef", "_Bool",  "enum"};
   for (TokenPtr t = tok; t != nullptr; t = t->next) {
-    for (int i = 0; i < sizeof(kw) / sizeof(*kw); i++) {
-      if (StrEqual(t->loc, kw[i], t->len)) {
+    for (auto& kw : keyword) {
+      if (StrEqual(t->loc, kw, t->len)) {
         t->kind = TK_KEYWORD;
       }
     }
@@ -219,11 +220,9 @@ bool Token::Equal(const TokenPtr tok) const {
   return tok->len == len && !std::strncmp(loc, tok->loc, len);
 }
 
-const TokenPtr& Token::SkipToken(const char* op, bool enable_error) {
-  if (!Equal(op)) {
-    if (enable_error) {
-      ErrorAt(this->loc, "Expect \'%s\'", op);
-    }
+const TokenPtr& Token::SkipToken(const char* op, bool enable_error)const {
+  if (!Equal(op) && enable_error) {
+    ErrorAt(this->loc, "Expect \'%s\'", op);
   }
   return next;
 }
@@ -241,7 +240,7 @@ int Token::FromHex(const char c) {
 int Token::ReadEscapeedChar(const char** new_pos, const char* p) {
   if ('0' <= *p && *p <= '7') {
     //  Read an octal number.
-    int c = static_cast<int>(*p++ - '0');
+    auto c = static_cast<char>(*p++ - '0');
     if ('0' <= *p && *p <= '7') {
       c = (c << 3) + (*p++ - '0');
       if ('0' <= *p && *p <= '7') {
@@ -299,7 +298,7 @@ int Token::ReadEscapeedChar(const char** new_pos, const char* p) {
   }
 }
 
-const char* Token::StringLiteralEnd(const char* start) {
+const char* Token::StringLiteralEnd(const char* start) const {
   const char* p = start + 1;
   for (; *p != '"'; p++) {
     if (*p == '\n' || *p == '\0') {
@@ -312,7 +311,7 @@ const char* Token::StringLiteralEnd(const char* start) {
   return p;
 }
 
-TokenPtr Token::ReadStringLiteral(const char* start) {
+TokenPtr Token::ReadStringLiteral(const char* start) const {
   const char* end = StringLiteralEnd(start);
   TokenPtr tok = CreateStringToken(start, end);
   return tok;
@@ -335,10 +334,11 @@ long Token::GetNumber() const {
 int Token::GetLineNo() const { return line_no; }
 
 bool Token::IsTypename() const {
-  static const char* kw[] = {"void",  "char",   "short",   "int",   "long", "struct",
-                             "union", "struct", "typedef", "_Bool", "enum"};
-  for (int i = 0; i < sizeof(kw) / sizeof(*kw); i++) {
-    if (Equal(kw[i])) {
+  static std::vector<const char*> keyword = {"void",    "char",   "short", "int",
+                                             "long",    "struct", "union", "struct",
+                                             "typedef", "_Bool",  "enum"};
+  for (auto& kw : keyword) {
+    if (Equal(kw)) {
       return true;
     }
   }
@@ -385,7 +385,7 @@ void Token::VrdicErrorAt(int line_no, const char* loc, const char* fmt, va_list 
   // print the line
   const int indent = fprintf(stderr, "%s:%d: ", current_filename.c_str(), line_no);
   fprintf(stderr, "%.*s\n", static_cast<int>(end - start), start);
-  int pos = static_cast<int>(loc - start + indent);
+  auto pos = static_cast<int>(loc - start + indent);
 
   fprintf(stderr, "%*s", pos, "");  // print pos spaces.
   fprintf(stderr, "^ ");

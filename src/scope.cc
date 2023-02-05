@@ -15,7 +15,7 @@
 ScopePtr scope = nullptr;
 
 void Scope::EnterScope(ScopePtr& next) {
-  ScopePtr sc = std::make_shared<Scope>();
+  auto sc = std::make_shared<Scope>();
   sc->next = next;
   next = sc;
 }

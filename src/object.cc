@@ -33,13 +33,13 @@ ObjectPtr globals = nullptr;
 ObjectPtr cur_fn = nullptr;
 
 ObjectPtr Object::CreateVar(Objectkind kind, const String& name, const TypePtr& ty) {
-  ObjectPtr obj = std::make_shared<Object>(kind, name, ty);
+  auto obj = std::make_shared<Object>(kind, name, ty);
   Scope::PushVarScope(name)->var = obj;
   return obj;
 }
 
 ObjectPtr Object::CreateLocalVar(const String& name, const TypePtr& ty, ObjectPtr* next) {
-  ObjectPtr obj = CreateVar(OB_LOCAL, name, ty);
+  ObjectPtr obj = CreateVar(Objectkind::OB_LOCAL, name, ty);
   // if (Find(name.c_str()) != nullptr) {
   //   ty->name->ErrorTok("redefined variable.");
   // }
@@ -49,7 +49,7 @@ ObjectPtr Object::CreateLocalVar(const String& name, const TypePtr& ty, ObjectPt
 }
 
 ObjectPtr Object::CreateGlobalVar(const String& name, const TypePtr& ty, ObjectPtr* next) {
-  ObjectPtr obj = CreateVar(OB_GLOBAL, name, ty);
+  ObjectPtr obj = CreateVar(Objectkind::OB_GLOBAL, name, ty);
   // if (ty->HasName() && ty->name->FindVar() != nullptr) {
   //   ty->name->ErrorTok("redefined variable.");
   // }
@@ -68,7 +68,7 @@ ObjectPtr Object::CreateStringVar(const String& name) {
 
 TokenPtr Object::CreateFunction(TokenPtr tok, TypePtr basety, ObjectPtr* next) {
   TypePtr ty = Parser::Declarator(&tok, tok, basety);
-  ObjectPtr fn = CreateVar(OB_FUNCTION, ty->name->GetIdent(), ty);
+  ObjectPtr fn = CreateVar(Objectkind::OB_FUNCTION, ty->name->GetIdent(), ty);
 
   // function declaration
   if (tok->Equal(";")) {
@@ -122,7 +122,7 @@ ObjectPtr Object::Parse(TokenPtr tok) {
   // enter scope
   Scope::EnterScope(scope);
   while (!tok->Is<TK_EOF>()) {
-    VarAttrPtr attr = std::make_shared<VarAttr>();
+    auto attr = std::make_shared<VarAttr>();
     TypePtr basety = Parser::Declspec(&tok, tok, attr);
 
     if (attr->is_typedef) {
@@ -164,12 +164,12 @@ void Object::OffsetCal() {
       continue;
     }
 
-    int offset = 0;
+    int ofs = 0;
     for (ObjectPtr v = fn->loc_list; v != nullptr; v = v->next) {
-      offset += v->ty->size;
-      offset = AlignTo(offset, v->ty->align);
-      v->offset = offset;
+      ofs += v->ty->size;
+      ofs = AlignTo(ofs, v->ty->align);
+      v->offset = ofs;
     }
-    fn->stack_size = AlignTo(offset, 16);
+    fn->stack_size = AlignTo(ofs, 16);
   }
 }

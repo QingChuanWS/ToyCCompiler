@@ -61,7 +61,7 @@ class Node {
   // error print
   void Error(const char* fmt, ...) const;
 
- public:
+
   // create const node with type == ty_long.
   static NodePtr CreateLongConstNode(int64_t val, TokenPtr node_name);
   // create const node.
@@ -99,7 +99,7 @@ class Node {
   friend class Type;
 
   // Node kind
-  NodeKind kind = ND_END;
+  NodeKind kind = NodeKind::ND_END;
   // Representative node, node name
   TokenPtr name = nullptr;
   // node type

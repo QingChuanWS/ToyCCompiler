@@ -28,7 +28,7 @@ NodePtr Parser::Program(TokenPtr* rest, TokenPtr tok) {
 
 // compound-stmt  = (typedef | declaration | stmt)* "}"
 NodePtr Parser::CompoundStmt(TokenPtr* rest, TokenPtr tok) {
-  NodePtr sub_expr = std::make_shared<Node>(ND_END, tok);
+  auto sub_expr = std::make_shared<Node>(ND_END, tok);
   NodePtr cur = sub_expr;
 
   Scope::EnterScope(scope);
@@ -36,7 +36,7 @@ NodePtr Parser::CompoundStmt(TokenPtr* rest, TokenPtr tok) {
   while (!tok->Equal("}")) {
     // parser declaration.
     if (tok->IsTypename()) {
-      VarAttrPtr attr = std::make_shared<VarAttr>();
+      auto attr = std::make_shared<VarAttr>();
       TypePtr basety = Declspec(&tok, tok, attr);
 
       if (attr->is_typedef) {
@@ -65,7 +65,7 @@ NodePtr Parser::CompoundStmt(TokenPtr* rest, TokenPtr tok) {
 //                 declarator ( "=" expr)?
 //                 ("," declarator ("=" expr)? ) * )? ";"
 NodePtr Parser::Declaration(TokenPtr* rest, TokenPtr tok, TypePtr basety) {
-  NodePtr decl_expr = std::make_shared<Node>(ND_END, tok);
+  auto decl_expr = std::make_shared<Node>(ND_END, tok);
   NodePtr cur = decl_expr;
   int i = 0;
 
@@ -211,7 +211,7 @@ TypePtr Parser::Declarator(TokenPtr* rest, TokenPtr tok, TypePtr ty) {
 
   if (tok->Equal("(")) {
     TokenPtr start = tok;
-    TypePtr head = std::make_shared<Type>(TY_END, 0, 0);
+    auto head = std::make_shared<Type>(TY_END, 0, 0);
     Declarator(&tok, Token::GetNext<1>(start), head);
     tok = tok->SkipToken(")");
     ty = TypeSuffix(rest, tok, ty);
@@ -232,7 +232,7 @@ TypePtr Parser::TypeSuffix(TokenPtr* rest, TokenPtr tok, TypePtr ty) {
     return FunctionParam(rest, Token::GetNext<1>(tok), ty);
   }
   if (tok->Equal("[")) {
-    int len = Token::GetNext<1>(tok)->GetNumber();
+    long len = Token::GetNext<1>(tok)->GetNumber();
     tok = Token::GetNext<2>(tok)->SkipToken("]");
     ty = TypeSuffix(rest, tok, ty);
     return Type::CreateArrayType(ty, len);
@@ -243,7 +243,7 @@ TypePtr Parser::TypeSuffix(TokenPtr* rest, TokenPtr tok, TypePtr ty) {
 }
 
 TypePtr Parser::TypedefDecl(TokenPtr* rest, TokenPtr tok, TypePtr basety) {
-  TypePtr head = std::make_shared<Type>(TY_END, 1, 1);
+  auto head = std::make_shared<Type>(TY_END, 1, 1);
   TypePtr cur = head;
   bool first = true;
   while (!tok->Equal(";")) {
@@ -266,7 +266,7 @@ static TypePtr AbstractDeclarator(TokenPtr* rest, TokenPtr tok, TypePtr ty) {
 
   if (tok->Equal("(")) {
     TokenPtr start = tok;
-    TypePtr head = std::make_shared<Type>(TY_END, 0, 0);
+    auto head = std::make_shared<Type>(TY_END, 0, 0);
     AbstractDeclarator(&tok, Token::GetNext<1>(start), head);
     tok = tok->SkipToken(")");
     ty = Parser::TypeSuffix(rest, tok, ty);
@@ -285,7 +285,7 @@ TypePtr Parser::Typename(TokenPtr* rest, TokenPtr tok) {
 // func-param = param ("," param) *
 // param = declspec declarator
 TypePtr Parser::FunctionParam(TokenPtr* rest, TokenPtr tok, TypePtr ty) {
-  TypePtr params = std::make_shared<Type>(TY_END, 0, 0);
+  auto params = std::make_shared<Type>(TY_END, 0, 0);
   TypePtr cur = params;
 
   while (!tok->Equal(")")) {
@@ -704,7 +704,7 @@ NodePtr Parser::Call(TokenPtr* rest, TokenPtr tok) {
   TypePtr ty = sc->var->GetType();
   TypePtr param_ty = ty->params;
 
-  NodePtr head = std::make_shared<Node>(ND_END, tok);
+  auto head = std::make_shared<Node>(ND_END, tok);
   NodePtr cur = head;
 
   while (!tok->Equal(")")) {
