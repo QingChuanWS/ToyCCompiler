@@ -25,6 +25,7 @@ enum TypeKind {
   TY_INT,
   TY_SHORT,
   TY_LONG,
+  TY_ENUM,
   TY_PRT,
   TY_FUNC,
   TY_ARRAY,
@@ -73,6 +74,8 @@ class Type {
   static TypePtr CreateStructType(MemberPtr mem);
   // create union type.
   static TypePtr CreateUnionType(MemberPtr mem);
+  // create enum type.
+  static TypePtr CreateEnumType();
   // Inference Node Type
   static void TypeInfer(NodePtr node);
 

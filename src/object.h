@@ -25,52 +25,6 @@ enum Objectkind {
   OB_FUNCTION,
   OB_END,
 };
-
-class VarScope {
- public:
-  VarScope() = default;
-  ObjectPtr& GetVar() { return var; }
-  void SetVar(ObjectPtr v) { var = v; }
-  TypePtr& GetType() { return tydef; }
-  void SetType(TypePtr t) { tydef = t; }
-
- private:
-  ObjectPtr var = nullptr;
-  TypePtr tydef = nullptr;
-};
-
-class Scope {
- public:
-  // get current var scope
-  VarScopeMap& GetVarScope() { return vars; }
-  // get current tag scope
-  TagScopeMap& GetTagScope() { return tags; }
-
- public:
-  // create a scpoe
-  static void EnterScope(ScopePtr& next);
-  // delete a scope
-  static void LevarScope(ScopePtr& next);
-  // find a variable by name.
-  static VarScopePtr FindVarScope(const String& name);
-  // find a tag by name.
-  static TypePtr FindTag(const String& name);
-  // find a typedef name by name.
-  static const TypePtr FindTypedef(const TokenPtr& tok);
-  // create a varscope.
-  static VarScopePtr& PushVarScope(const String& name);
-
- private:
-  // scope link list.
-  ScopePtr next = nullptr;
-  // --- C has two black scope; one is for variable and other
-  // is for struct tags. ---
-  // var scope map.
-  VarScopeMap vars = VarScopeMap();
-  // tag scope map.
-  TagScopeMap tags = TagScopeMap();
-};
-
 class Object {
  public:
   // construct a Object object based on kind.

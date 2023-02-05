@@ -17,6 +17,7 @@
 #include <memory>
 
 #include "object.h"
+#include "scope.h"
 #include "token.h"
 #include "tools.h"
 #include "type.h"
@@ -47,11 +48,17 @@ NodePtr Node::CreateVarNode(ObjectPtr var, TokenPtr tok) {
 }
 
 NodePtr Node::CreateIdentNode(TokenPtr tok) {
-  ObjectPtr var = tok->FindVar();
-  if (var == nullptr) {
+  VarScopePtr sc = Scope::FindVarScope(tok->GetIdent());
+  if (!sc || (!sc->var && !sc->IsEnum())) {
     tok->ErrorTok("undefined variable.");
   }
-  return CreateVarNode(var, tok);
+  NodePtr res = nullptr;
+  if (sc->var) {
+    res = CreateVarNode(sc->var, tok);
+  } else {
+    res = CreateConstNode(sc->GetEnumList(), tok);
+  }
+  return res;
 }
 
 NodePtr Node::CreateCallNode(TokenPtr call_name, NodePtr args, TypePtr func_ty) {

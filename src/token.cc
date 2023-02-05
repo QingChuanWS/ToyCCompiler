@@ -22,6 +22,7 @@
 #include <ostream>
 
 #include "object.h"
+#include "scope.h"
 #include "tools.h"
 #include "utils.h"
 
@@ -184,9 +185,9 @@ int Token::ReadPunct(const char* p) const {
 }
 
 void Token::ConvertToReserved(TokenPtr tok) {
-  static const char* kw[] = {"return", "if",     "else", "for",     "while",
-                             "int",    "sizeof", "char", "struct",  "union",
-                             "short",  "long",   "void", "typedef", "_Bool"};
+  static const char* kw[] = {"return", "if",      "else",   "for",   "while", "int",
+                             "sizeof", "char",    "struct", "union", "short", "long",
+                             "void",   "typedef", "_Bool",  "enum"};
   for (TokenPtr t = tok; t != nullptr; t = t->next) {
     for (int i = 0; i < sizeof(kw) / sizeof(*kw); i++) {
       if (StrEqual(t->loc, kw[i], t->len)) {
@@ -335,17 +336,9 @@ long Token::GetNumber() const {
 
 int Token::GetLineNo() const { return line_no; }
 
-ObjectPtr Token::FindVar() {
-  VarScopePtr v = Scope::FindVarScope(GetIdent());
-  if (v != nullptr) {
-    return v->GetVar();
-  }
-  return nullptr;
-}
-
 bool Token::IsTypename() const {
-  static const char* kw[] = {"void",   "char",  "short",  "int",     "long",
-                             "struct", "union", "struct", "typedef", "_Bool"};
+  static const char* kw[] = {"void",  "char",   "short",   "int",   "long", "struct",
+                             "union", "struct", "typedef", "_Bool", "enum"};
   for (int i = 0; i < sizeof(kw) / sizeof(*kw); i++) {
     if (Equal(kw[i])) {
       return true;

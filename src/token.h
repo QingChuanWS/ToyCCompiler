@@ -31,6 +31,11 @@ enum Tokenkind {
 class Token {
  public:
   Token(Tokenkind kind, const char* str, const int len) : kind(kind), loc(str), len(len) {}
+  // whether the tok kind is the T.
+  template <Tokenkind T>
+  bool Is() {
+    return kind == T;
+  }
   // create string token.
   TokenPtr CreateStringToken(const char* start, const char* end);
   // Check the current token->str is char op or not.
@@ -57,8 +62,6 @@ class Token {
   inline const TokenPtr& GetNext() const { return next; }
   // get the tok kind.
   inline Tokenkind GetKind() const { return kind; }
-  // find a variable in scope.
-  ObjectPtr FindVar();
 
  private:
   // find a closing double-quote.

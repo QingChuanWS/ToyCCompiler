@@ -38,8 +38,8 @@ int Member::CalcuStructOffset(MemberPtr mem) {
   return offset;
 }
 
-// struct-decl = "{" struct-member
-MemberPtr Member::StructUnionDecl(TokenPtr* rest, TokenPtr tok) {
+// struct-decl = "{" struct or union member
+MemberPtr Member::MemberDecl(TokenPtr* rest, TokenPtr tok) {
   tok = tok->SkipToken("{");
   MemberPtr head = std::make_shared<Member>();
   MemberPtr cur = head;

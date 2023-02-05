@@ -28,7 +28,7 @@ TypePtr ty_bool = std::make_shared<Type>(TY_BOOL, 1, 1);
 
 bool Type::IsInteger() const {
   return kind == TY_BOOL || kind == TY_INT || kind == TY_CHAR || kind == TY_SHORT ||
-         kind == TY_LONG;
+         kind == TY_LONG || kind == TY_ENUM;
 }
 
 TypePtr Type::CreatePointerType(TypePtr base) {
@@ -90,6 +90,8 @@ MemberPtr Type::GetStructMember(TokenPtr tok) {
   tok->ErrorTok("no such member.");
   return nullptr;
 }
+
+TypePtr Type::CreateEnumType() { return std::make_shared<Type>(TY_ENUM, 4, 4); }
 
 TypePtr Type::GetCommonType(const TypePtr& ty1, const TypePtr& ty2) {
   if (ty1->IsPointer()) {

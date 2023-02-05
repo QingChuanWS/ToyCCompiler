@@ -21,14 +21,18 @@ class Parser {
   // declspec = ( "_Bool" | "void" | "char" | "int"
   //             | "short" | "long"
   //             | "typedef" | struct-decl
-  //             | union-def | typedef-name )+
+  //             | union-def | typedef-name | enum-specifier)+
   static TypePtr Declspec(TokenPtr* rest, TokenPtr tok, VarAttrPtr attr);
   // struct-decl = ident? "{" struct-member
   static TypePtr StructDecl(TokenPtr* rest, TokenPtr tok);
   // union-decl = ident? "{" union-member
   static TypePtr UnionDecl(TokenPtr* rest, TokenPtr tok);
-  // struct-union tag = ("struct" or "union") ident?
-  static TypePtr StructUnionTagDecl(TokenPtr* rest, TokenPtr tok, TokenPtr tag);
+  // enum-specifier = ident ? "{" enum-list? "}"
+  //                | ident ( "{" enum-list? "}" )?
+  // enum-list = ident ("=" num)? ("," ident ("=" num)? )*
+  static TypePtr EnumDecl(TokenPtr* rest, TokenPtr tok);
+  // typedef = declspec (ident (",")? ) + ";"
+  static TypePtr TypedefDecl(TokenPtr* rest, TokenPtr tok, TypePtr basety);
   // declarator = "*"* ident type-suffix
   static TypePtr Declarator(TokenPtr* rest, TokenPtr tok, TypePtr ty);
   // type-suffix = "(" func-params | "[" num "]" | ɛ )
@@ -36,8 +40,6 @@ class Parser {
   // func-param = param ("," param) *
   // param = declspec declarator
   static TypePtr FunctionParam(TokenPtr* rest, TokenPtr tok, TypePtr ty);
-  // typedef = declspec (ident (",")? ) + ";"
-  static TypePtr ParseTypedef(TokenPtr* rest, TokenPtr tok, TypePtr basety);
   // typename = declspec abstract-declarator
   static TypePtr Typename(TokenPtr* rest, TokenPtr tok);
 

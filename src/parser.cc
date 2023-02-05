@@ -15,6 +15,7 @@
 #include <memory>
 
 #include "node.h"
+#include "scope.h"
 #include "token.h"
 #include "tools.h"
 #include "type.h"
@@ -39,9 +40,9 @@ NodePtr Parser::CompoundStmt(TokenPtr* rest, TokenPtr tok) {
       TypePtr basety = Declspec(&tok, tok, attr);
 
       if (attr->is_typedef) {
-        TypePtr ty_list = ParseTypedef(&tok, tok, basety);
+        TypePtr ty_list = TypedefDecl(&tok, tok, basety);
         for (TypePtr t = ty_list; t; t = t->next) {
-          Scope::PushVarScope(t->name->GetIdent())->SetType(t);
+          Scope::PushVarScope(t->name->GetIdent())->tydef = t;
         }
         continue;
       }
@@ -134,15 +135,17 @@ TypePtr Parser::Declspec(TokenPtr* rest, TokenPtr tok, VarAttrPtr attr) {
 
     // Handle user-define types.
     TypePtr tydef = Scope::FindTypedef(tok);
-    if (tok->Equal("struct") || tok->Equal("union") || tydef != nullptr) {
+    if (tok->Equal("struct") || tok->Equal("union") || tok->Equal("enum") || tydef != nullptr) {
       if (counter) {
         break;
       }
 
       if (tok->Equal("struct")) {
-        ty = StructDecl(&tok, tok->next);
+        ty = StructDecl(&tok, tok->GetNext());
       } else if (tok->Equal("union")) {
-        ty = UnionDecl(&tok, tok->next);
+        ty = UnionDecl(&tok, tok->GetNext());
+      } else if (tok->Equal("enum")) {
+        ty = EnumDecl(&tok, tok->GetNext());
       } else {
         ty = tydef;
         tok = tok->next;
@@ -239,7 +242,7 @@ TypePtr Parser::TypeSuffix(TokenPtr* rest, TokenPtr tok, TypePtr ty) {
   return ty;
 }
 
-TypePtr Parser::ParseTypedef(TokenPtr* rest, TokenPtr tok, TypePtr basety) {
+TypePtr Parser::TypedefDecl(TokenPtr* rest, TokenPtr tok, TypePtr basety) {
   TypePtr head = std::make_shared<Type>(TY_END, 1, 1);
   TypePtr cur = head;
   bool first = true;
@@ -255,7 +258,7 @@ TypePtr Parser::ParseTypedef(TokenPtr* rest, TokenPtr tok, TypePtr basety) {
 }
 
 // abstract-declarator = "*"* ("(" abstract-declarator ")")? type-suffix
-TypePtr AbstractDeclarator(TokenPtr* rest, TokenPtr tok, TypePtr ty) {
+static TypePtr AbstractDeclarator(TokenPtr* rest, TokenPtr tok, TypePtr ty) {
   while (tok->Equal("*")) {
     ty = Type::CreatePointerType(ty);
     tok = tok->GetNext();
@@ -300,55 +303,85 @@ TypePtr Parser::FunctionParam(TokenPtr* rest, TokenPtr tok, TypePtr ty) {
   return ty;
 }
 
-TypePtr Parser::StructDecl(TokenPtr* rest, TokenPtr tok) {
+static TypePtr StructOrUnionDecl(TypeKind kind, TokenPtr* rest, TokenPtr tok) {
+  DEBUG(kind == TY_STRUCT || kind == TY_UNION);
   // read struct or union tag.
   TokenPtr tag = nullptr;
-  if (tok->kind == TK_IDENT) {
+  TypePtr ty = nullptr;
+  if (tok->Is<TK_IDENT>() == TK_IDENT) {
     tag = tok;
-    TypePtr ty = StructUnionTagDecl(&tok, tok->next, tag);
-    if (ty != nullptr) {
+    tok = tok->GetNext();
+    if (!tok->Equal("{")) {
+      ty = Scope::FindTag(tag->GetIdent());
+      if (!ty) {
+        tok->ErrorTok("unknow struct tag.");
+      }
       *rest = tok;
       return ty;
     }
   }
 
-  MemberPtr mem = Member::StructUnionDecl(rest, tok);
-  TypePtr ty = Type::CreateStructType(mem);
+  MemberPtr mem = Member::MemberDecl(rest, tok);
+  if (kind == TY_STRUCT) {
+    ty = Type::CreateStructType(mem);
+  } else {
+    ty = Type::CreateUnionType(mem);
+  }
   if (tag) {
     scope->GetTagScope()[tag->GetIdent()] = ty;
   }
   return ty;
+}
+
+TypePtr Parser::StructDecl(TokenPtr* rest, TokenPtr tok) {
+  return StructOrUnionDecl(TY_STRUCT, rest, tok);
 }
 
 TypePtr Parser::UnionDecl(TokenPtr* rest, TokenPtr tok) {
-  // read struct or union tag.
+  return StructOrUnionDecl(TY_UNION, rest, tok);
+}
+
+TypePtr Parser::EnumDecl(TokenPtr* rest, TokenPtr tok) {
+  TypePtr ty = Type::CreateEnumType();
+
   TokenPtr tag = nullptr;
+  // read a struct tag.
   if (tok->kind == TK_IDENT) {
     tag = tok;
-    TypePtr ty = StructUnionTagDecl(&tok, tok->next, tag);
-    if (ty != nullptr) {
+    tok = tok->GetNext();
+    if (tag && !tok->Equal("{")) {
+      TypePtr res = Scope::FindTag(tag->GetIdent());
+      if (!res) {
+        tok->ErrorTok("unknow enum tag");
+      }
+      if (!res->Is<TY_ENUM>()) {
+        tok->ErrorTok("not a enum tag");
+      }
       *rest = tok;
-      return ty;
+      return res;
     }
   }
-  MemberPtr mem = Member::StructUnionDecl(rest, tok);
-  TypePtr ty = Type::CreateUnionType(mem);
+  tok = tok->SkipToken("{");
+  int i = 0;
+  int val = 0;
+  while (!tok->Equal("}")) {
+    if (i++ > 0) {
+      tok = tok->SkipToken(",");
+    }
+
+    const String& name = tok->GetIdent();
+    tok = tok->GetNext();
+    if (tok->Equal("=")) {
+      val = tok->GetNext()->GetNumber();
+      tok = tok->GetNext()->GetNext();
+    }
+
+    Scope::PushVarScope(name)->SetEnumList(val++, ty);
+  }
+  *rest = tok->SkipToken("}");
   if (tag) {
     scope->GetTagScope()[tag->GetIdent()] = ty;
   }
-  return ty;
-}
-
-// struct-union tag = ("struct" or "union") ident?
-TypePtr Parser::StructUnionTagDecl(TokenPtr* rest, TokenPtr tok, TokenPtr tag) {
-  TypePtr ty = nullptr;
-  if (!tok->Equal("{")) {
-    ty = Scope::FindTag(tag->GetIdent());
-    if (ty == nullptr) {
-      tok->ErrorTok("unknow struct tag.");
-    }
-  }
-  *rest = tok;
   return ty;
 }
 
@@ -663,11 +696,11 @@ NodePtr Parser::Call(TokenPtr* rest, TokenPtr tok) {
   if (!sc) {
     start->ErrorTok("implicit declaration of a function");
   }
-  if (!sc->GetVar() || !sc->GetVar()->IsFunction()) {
+  if (!sc->var || !sc->var->IsFunction()) {
     start->ErrorTok("not a function.");
   }
 
-  TypePtr ty = sc->GetVar()->GetType();
+  TypePtr ty = sc->var->GetType();
   TypePtr param_ty = ty->params;
 
   NodePtr head = std::make_shared<Node>(ND_END, tok);

@@ -18,6 +18,7 @@
 
 #include "node.h"
 #include "parser.h"
+#include "scope.h"
 #include "token.h"
 #include "tools.h"
 #include "type.h"
@@ -28,57 +29,12 @@
 ObjectPtr locals = nullptr;
 // Likewise, global variable are accumulated to this list.
 ObjectPtr globals = nullptr;
-// All variable or tag scope instance are accumulated to this list.
-ScopePtr scope = nullptr;
-
+// current parsering function.
 ObjectPtr cur_fn = nullptr;
-
-void Scope::EnterScope(ScopePtr& next) {
-  ScopePtr sc = std::make_shared<Scope>();
-  sc->next = next;
-  next = sc;
-}
-
-void Scope::LevarScope(ScopePtr& next) { next = next->next; }
-
-VarScopePtr& Scope::PushVarScope(const String& name) {
-  scope->vars[name] = std::make_shared<VarScope>();
-  return scope->vars[name];
-}
-
-VarScopePtr Scope::FindVarScope(const String& name) {
-  for (ScopePtr sc = scope; sc != nullptr; sc = sc->next) {
-    auto v = sc->vars.find(name);
-    if (v != sc->vars.end()) {
-      return v->second;
-    }
-  }
-  return nullptr;
-}
-
-TypePtr Scope::FindTag(const String& name) {
-  for (ScopePtr sc = scope; sc != nullptr; sc = sc->next) {
-    auto t = sc->tags.find(name);
-    if (t != sc->tags.end()) {
-      return t->second;
-    }
-  }
-  return nullptr;
-}
-
-const TypePtr Scope::FindTypedef(const TokenPtr& tok) {
-  if (tok->GetKind() == TK_IDENT) {
-    VarScopePtr v = FindVarScope(tok->GetIdent());
-    if (v != nullptr) {
-      return v->GetType();
-    }
-  }
-  return nullptr;
-}
 
 ObjectPtr Object::CreateVar(Objectkind kind, const String& name, const TypePtr& ty) {
   ObjectPtr obj = std::make_shared<Object>(kind, name, ty);
-  Scope::PushVarScope(name)->SetVar(obj);
+  Scope::PushVarScope(name)->var = obj;
   return obj;
 }
 
@@ -170,9 +126,9 @@ ObjectPtr Object::Parse(TokenPtr tok) {
     TypePtr basety = Parser::Declspec(&tok, tok, attr);
 
     if (attr->is_typedef) {
-      TypePtr ty_list = Parser::ParseTypedef(&tok, tok, basety);
+      TypePtr ty_list = Parser::TypedefDecl(&tok, tok, basety);
       for (TypePtr t = ty_list; t; t = t->next) {
-        Scope::PushVarScope(t->name->GetIdent())->SetType(t);
+        Scope::PushVarScope(t->name->GetIdent())->tydef = t;
       }
       continue;
     }
