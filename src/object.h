@@ -50,7 +50,7 @@ class Object {
   // create local varibal
   static ObjectPtr CreateLocalVar(const String& name, const TypePtr& ty, ObjectPtr* next);
   // create a function based on token list.
-  static TokenPtr CreateFunction(TokenPtr tok, TypePtr basety, ObjectPtr* next);
+  static TokenPtr CreateFunction(TokenPtr tok, TypePtr basety, VarAttrPtr attr, ObjectPtr* next);
   // create a string literal variable
   static ObjectPtr CreateStringVar(const String& name);
   // create function parameter list.
@@ -92,6 +92,8 @@ class Object {
   int stack_size = 0;
   // function only have defination.
   bool is_defination = false;
+  // function is a static function
+  bool is_static = false;
 };
 
 #endif  // OBJECT_GRUAD

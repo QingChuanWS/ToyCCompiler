@@ -20,7 +20,7 @@ class Parser {
   // ---- parse TYPE ----
   // declspec = ( "_Bool" | "void" | "char" | "int"
   //             | "short" | "long"
-  //             | "typedef" | struct-decl
+  //             | "typedef" | "static" | struct-decl
   //             | union-def | typedef-name | enum-specifier)+
   static TypePtr Declspec(TokenPtr* rest, TokenPtr tok, VarAttrPtr attr);
   // struct-decl = ident? "{" struct-member

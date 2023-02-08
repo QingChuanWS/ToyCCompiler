@@ -66,7 +66,7 @@ ObjectPtr Object::CreateStringVar(const String& name) {
   return obj;
 }
 
-TokenPtr Object::CreateFunction(TokenPtr tok, TypePtr basety, ObjectPtr* next) {
+TokenPtr Object::CreateFunction(TokenPtr tok, TypePtr basety, VarAttrPtr attr, ObjectPtr* next) {
   TypePtr ty = Parser::Declarator(&tok, tok, basety);
   ObjectPtr fn = CreateVar(Objectkind::OB_FUNCTION, ty->name->GetIdent(), ty);
 
@@ -76,6 +76,7 @@ TokenPtr Object::CreateFunction(TokenPtr tok, TypePtr basety, ObjectPtr* next) {
     tok = tok->SkipToken(";");
     return tok;
   }
+  fn->is_static = attr->is_static;
   cur_fn = fn;
   locals = nullptr;
   // create scope.
@@ -134,7 +135,7 @@ ObjectPtr Object::Parse(TokenPtr tok) {
     }
 
     if (IsFuncToks(tok)) {
-      tok = CreateFunction(tok, basety, &globals);
+      tok = CreateFunction(tok, basety, attr, &globals);
       continue;
     }
     tok = ParseGlobalVar(tok, basety);

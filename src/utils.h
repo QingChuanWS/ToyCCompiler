@@ -62,6 +62,7 @@ extern ScopePtr scope;
 struct VarAttr {
   VarAttr() = default;
   bool is_typedef = false;
+  bool is_static = false;
 };
 
 struct Config {

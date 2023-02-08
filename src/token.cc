@@ -187,8 +187,8 @@ int Token::ReadPunct(const char* p) const {
 
 void Token::ConvertToReserved(TokenPtr tok) {
   static std::vector<const char*> keyword = {
-      "return", "if",    "else",  "for",  "while", "int",     "sizeof", "char",
-      "struct", "union", "short", "long", "void",  "typedef", "_Bool",  "enum"};
+      "return", "if",    "else", "for",  "while",   "int",   "sizeof", "char",  "struct",
+      "union",  "short", "long", "void", "typedef", "_Bool", "enum",   "static"};
   for (TokenPtr t = tok; t != nullptr; t = t->next) {
     for (auto& kw : keyword) {
       if (StrEqual(t->loc, kw, t->len)) {
@@ -220,7 +220,7 @@ bool Token::Equal(const TokenPtr tok) const {
   return tok->len == len && !std::strncmp(loc, tok->loc, len);
 }
 
-const TokenPtr& Token::SkipToken(const char* op, bool enable_error)const {
+const TokenPtr& Token::SkipToken(const char* op, bool enable_error) const {
   if (!Equal(op) && enable_error) {
     ErrorAt(this->loc, "Expect \'%s\'", op);
   }
@@ -336,7 +336,7 @@ int Token::GetLineNo() const { return line_no; }
 bool Token::IsTypename() const {
   static std::vector<const char*> keyword = {"void",    "char",   "short", "int",
                                              "long",    "struct", "union", "struct",
-                                             "typedef", "_Bool",  "enum"};
+                                             "typedef", "_Bool",  "enum",  "static"};
   for (auto& kw : keyword) {
     if (Equal(kw)) {
       return true;

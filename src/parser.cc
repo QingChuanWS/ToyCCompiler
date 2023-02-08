@@ -123,12 +123,21 @@ TypePtr Parser::Declspec(TokenPtr* rest, TokenPtr tok, VarAttrPtr attr) {
   TypePtr ty = ty_int;
   int counter = 0;
   while (tok->IsTypename()) {
-    // handle typedef keyword.
-    if (tok->Equal("typedef")) {
+    // handle strong class specifiers.
+    if (tok->Equal("typedef") || tok->Equal("static")) {
       if (attr == nullptr) {
         tok->ErrorTok("storage class specifier is not allow in this context.");
       }
-      attr->is_typedef = true;
+
+      if (tok->Equal("typedef")) {
+        attr->is_typedef = true;
+      } else {
+        attr->is_static = true;
+      }
+      if (attr->is_typedef + attr->is_static > 1) {
+        tok->ErrorTok("typedef and static may not be used together.");
+      }
+
       tok = Token::GetNext<1>(tok);
       continue;
     }
@@ -488,11 +497,13 @@ NodePtr Parser::Equality(TokenPtr* rest, TokenPtr tok) {
   for (;;) {
     TokenPtr node_name = tok;
     if (tok->Equal("==")) {
-      node = Node::CreateBinaryNode(ND_EQ, node_name, node, Relational(&tok, Token::GetNext<1>(tok)));
+      node =
+          Node::CreateBinaryNode(ND_EQ, node_name, node, Relational(&tok, Token::GetNext<1>(tok)));
       continue;
     }
     if (tok->Equal("!=")) {
-      node = Node::CreateBinaryNode(ND_NE, node_name, node, Relational(&tok, Token::GetNext<1>(tok)));
+      node =
+          Node::CreateBinaryNode(ND_NE, node_name, node, Relational(&tok, Token::GetNext<1>(tok)));
       continue;
     }
 

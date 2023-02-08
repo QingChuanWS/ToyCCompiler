@@ -214,7 +214,11 @@ void CodeGenerator::EmitText(ObjectPtr prog) {
       continue;
     }
 
-    ASM_GEN("  .global ", fn->obj_name);
+    if (fn->is_static) {
+      ASM_GEN("  .local ", fn->obj_name);
+    } else {
+      ASM_GEN("  .global ", fn->obj_name);
+    }
     ASM_GEN(" .text");
     ASM_GEN(fn->obj_name, ":");
     cur_fn = fn;
