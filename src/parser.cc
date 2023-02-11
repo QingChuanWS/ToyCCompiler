@@ -314,10 +314,17 @@ TypePtr Parser::FunctionParam(TokenPtr* rest, TokenPtr tok, TypePtr ty) {
     if (cur != params) {
       tok = tok->SkipToken(",");
     }
-    TypePtr base_ty = Declspec(&tok, tok, nullptr);
-    TypePtr var_type = Declarator(&tok, tok, base_ty);
-    cur->next = std::make_shared<Type>(*var_type);
-    cur = cur->next;
+    TypePtr param_ty = Declspec(&tok, tok, nullptr);
+    param_ty = Declarator(&tok, tok, param_ty);
+
+    // "array of T" is converted to pointer of T only in the parameter context.
+    if (param_ty->Is<TY_ARRAY>()) {
+      TokenPtr name = param_ty->GetName();
+      param_ty = Type::CreatePointerType(param_ty->GetBase());
+      param_ty->name = name;
+    }
+
+    cur = cur->next = std::make_shared<Type>(*param_ty);
   }
   ty = Type::CreateFunctionType(ty, params->next);
 
