@@ -75,6 +75,9 @@ NodePtr Parser::Declaration(TokenPtr* rest, TokenPtr tok, TypePtr basety) {
       tok = tok->SkipToken(",");
     }
     TypePtr ty = Declarator(&tok, tok, basety);
+    if (ty->Size() < 0) {
+      tok->ErrorTok("variable has incomplete type.");
+    }
     if (ty->Is<TY_VOID>()) {
       ty->name->ErrorTok("variable declared void.");
     }
@@ -236,18 +239,27 @@ TypePtr Parser::Declarator(TokenPtr* rest, TokenPtr tok, TypePtr ty) {
   return ty;
 }
 
-// type-suffix = "(" func-params ")" | "[" num "]" type-suffix | ɛ
+// array-dimenstion = num? "]" type-suffix;
+TypePtr Parser::ArrayDimention(TokenPtr* rest, TokenPtr tok, TypePtr ty) {
+  if (tok->Equal("]")) {
+    ty = TypeSuffix(rest, Token::GetNext<1>(tok), ty);
+    return Type::CreateArrayType(ty, -1);
+  }
+  int sz = tok->GetNumber();
+  tok = Token::GetNext<1>(tok)->SkipToken("]");
+  ty = TypeSuffix(rest, tok, ty);
+  return Type::CreateArrayType(ty, sz);
+}
+
+// type-suffix = "(" func-params ")" |
+//               "[" array-dimention | ɛ
 TypePtr Parser::TypeSuffix(TokenPtr* rest, TokenPtr tok, TypePtr ty) {
   if (tok->Equal("(")) {
     return FunctionParam(rest, Token::GetNext<1>(tok), ty);
   }
   if (tok->Equal("[")) {
-    long len = Token::GetNext<1>(tok)->GetNumber();
-    tok = Token::GetNext<2>(tok)->SkipToken("]");
-    ty = TypeSuffix(rest, tok, ty);
-    return Type::CreateArrayType(ty, len);
+    return ArrayDimention(rest, Token::GetNext<1>(tok), ty);
   }
-
   *rest = tok;
   return ty;
 }
