@@ -340,6 +340,12 @@ void CodeGenerator::ExprGen(NodePtr& node) {
       ExprGen(node->lhs);
       Cast(node->lhs->ty, node->ty);
       return;
+    case ND_NOT:
+      ExprGen(node->lhs);
+      ASM_GEN("  cmp rax, 0");
+      ASM_GEN("  sete al")
+      ASM_GEN("  movzx rax, al")
+      return ;
     case ND_CALL: {
       int nargs = 0;
       for (NodePtr& arg = node->args; arg != nullptr; arg = arg->next) {

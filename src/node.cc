@@ -194,6 +194,7 @@ NodePtr Node::CreateCombinedNode(NodePtr binary) {
   NodePtr expr1 = CreateBinaryNode(ND_ASSIGN, root_name, CreateVarNode(var, root_name), lhs_addr);
 
   // *tmp(as left val)
+  // the fresh point should be indenpent by each other.
   NodePtr deref_lval = CreateUnaryNode(ND_DEREF, root_name, CreateVarNode(var, root_name));
   // *tmp(as right val)
   NodePtr deref_rval = CreateUnaryNode(ND_DEREF, root_name, CreateVarNode(var, root_name));

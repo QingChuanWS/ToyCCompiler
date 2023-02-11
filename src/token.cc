@@ -54,7 +54,7 @@ static int ReadPunct(const char* p) {
     }
   }
 
-  return std::strchr("+-*/()<>;=,{}[]&.", *p) != nullptr ? 1 : 0;
+  return std::ispunct(*p) ? 1 : 0;
 }
 
 // convert char c to hex format

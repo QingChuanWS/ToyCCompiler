@@ -76,7 +76,7 @@ class Parser {
   static NodePtr Mul(TokenPtr* rest, TokenPtr tok);
   // cast = "(" type-name ")" cast | unary
   static NodePtr Cast(TokenPtr* rest, TokenPtr tok);
-  // unary = ("+" | "-" | "*" | "&") cast?
+  // unary = ("+" | "-" | "*" | "&" | "!") cast?
   //         | ("++" | "--") unary
   //         | postfix
   static NodePtr Unary(TokenPtr* rest, TokenPtr tok);

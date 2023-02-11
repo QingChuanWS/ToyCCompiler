@@ -39,6 +39,7 @@ enum NodeKind {
   ND_MUMBER,     // .(struct member asscess)
   ND_ADDR,       // unary &
   ND_DEREF,      // *
+  ND_NOT,        // !
   ND_EXPR_STMT,  // expression statement
   ND_STMT_EXPR,  // statement expression
   ND_RETURN,     // return
