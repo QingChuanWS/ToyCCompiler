@@ -11,9 +11,12 @@
 
 #include "token.h"
 
+#include <strings.h>
+
 #include <cctype>
 #include <cstdarg>
 #include <cstddef>
+#include <cstdint>
 #include <cstdio>
 #include <cstring>
 #include <fstream>
@@ -33,23 +36,102 @@ String current_filename;
 // input string.
 StringPtr prg;
 
-TokenPtr Token::CreateStringToken(const char* start, const char* end) const {
-  auto max_len = static_cast<int>(end - start);
-  auto new_str = String(max_len, '\0');
-  int str_litral_len = 0;
-  for (const char* p = start + 1; p < end;) {
-    if (*p == '\\') {
-      new_str[str_litral_len++] = ReadEscapeedChar(&p, p + 1);
-    } else {
-      new_str[str_litral_len++] = *p++;
+const std::vector<const char*> keyword = {"return", "if",      "else",   "for",   "while", "int",
+                                          "sizeof", "char",    "struct", "union", "short", "long",
+                                          "void",   "typedef", "_Bool",  "enum",  "static"};
+
+const std::vector<const char*> type_name = {"void",    "char",   "short", "int",
+                                            "long",    "struct", "union", "struct",
+                                            "typedef", "_Bool",  "enum",  "static"};
+
+// read punction.
+static int ReadPunct(const char* p) {
+  static std::vector<const char*> ops = {
+      ">=", "==", "!=", "<=", "->", "+=", "-=", "*=", "/=", "++", "--"};
+  for (auto& op : ops) {
+    if (StrEqual(p, op, 2)) {
+      return 2;
     }
   }
-  auto res = std::make_shared<Token>(TK_STR, start, end - start + 1);
-  res->str_literal = std::move(new_str);
-  return res;
+
+  return std::strchr("+-*/()<>;=,{}[]&.", *p) != nullptr ? 1 : 0;
 }
 
-StringStream Token::ReadFromFile(const String& filename) {
+// convert char c to hex format
+static int FromHex(const char c) {
+  if ('0' <= c && c <= '9') {
+    return c - '0';
+  }
+  if ('a' <= c && c <= 'f') {
+    return c - 'a' + 10;
+  }
+  return c - 'A' + 10;
+}
+
+// read the escaped char
+static int ReadEscapeedChar(const char** new_pos, const char* p) {
+  if ('0' <= *p && *p <= '7') {
+    //  Read an octal number.
+    auto c = static_cast<char>(*p++ - '0');
+    if ('0' <= *p && *p <= '7') {
+      c = (c << 3) + (*p++ - '0');
+      if ('0' <= *p && *p <= '7') {
+        c = (c << 3) + (*p++ - '0');
+      }
+    }
+    *new_pos = p;
+    return c;
+  }
+  *new_pos = p + 1;
+
+  if (*p == 'x') {
+    // return a hexadecimal number.
+    p++;
+    if (!std::isxdigit(*p)) {
+      Error("%c is invaild hex escape sequence.", *p);
+    }
+    int c = 0;
+    for (; isxdigit(*p); p++) {
+      c = (c << 4) + FromHex(*p);
+    }
+    *new_pos = p;
+    return c;
+  }
+
+  // Escape sequences are defined using themselves here. E.g.
+  // '\n' is implemented using '\n'. This tautological definition
+  // works because the compiler that compiles our compiler knows
+  // what '\n' actually is. In other words, we "inherit" the ASCII
+  // code of '\n' from the compiler that compiles our compiler,
+  // so we don't have to teach the actual code here.
+  //
+  // This fact has huge implications not only for the correctness
+  // of the compiler but also for the security of the generated code.
+  switch (*p) {
+    case 'a':
+      return '\a';
+    case 'b':
+      return '\b';
+    case 't':
+      return '\t';
+    case 'n':
+      return '\n';
+    case 'v':
+      return '\v';
+    case 'f':
+      return '\f';
+    case 'r':
+      return '\r';
+    // [GNU] \e is a escaped char in gnu extension.
+    case 'e':
+      return 27;
+    default:
+      return *p;
+  }
+}
+
+// read code from filename.
+static StringStream ReadFromFile(const String& filename) {
   StringStream buf;
   // By convention, read from the stdin if the given file name is '-'.
   if (filename == "-") {
@@ -66,7 +148,8 @@ StringStream Token::ReadFromFile(const String& filename) {
   return buf;
 }
 
-StringPtr Token::ReadFile(const String& filename) {
+// return the contents of given file.
+static StringPtr ReadFile(const String& filename) {
   auto program = String(ReadFromFile(filename).str());
   // Make sure that the last line is properly terminated with '\n'
   if (program.size() == 0 || program[program.size() - 1] != '\n') {
@@ -75,6 +158,46 @@ StringPtr Token::ReadFile(const String& filename) {
   program.push_back('\0');
 
   return std::make_shared<String>(std::move(program));
+}
+
+TokenPtr Token::ReadIntLiteral(const char* start) {
+  const char* p = start;
+
+  int base = 10;
+  if (!strncasecmp(p, "0x", 2) && std::isalnum(p[2])) {
+    p += 2;
+    base = 16;
+  } else if (!strncasecmp(p, "0b", 2) && std::isalnum(p[2])) {
+    p += 2;
+    base = 2;
+  } else if (*p == '0') {
+    base = 8;
+  }
+
+  char* res_p;
+  int64_t val = strtoul(p, &res_p, base);
+  if (std::isalnum(*res_p)) {
+    Error("%c is invaild digit");
+  }
+  auto res = std::make_shared<Token>(TK_NUM, start, res_p - start);
+  res->val = val;
+  return res;
+}
+
+TokenPtr Token::CreateStringToken(const char* start, const char* end) const {
+  auto max_len = static_cast<int>(end - start);
+  auto new_str = String(max_len, '\0');
+  int str_litral_len = 0;
+  for (const char* p = start + 1; p < end;) {
+    if (*p == '\\') {
+      new_str[str_litral_len++] = ReadEscapeedChar(&p, p + 1);
+    } else {
+      new_str[str_litral_len++] = *p++;
+    }
+  }
+  auto res = std::make_shared<Token>(TK_STR, start, end - start + 1);
+  res->str_literal = std::move(new_str);
+  return res;
 }
 
 TokenPtr Token::ReadCharacterLiteral(const char* start) {
@@ -130,10 +253,8 @@ TokenPtr Token::CreateTokens(const String& file_name, const StringPtr& program) 
     }
 
     if (std::isdigit(*p)) {
-      cur = cur->next = std::make_shared<Token>(TK_NUM, p, 0);
-      char* q = p;
-      cur->val = strtol(p, &p, 10);
-      cur->len = static_cast<int>(p - q);
+      cur = cur->next = ReadIntLiteral(p);
+      p += cur->len;
       continue;
     }
 
@@ -159,7 +280,7 @@ TokenPtr Token::CreateTokens(const String& file_name, const StringPtr& program) 
       continue;
     }
 
-    int punct_len = cur->ReadPunct(p);
+    int punct_len = ReadPunct(p);
     if (punct_len) {
       cur = cur->next = std::make_shared<Token>(TK_PUNCT, p, punct_len);
       p += punct_len;
@@ -169,27 +290,13 @@ TokenPtr Token::CreateTokens(const String& file_name, const StringPtr& program) 
   }
 
   cur->next = std::make_shared<Token>(TK_EOF, p, 0);
+
   ConvertToReserved(tok_list->next);
   InitLineNumInfo(tok_list->next);
   return tok_list->next;
 }
 
-int Token::ReadPunct(const char* p) const {
-  static std::vector<const char*> ops = {
-      ">=", "==", "!=", "<=", "->", "+=", "-=", "*=", "/=", "++", "--"};
-  for (auto& op : ops) {
-    if (StrEqual(p, op, 2)) {
-      return 2;
-    }
-  }
-
-  return std::strchr("+-*/()<>;=,{}[]&.", *p) != nullptr ? 1 : 0;
-}
-
-void Token::ConvertToReserved(TokenPtr tok) {
-  static std::vector<const char*> keyword = {
-      "return", "if",    "else", "for",  "while",   "int",   "sizeof", "char",  "struct",
-      "union",  "short", "long", "void", "typedef", "_Bool", "enum",   "static"};
+inline void Token::ConvertToReserved(TokenPtr tok) {
   for (TokenPtr t = tok; t != nullptr; t = t->next) {
     for (auto& kw : keyword) {
       if (StrEqual(t->loc, kw, t->len)) {
@@ -228,77 +335,6 @@ const TokenPtr& Token::SkipToken(const char* op, bool enable_error) const {
   return next;
 }
 
-int Token::FromHex(const char c) {
-  if ('0' <= c && c <= '9') {
-    return c - '0';
-  }
-  if ('a' <= c && c <= 'f') {
-    return c - 'a' + 10;
-  }
-  return c - 'A' + 10;
-}
-
-int Token::ReadEscapeedChar(const char** new_pos, const char* p) {
-  if ('0' <= *p && *p <= '7') {
-    //  Read an octal number.
-    auto c = static_cast<char>(*p++ - '0');
-    if ('0' <= *p && *p <= '7') {
-      c = (c << 3) + (*p++ - '0');
-      if ('0' <= *p && *p <= '7') {
-        c = (c << 3) + (*p++ - '0');
-      }
-    }
-    *new_pos = p;
-    return c;
-  }
-  *new_pos = p + 1;
-
-  if (*p == 'x') {
-    // return a hexadecimal number.
-    p++;
-    if (!std::isxdigit(*p)) {
-      ErrorAt(p, "invaild hex escape sequence.");
-    }
-    int c = 0;
-    for (; isxdigit(*p); p++) {
-      c = (c << 4) + FromHex(*p);
-    }
-    *new_pos = p;
-    return c;
-  }
-
-  // Escape sequences are defined using themselves here. E.g.
-  // '\n' is implemented using '\n'. This tautological definition
-  // works because the compiler that compiles our compiler knows
-  // what '\n' actually is. In other words, we "inherit" the ASCII
-  // code of '\n' from the compiler that compiles our compiler,
-  // so we don't have to teach the actual code here.
-  //
-  // This fact has huge implications not only for the correctness
-  // of the compiler but also for the security of the generated code.
-  switch (*p) {
-    case 'a':
-      return '\a';
-    case 'b':
-      return '\b';
-    case 't':
-      return '\t';
-    case 'n':
-      return '\n';
-    case 'v':
-      return '\v';
-    case 'f':
-      return '\f';
-    case 'r':
-      return '\r';
-    // [GNU] \e is a escaped char in gnu extension.
-    case 'e':
-      return 27;
-    default:
-      return *p;
-  }
-}
-
 const char* Token::StringLiteralEnd(const char* start) const {
   const char* p = start + 1;
   for (; *p != '"'; p++) {
@@ -311,6 +347,11 @@ const char* Token::StringLiteralEnd(const char* start) const {
   }
   return p;
 }
+
+template <>
+const TokenPtr& Token::GetNext<1>(TokenPtr& tok) {
+  return tok->next;
+};
 
 TokenPtr Token::ReadStringLiteral(const char* start) const {
   const char* end = StringLiteralEnd(start);
@@ -335,11 +376,8 @@ long Token::GetNumber() const {
 int Token::GetLineNo() const { return line_no; }
 
 bool Token::IsTypename() const {
-  static std::vector<const char*> keyword = {"void",    "char",   "short", "int",
-                                             "long",    "struct", "union", "struct",
-                                             "typedef", "_Bool",  "enum",  "static"};
-  for (auto& kw : keyword) {
-    if (Equal(kw)) {
+  for (auto& tn : type_name) {
+    if (Equal(tn)) {
       return true;
     }
   }
@@ -393,8 +431,3 @@ void Token::VrdicErrorAt(int line_no, const char* loc, const char* fmt, va_list 
   vfprintf(stderr, fmt, ap);
   fprintf(stderr, "\n");
 }
-
-template <>
-const TokenPtr& Token::GetNext<1>(TokenPtr& tok) {
-  return tok->next;
-};

@@ -58,19 +58,10 @@ class Token {
   const String& GetStringLiteral() const { return str_literal; }
   // Check whether the given token is a typename.
   bool IsTypename() const;
-  // get the tok i th next point.
-  template <const int nth>
-  static const TokenPtr& GetNext(TokenPtr& tok);
 
  private:
   // find a closing double-quote.
   const char* StringLiteralEnd(const char* start) const;
-  // read the escaped char
-  static int ReadEscapeedChar(const char** new_pos, const char* p);
-  // convert char c to hex format
-  static int FromHex(const char c);
-  // matching punction.
-  int ReadPunct(const char* p) const;
   // read a string literal for source pargram char.
   TokenPtr ReadStringLiteral(const char* start) const;
   // read character literal
@@ -79,12 +70,13 @@ class Token {
  public:
   // Create
   static TokenPtr TokenizeFile(const String& file_name);
+  // get the tok i th next point.
+  template <const int nth>
+  static const TokenPtr& GetNext(TokenPtr& tok) {
+    return GetNext<nth - 1>(tok->next);
+  };
 
  private:
-  // read code from filename.
-  static StringStream ReadFromFile(const String& filename);
-  // return the contents of given file.
-  static StringPtr ReadFile(const String& filename);
   // creating token list from the source program.
   static TokenPtr CreateTokens(const String& file_name, const StringPtr& program);
   // matching reserved keyword based start.
@@ -93,6 +85,8 @@ class Token {
   static void InitLineNumInfo(TokenPtr tok);
   // Reports an error location and exit.
   static void ErrorAt(const char* loc, const char* fmt, ...);
+  // read int literal number, such as 0xa4, 0b1011, 0311, 1123
+  static TokenPtr ReadIntLiteral(const char* start);
   // Reports an error message in the follow format.
   //
   // foo.c:10: x = y + 1;
@@ -119,10 +113,5 @@ class Token {
 
 template <>
 const TokenPtr& Token::GetNext<1>(TokenPtr& tok);
-
-template <const int nth>
-const TokenPtr& Token::GetNext(TokenPtr& tok) {
-  return GetNext<nth - 1>(tok->next);
-};
 
 #endif  //  TOKEN_GRUAD
