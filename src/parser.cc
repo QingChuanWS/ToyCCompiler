@@ -521,30 +521,22 @@ NodePtr Parser::Assign(TokenPtr* rest, TokenPtr tok) {
     return Node::CreateCombinedNode(
         Node::CreateSubNode(tok, node, Assign(rest, Token::GetNext<1>(tok))));
   }
-  if (tok->Equal("*=")) {
-    return Node::CreateCombinedNode(
-        Node::CreateBinaryNode(ND_MUL, tok, node, Assign(rest, Token::GetNext<1>(tok))));
+
+#define CREATE_COMBINE_NODE(op, ND_label)                                                   \
+  if (tok->Equal(op)) {                                                                     \
+    return Node::CreateCombinedNode(                                                        \
+        Node::CreateBinaryNode(ND_label, tok, node, Assign(rest, Token::GetNext<1>(tok)))); \
   }
-  if (tok->Equal("/=")) {
-    return Node::CreateCombinedNode(
-        Node::CreateBinaryNode(ND_DIV, tok, node, Assign(rest, Token::GetNext<1>(tok))));
-  }
-  if (tok->Equal("%=")) {
-    return Node::CreateCombinedNode(
-        Node::CreateBinaryNode(ND_MOD, tok, node, Assign(rest, Token::GetNext<1>(tok))));
-  }
-  if (tok->Equal("&=")) {
-    return Node::CreateCombinedNode(
-        Node::CreateBinaryNode(ND_BITAND, tok, node, Assign(rest, Token::GetNext<1>(tok))));
-  }
-  if (tok->Equal("|=")) {
-    return Node::CreateCombinedNode(
-        Node::CreateBinaryNode(ND_BITOR, tok, node, Assign(rest, Token::GetNext<1>(tok))));
-  }
-  if (tok->Equal("^=")) {
-    return Node::CreateCombinedNode(
-        Node::CreateBinaryNode(ND_BITXOR, tok, node, Assign(rest, Token::GetNext<1>(tok))));
-  }
+
+  CREATE_COMBINE_NODE("*=", ND_MUL)
+  CREATE_COMBINE_NODE("/=", ND_DIV)
+  CREATE_COMBINE_NODE("%=", ND_MOD)
+  CREATE_COMBINE_NODE("&=", ND_BITAND)
+  CREATE_COMBINE_NODE("|=", ND_BITOR)
+  CREATE_COMBINE_NODE("^=", ND_BITXOR)
+
+#undef CREATE_COMBINE_NODE
+
   *rest = tok;
   return node;
 }
@@ -632,22 +624,20 @@ NodePtr Parser::Relational(TokenPtr* rest, TokenPtr tok) {
 
   for (;;) {
     TokenPtr node_name = tok;
-    if (tok->Equal("<")) {
-      node = Node::CreateBinaryNode(ND_LT, node_name, node, Add(&tok, Token::GetNext<1>(tok)));
-      continue;
-    }
-    if (tok->Equal("<=")) {
-      node = Node::CreateBinaryNode(ND_LE, node_name, node, Add(&tok, Token::GetNext<1>(tok)));
-      continue;
-    }
-    if (tok->Equal(">")) {
-      node = Node::CreateBinaryNode(ND_LT, node_name, Add(&tok, Token::GetNext<1>(tok)), node);
-      continue;
-    }
-    if (tok->Equal(">=")) {
-      node = Node::CreateBinaryNode(ND_LE, node_name, Add(&tok, Token::GetNext<1>(tok)), node);
-      continue;
-    }
+
+#define CREATE_REATIONAL_NODE(op, lable, node_left, node_right)             \
+  if (tok->Equal(op)) {                                                     \
+    node = Node::CreateBinaryNode(lable, node_name, node_left, node_right); \
+    continue;                                                               \
+  }
+
+    CREATE_REATIONAL_NODE("<", ND_LT, node, Add(&tok, Token::GetNext<1>(tok)))
+    CREATE_REATIONAL_NODE("<=", ND_LE, node, Add(&tok, Token::GetNext<1>(tok)))
+    CREATE_REATIONAL_NODE(">", ND_LT, Add(&tok, Token::GetNext<1>(tok)), node)
+    CREATE_REATIONAL_NODE(">=", ND_LE, Add(&tok, Token::GetNext<1>(tok)), node)
+
+#undef CREATE_REATIONAL_NODE
+
     *rest = tok;
     return node;
   }
@@ -678,18 +668,19 @@ NodePtr Parser::Mul(TokenPtr* rest, TokenPtr tok) {
 
   for (;;) {
     TokenPtr node_name = tok;
-    if (tok->Equal("*")) {
-      node = Node::CreateBinaryNode(ND_MUL, node_name, node, Cast(&tok, Token::GetNext<1>(tok)));
-      continue;
-    }
-    if (tok->Equal("/")) {
-      node = Node::CreateBinaryNode(ND_DIV, node_name, node, Cast(&tok, Token::GetNext<1>(tok)));
-      continue;
-    }
-    if (tok->Equal("%")) {
-      node = Node::CreateBinaryNode(ND_MOD, node_name, node, Cast(&tok, Token::GetNext<1>(tok)));
-      continue;
-    }
+
+#define CREATE_MUL_NODE(op, lable, node_left, node_right)                   \
+  if (tok->Equal(op)) {                                                     \
+    node = Node::CreateBinaryNode(lable, node_name, node_left, node_right); \
+    continue;                                                               \
+  }
+
+    CREATE_MUL_NODE("*", ND_MUL, node, Cast(&tok, Token::GetNext<1>(tok)))
+    CREATE_MUL_NODE("/", ND_DIV, node, Cast(&tok, Token::GetNext<1>(tok)))
+    CREATE_MUL_NODE("%", ND_MOD, node, Cast(&tok, Token::GetNext<1>(tok)))
+
+#undef CREATE_MUL_NODE
+
     *rest = tok;
     return node;
   }
@@ -712,21 +703,19 @@ NodePtr Parser::Unary(TokenPtr* rest, TokenPtr tok) {
   if (tok->Equal("+")) {
     return Cast(rest, Token::GetNext<1>(tok));
   }
-  if (tok->Equal("-")) {
-    return Node::CreateUnaryNode(ND_NEG, tok, Cast(rest, Token::GetNext<1>(tok)));
+#define CREATE_UNARY_NODE(op, label)                                              \
+  if (tok->Equal(op)) {                                                           \
+    return Node::CreateUnaryNode(label, tok, Cast(rest, Token::GetNext<1>(tok))); \
   }
-  if (tok->Equal("&")) {
-    return Node::CreateUnaryNode(ND_ADDR, tok, Cast(rest, Token::GetNext<1>(tok)));
-  }
-  if (tok->Equal("*")) {
-    return Node::CreateUnaryNode(ND_DEREF, tok, Cast(rest, Token::GetNext<1>(tok)));
-  }
-  if (tok->Equal("!")) {
-    return Node::CreateUnaryNode(ND_NOT, tok, Cast(rest, Token::GetNext<1>(tok)));
-  }
-  if (tok->Equal("~")) {
-    return Node::CreateUnaryNode(ND_BITNOT, tok, Cast(rest, Token::GetNext<1>(tok)));
-  }
+
+  CREATE_UNARY_NODE("-", ND_NEG)
+  CREATE_UNARY_NODE("&", ND_ADDR)
+  CREATE_UNARY_NODE("*", ND_DEREF)
+  CREATE_UNARY_NODE("!", ND_NOT)
+  CREATE_UNARY_NODE("~", ND_BITNOT)
+
+#undef CREATE_UNARY_NODE
+
   // read ++i ==> i+1
   if (tok->Equal("++")) {
     NodePtr binary = Node::CreateAddNode(tok, Unary(rest, Token::GetNext<1>(tok)),

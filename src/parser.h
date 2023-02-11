@@ -38,7 +38,7 @@ class Parser {
   // type-suffix = "(" func-params | "[" num "]" | ɛ )
   static TypePtr TypeSuffix(TokenPtr* rest, TokenPtr tok, TypePtr ty);
   // array-dimension = num ? "]" type-suffix
-  static TypePtr ArrayDimention(TokenPtr*rest, TokenPtr tok, TypePtr ty);
+  static TypePtr ArrayDimention(TokenPtr* rest, TokenPtr tok, TypePtr ty);
   // func-param = param ("," param) *
   // param = declspec declarator
   static TypePtr FunctionParam(TokenPtr* rest, TokenPtr tok, TypePtr ty);
