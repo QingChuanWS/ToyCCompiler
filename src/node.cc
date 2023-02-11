@@ -188,21 +188,31 @@ NodePtr Node::CreateCombinedNode(NodePtr binary) {
   TokenPtr root_name = binary->name;
   // generate fresh pointer variable.
   ObjectPtr var = Object::CreateLocalVar("", Type::CreatePointerType(binary->lhs->ty), &locals);
-  NodePtr var_node = CreateVarNode(var, root_name);
   // &A
   NodePtr lhs_addr = CreateUnaryNode(ND_ADDR, root_name, binary->lhs);
-  // tmp = &A 
-  NodePtr expr1 = CreateBinaryNode(ND_ASSIGN, root_name, var_node, lhs_addr);
+  // tmp = &A
+  NodePtr expr1 = CreateBinaryNode(ND_ASSIGN, root_name, CreateVarNode(var, root_name), lhs_addr);
 
   // *tmp(as left val)
-  NodePtr deref_lval /*dereference and as the left value*/ =
-      CreateUnaryNode(ND_DEREF, root_name, lhs_addr);
+  NodePtr deref_lval = CreateUnaryNode(ND_DEREF, root_name, CreateVarNode(var, root_name));
   // *tmp(as right val)
-  NodePtr deref_rval /*dereference and as the right value*/ =
-      CreateUnaryNode(ND_DEREF, root_name, lhs_addr);
+  NodePtr deref_rval = CreateUnaryNode(ND_DEREF, root_name, CreateVarNode(var, root_name));
   // *tmp op rhs
   NodePtr compute = CreateBinaryNode(binary->kind, root_name, deref_rval, binary->rhs);
   // *tmp = *tmp op rhs.
   NodePtr expr2 = CreateBinaryNode(ND_ASSIGN, root_name, deref_lval, compute);
   return CreateBinaryNode(ND_COMMON, root_name, expr1, expr2);
+}
+
+// Convert A++ to `(typeof A)(A += 1) -1`
+NodePtr Node::CreateIncdecNode(TokenPtr name, NodePtr prefix, int addend) {
+  Type::TypeInfer(prefix);
+  // A + 1
+  NodePtr add = CreateAddNode(name, prefix, CreateConstNode(addend, name));
+  // A += 1
+  NodePtr add_assgin = CreateCombinedNode(add);
+  // (A += 1) - 1
+  NodePtr sub = CreateAddNode(name, add_assgin, CreateConstNode(-addend, name));
+  // (typeof A)(A += 1) -1
+  return CreateCastNode(name, sub, prefix->ty);
 }

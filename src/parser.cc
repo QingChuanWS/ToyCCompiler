@@ -676,6 +676,18 @@ NodePtr Parser::Postfix(TokenPtr* rest, TokenPtr tok) {
       tok = Token::GetNext<2>(tok);
       continue;
     }
+    
+    if(tok->Equal("++")){
+      node = Node::CreateIncdecNode(tok, node, 1);
+      tok = Token::GetNext<1>(tok);
+      continue;
+    }
+
+    if(tok->Equal("--")){
+      node = Node::CreateIncdecNode(tok, node, -1);
+      tok = Token::GetNext<1>(tok);
+      continue;
+    }
 
     *rest = tok;
     return node;

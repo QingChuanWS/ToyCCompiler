@@ -93,6 +93,8 @@ class Node {
   static NodePtr CreateCastNode(TokenPtr node_name, NodePtr expr, TypePtr ty);
   // create a combined arithmatic node, such as "+=", "-="...
   static NodePtr CreateCombinedNode(NodePtr binary);
+  // create a post inc and dec node.
+  static NodePtr CreateIncdecNode(TokenPtr node_name, NodePtr prefix, int addend);
 
  private:
   friend class CodeGenerator;
