@@ -175,7 +175,8 @@ TokenPtr Token::CreateTokens(const String& file_name, const StringPtr& program) 
 }
 
 int Token::ReadPunct(const char* p) const {
-  static std::vector<const char*> ops = {">=", "==", "!=", "<=", "->", "+=", "-=", "*=", "/="};
+  static std::vector<const char*> ops = {
+      ">=", "==", "!=", "<=", "->", "+=", "-=", "*=", "/=", "++", "--"};
   for (auto& op : ops) {
     if (StrEqual(p, op, 2)) {
       return 2;

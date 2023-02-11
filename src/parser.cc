@@ -493,7 +493,8 @@ NodePtr Parser::Expr(TokenPtr* rest, TokenPtr tok) {
   return node;
 }
 
-// assign = equality ("=" assign)?
+// assign = equality (assign-op assign)?
+// assign-op = "+=" | "-=" | "*=" | "/="
 NodePtr Parser::Assign(TokenPtr* rest, TokenPtr tok) {
   NodePtr node = Equality(&tok, tok);
   if (tok->Equal("=")) {
@@ -631,6 +632,18 @@ NodePtr Parser::Unary(TokenPtr* rest, TokenPtr tok) {
   }
   if (tok->Equal("*")) {
     return Node::CreateUnaryNode(ND_DEREF, tok, Cast(rest, Token::GetNext<1>(tok)));
+  }
+  // read ++i ==> i+1
+  if (tok->Equal("++")) {
+    NodePtr binary = Node::CreateAddNode(tok, Unary(rest, Token::GetNext<1>(tok)),
+                                         Node::CreateConstNode(1, tok));
+    return Node::CreateCombinedNode(binary);
+  }
+  // read --i ==> i-1
+  if (tok->Equal("--")) {
+    NodePtr binary = Node::CreateSubNode(tok, Unary(rest, Token::GetNext<1>(tok)),
+                                         Node::CreateConstNode(1, tok));
+    return Node::CreateCombinedNode(binary);
   }
   return Postfix(rest, tok);
 }

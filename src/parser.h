@@ -63,7 +63,8 @@ class Parser {
   static NodePtr ExprStmt(TokenPtr* rest, TokenPtr tok);
   // expr = assign ("," expr)?
   static NodePtr Expr(TokenPtr* rest, TokenPtr tok);
-  // assign = equality ("=" assign)?
+  // assign = equality (assign-op assign)?
+  // assign-op = "+=" | "-=" | "*=" | "/="
   static NodePtr Assign(TokenPtr* rest, TokenPtr tok);
   // equality = relational ("==" relational | "!=" relational)
   static NodePtr Equality(TokenPtr* rest, TokenPtr tok);
@@ -75,7 +76,9 @@ class Parser {
   static NodePtr Mul(TokenPtr* rest, TokenPtr tok);
   // cast = "(" type-name ")" cast | unary
   static NodePtr Cast(TokenPtr* rest, TokenPtr tok);
-  // unary = ("+" | "-" | "*" | "&") ? cast | postfix
+  // unary = ("+" | "-" | "*" | "&") cast?
+  //         | ("++" | "--") unary
+  //         | postfix
   static NodePtr Unary(TokenPtr* rest, TokenPtr tok);
   // postfix = primary ("[" Expr "]" | "." ident | "->" ident )*
   static NodePtr Postfix(TokenPtr* rest, TokenPtr tok);
