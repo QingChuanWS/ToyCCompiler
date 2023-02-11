@@ -426,9 +426,18 @@ NodePtr Parser::Stmt(TokenPtr* rest, TokenPtr tok) {
     TokenPtr node_name = tok;
     tok = Token::GetNext<1>(tok)->SkipToken("(");
 
-    NodePtr init = ExprStmt(&tok, tok);
+    NodePtr init = nullptr;
     NodePtr cond = nullptr;
     NodePtr inc = nullptr;
+
+    Scope::EnterScope(scope);
+
+    if (tok->IsTypename()) {
+      TypePtr basety = Declspec(&tok, tok, nullptr);
+      init = Declaration(&tok, tok, basety);
+    } else {
+      init = ExprStmt(&tok, tok);
+    }
 
     if (!tok->Equal(";")) {
       cond = Expr(&tok, tok);
@@ -438,7 +447,11 @@ NodePtr Parser::Stmt(TokenPtr* rest, TokenPtr tok) {
       inc = Expr(&tok, tok);
     }
     tok = tok->SkipToken(")");
-    return Node::CreateForNode(node_name, init, cond, inc, Stmt(rest, tok));
+
+    NodePtr body = Stmt(rest, tok);
+
+    Scope::LevarScope(scope);
+    return Node::CreateForNode(node_name, init, cond, inc, body);
   }
 
   if (tok->Equal("while")) {
