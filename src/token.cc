@@ -43,17 +43,16 @@ const std::vector<const char*> keyword = {"return", "if",      "else",   "for", 
 const std::vector<const char*> type_name = {"void",    "char",   "short", "int",
                                             "long",    "struct", "union", "struct",
                                             "typedef", "_Bool",  "enum",  "static"};
+const std::vector<const char*> ops = {
+    ">=", "==", "!=", "<=", "->", "+=", "-=", "*=", "/=", "++", "--", "%="};
 
 // read punction.
-static int ReadPunct(const char* p) {
-  static std::vector<const char*> ops = {
-      ">=", "==", "!=", "<=", "->", "+=", "-=", "*=", "/=", "++", "--"};
+inline int ReadPunct(const char* p) {
   for (auto& op : ops) {
     if (StrEqual(p, op, 2)) {
       return 2;
     }
   }
-
   return std::ispunct(*p) ? 1 : 0;
 }
 

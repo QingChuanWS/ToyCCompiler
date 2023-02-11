@@ -394,12 +394,16 @@ void CodeGenerator::ExprGen(NodePtr& node) {
       ASM_GEN("  imul  ", ax, ", ", di);
       return;
     case ND_DIV:
+    case ND_MOD:
       if (node->lhs->ty->Size() == 8) {
         ASM_GEN("  cqo");
       } else {
         ASM_GEN("  cdq");
       }
       ASM_GEN("  idiv ", di);
+      if(node->kind == ND_MOD){
+        ASM_GEN("  mov rax, rdx")
+      }
       return;
     case ND_EQ:
       ASM_GEN("  cmp ", ax, ", ", di);

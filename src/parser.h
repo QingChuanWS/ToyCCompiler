@@ -64,7 +64,7 @@ class Parser {
   // expr = assign ("," expr)?
   static NodePtr Expr(TokenPtr* rest, TokenPtr tok);
   // assign = equality (assign-op assign)?
-  // assign-op = "+=" | "-=" | "*=" | "/="
+  // assign-op = "+=" | "-=" | "*=" | "/=" | "%="
   static NodePtr Assign(TokenPtr* rest, TokenPtr tok);
   // equality = relational ("==" relational | "!=" relational)
   static NodePtr Equality(TokenPtr* rest, TokenPtr tok);

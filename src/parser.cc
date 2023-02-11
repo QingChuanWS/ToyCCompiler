@@ -494,7 +494,7 @@ NodePtr Parser::Expr(TokenPtr* rest, TokenPtr tok) {
 }
 
 // assign = equality (assign-op assign)?
-// assign-op = "+=" | "-=" | "*=" | "/="
+// assign-op = "+=" | "-=" | "*=" | "/=" | "%="
 NodePtr Parser::Assign(TokenPtr* rest, TokenPtr tok) {
   NodePtr node = Equality(&tok, tok);
   if (tok->Equal("=")) {
@@ -515,6 +515,10 @@ NodePtr Parser::Assign(TokenPtr* rest, TokenPtr tok) {
   if (tok->Equal("/=")) {
     return Node::CreateCombinedNode(
         Node::CreateBinaryNode(ND_DIV, tok, node, Assign(rest, Token::GetNext<1>(tok))));
+  }
+  if (tok->Equal("%=")) {
+    return Node::CreateCombinedNode(
+        Node::CreateBinaryNode(ND_MOD, tok, node, Assign(rest, Token::GetNext<1>(tok))));
   }
   *rest = tok;
   return node;
@@ -600,6 +604,10 @@ NodePtr Parser::Mul(TokenPtr* rest, TokenPtr tok) {
     }
     if (tok->Equal("/")) {
       node = Node::CreateBinaryNode(ND_DIV, node_name, node, Cast(&tok, Token::GetNext<1>(tok)));
+      continue;
+    }
+    if (tok->Equal("%")) {
+      node = Node::CreateBinaryNode(ND_MOD, node_name, node, Cast(&tok, Token::GetNext<1>(tok)));
       continue;
     }
     *rest = tok;

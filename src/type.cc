@@ -137,6 +137,7 @@ void Type::TypeInfer(NodePtr node) {
     case ND_SUB:
     case ND_MUL:
     case ND_DIV:
+    case ND_MOD:
       UsualArithConvert(node->lhs, node->rhs);
       node->ty = node->lhs->ty;
       return;
