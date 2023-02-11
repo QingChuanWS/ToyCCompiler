@@ -63,9 +63,13 @@ class Parser {
   static NodePtr ExprStmt(TokenPtr* rest, TokenPtr tok);
   // expr = assign ("," expr)?
   static NodePtr Expr(TokenPtr* rest, TokenPtr tok);
-  // assign = bitor (assign-op assign)?
+  // assign = logor (assign-op assign)?
   // assign-op = "+=" | "-=" | "*=" | "/=" | "%=" | "&=" | "|=" | "^="
   static NodePtr Assign(TokenPtr* rest, TokenPtr tok);
+  // logor = logadd ( "||" logadd)
+  static NodePtr LogOr(TokenPtr* rest, TokenPtr tok);
+  // logand = bitor ( "&&" bitor)
+  static NodePtr LogAnd(TokenPtr* rest, TokenPtr tok);
   // bitor = bitxor ( "|" bitxor)
   static NodePtr BitOr(TokenPtr* rest, TokenPtr tok);
   // bitxor = bitand ( "^" bitand)

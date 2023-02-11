@@ -497,7 +497,7 @@ NodePtr Parser::Expr(TokenPtr* rest, TokenPtr tok) {
 // assign = bitor (assign-op assign)?
 // assign-op = "+=" | "-=" | "*=" | "/=" | "%=" | "&=" | "|=" | "^="
 NodePtr Parser::Assign(TokenPtr* rest, TokenPtr tok) {
-  NodePtr node = BitOr(&tok, tok);
+  NodePtr node = LogOr(&tok, tok);
   if (tok->Equal("=")) {
     return Node::CreateBinaryNode(ND_ASSIGN, tok, node, Assign(rest, Token::GetNext<1>(tok)));
   }
@@ -532,6 +532,28 @@ NodePtr Parser::Assign(TokenPtr* rest, TokenPtr tok) {
   if (tok->Equal("^=")) {
     return Node::CreateCombinedNode(
         Node::CreateBinaryNode(ND_BITXOR, tok, node, Assign(rest, Token::GetNext<1>(tok))));
+  }
+  *rest = tok;
+  return node;
+}
+
+// logor = logand ( "||" logand)
+NodePtr Parser::LogOr(TokenPtr* rest, TokenPtr tok) {
+  NodePtr node = LogAnd(&tok, tok);
+  while (tok->Equal("||")) {
+    TokenPtr start = tok;
+    node = Node::CreateBinaryNode(ND_LOGOR, start, node, LogAnd(&tok, Token::GetNext<1>(tok)));
+  }
+  *rest = tok;
+  return node;
+}
+
+// logand = bitor ( "&&" bitor)
+NodePtr Parser::LogAnd(TokenPtr* rest, TokenPtr tok) {
+  NodePtr node = BitOr(&tok, tok);
+  while (tok->Equal("&&")) {
+    TokenPtr start = tok;
+    node = Node::CreateBinaryNode(ND_LOGAND, start, node, BitOr(&tok, Token::GetNext<1>(tok)));
   }
   *rest = tok;
   return node;

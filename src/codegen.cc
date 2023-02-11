@@ -345,11 +345,41 @@ void CodeGenerator::ExprGen(NodePtr& node) {
       ASM_GEN("  cmp rax, 0");
       ASM_GEN("  sete al")
       ASM_GEN("  movzx rax, al")
-      return ;
+      return;
     case ND_BITNOT:
       ExprGen(node->lhs);
       ASM_GEN("   not rax")
       return;
+    case ND_LOGOR: {
+      int c = Count();
+      ExprGen(node->lhs);
+      ASM_GEN("  cmp rax, 0");
+      ASM_GEN("  jne .L.true.", c);
+      ExprGen(node->rhs);
+      ASM_GEN("  cmp rax, 0");
+      ASM_GEN("  jne .L.true.", c);
+      ASM_GEN("  mov rax, 0");
+      ASM_GEN("  jmp .L.end.", c);
+      ASM_GEN(".L.true.", c, ":");
+      ASM_GEN("  mov rax, 1");
+      ASM_GEN(".L.end.", c, ":");
+      return;
+    }
+    case ND_LOGAND: {
+      int c = Count();
+      ExprGen(node->lhs);
+      ASM_GEN("  cmp rax, 0");
+      ASM_GEN("  je .L.false.", c);
+      ExprGen(node->rhs);
+      ASM_GEN("  cmp rax, 0");
+      ASM_GEN("  je .L.false.", c);
+      ASM_GEN("  mov rax, 1");
+      ASM_GEN("  jmp .L.end.", c);
+      ASM_GEN(".L.false.", c, ":");
+      ASM_GEN("  mov rax, 0");
+      ASM_GEN(".L.end.", c, ":");
+      return;
+    }
     case ND_CALL: {
       int nargs = 0;
       for (NodePtr& arg = node->args; arg != nullptr; arg = arg->next) {
@@ -401,7 +431,7 @@ void CodeGenerator::ExprGen(NodePtr& node) {
         ASM_GEN("  cdq");
       }
       ASM_GEN("  idiv ", di);
-      if(node->kind == ND_MOD){
+      if (node->kind == ND_MOD) {
         ASM_GEN("  mov rax, rdx")
       }
       return;
