@@ -346,6 +346,10 @@ void CodeGenerator::ExprGen(NodePtr& node) {
       ASM_GEN("  sete al")
       ASM_GEN("  movzx rax, al")
       return ;
+    case ND_BITNOT:
+      ExprGen(node->lhs);
+      ASM_GEN("   not rax")
+      return;
     case ND_CALL: {
       int nargs = 0;
       for (NodePtr& arg = node->args; arg != nullptr; arg = arg->next) {

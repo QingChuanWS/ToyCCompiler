@@ -40,6 +40,7 @@ enum NodeKind {
   ND_ADDR,       // unary &
   ND_DEREF,      // *
   ND_NOT,        // !
+  ND_BITNOT,     // ~
   ND_EXPR_STMT,  // expression statement
   ND_STMT_EXPR,  // statement expression
   ND_RETURN,     // return

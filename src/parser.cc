@@ -636,6 +636,9 @@ NodePtr Parser::Unary(TokenPtr* rest, TokenPtr tok) {
   if (tok->Equal("!")) {
     return Node::CreateUnaryNode(ND_NOT, tok, Cast(rest, Token::GetNext<1>(tok)));
   }
+  if (tok->Equal("~")) {
+    return Node::CreateUnaryNode(ND_BITNOT, tok, Cast(rest, Token::GetNext<1>(tok)));
+  }
   // read ++i ==> i+1
   if (tok->Equal("++")) {
     NodePtr binary = Node::CreateAddNode(tok, Unary(rest, Token::GetNext<1>(tok)),
