@@ -13,6 +13,7 @@
 
 #include <cstddef>
 #include <memory>
+#include <unordered_map>
 
 #include "node.h"
 #include "scope.h"
@@ -493,10 +494,10 @@ NodePtr Parser::Expr(TokenPtr* rest, TokenPtr tok) {
   return node;
 }
 
-// assign = equality (assign-op assign)?
-// assign-op = "+=" | "-=" | "*=" | "/=" | "%="
+// assign = bitor (assign-op assign)?
+// assign-op = "+=" | "-=" | "*=" | "/=" | "%=" | "&=" | "|=" | "^="
 NodePtr Parser::Assign(TokenPtr* rest, TokenPtr tok) {
-  NodePtr node = Equality(&tok, tok);
+  NodePtr node = BitOr(&tok, tok);
   if (tok->Equal("=")) {
     return Node::CreateBinaryNode(ND_ASSIGN, tok, node, Assign(rest, Token::GetNext<1>(tok)));
   }
@@ -519,6 +520,51 @@ NodePtr Parser::Assign(TokenPtr* rest, TokenPtr tok) {
   if (tok->Equal("%=")) {
     return Node::CreateCombinedNode(
         Node::CreateBinaryNode(ND_MOD, tok, node, Assign(rest, Token::GetNext<1>(tok))));
+  }
+  if (tok->Equal("&=")) {
+    return Node::CreateCombinedNode(
+        Node::CreateBinaryNode(ND_BITAND, tok, node, Assign(rest, Token::GetNext<1>(tok))));
+  }
+  if (tok->Equal("|=")) {
+    return Node::CreateCombinedNode(
+        Node::CreateBinaryNode(ND_BITOR, tok, node, Assign(rest, Token::GetNext<1>(tok))));
+  }
+  if (tok->Equal("^=")) {
+    return Node::CreateCombinedNode(
+        Node::CreateBinaryNode(ND_BITXOR, tok, node, Assign(rest, Token::GetNext<1>(tok))));
+  }
+  *rest = tok;
+  return node;
+}
+
+// bitor = bitxor ( "|" bitxor)
+NodePtr Parser::BitOr(TokenPtr* rest, TokenPtr tok) {
+  NodePtr node = BitXor(&tok, tok);
+  while (tok->Equal("|")) {
+    TokenPtr start = tok;
+    node = Node::CreateBinaryNode(ND_BITOR, start, node, BitXor(&tok, Token::GetNext<1>(tok)));
+  }
+  *rest = tok;
+  return node;
+}
+
+// bitxor = bitand ( "^" bitand)
+NodePtr Parser::BitXor(TokenPtr* rest, TokenPtr tok) {
+  NodePtr node = BitAnd(&tok, tok);
+  while (tok->Equal("^")) {
+    TokenPtr start = tok;
+    node = Node::CreateBinaryNode(ND_BITXOR, start, node, BitAnd(&tok, Token::GetNext<1>(tok)));
+  }
+  *rest = tok;
+  return node;
+}
+
+// bitand = equality ( "&" euquality)
+NodePtr Parser::BitAnd(TokenPtr* rest, TokenPtr tok) {
+  NodePtr node = Equality(&tok, tok);
+  while (tok->Equal("&")) {
+    TokenPtr start = tok;
+    node = Node::CreateBinaryNode(ND_BITAND, start, node, Equality(&tok, Token::GetNext<1>(tok)));
   }
   *rest = tok;
   return node;

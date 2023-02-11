@@ -405,6 +405,15 @@ void CodeGenerator::ExprGen(NodePtr& node) {
         ASM_GEN("  mov rax, rdx")
       }
       return;
+    case ND_BITAND:
+      ASM_GEN("  and rax, rdi");
+      return;
+    case ND_BITOR:
+      ASM_GEN("  or rax, rdi");
+      return;
+    case ND_BITXOR:
+      ASM_GEN("  xor rax, rdi");
+      return;
     case ND_EQ:
       ASM_GEN("  cmp ", ax, ", ", di);
       ASM_GEN("  sete al");

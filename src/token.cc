@@ -44,7 +44,7 @@ const std::vector<const char*> type_name = {"void",    "char",   "short", "int",
                                             "long",    "struct", "union", "struct",
                                             "typedef", "_Bool",  "enum",  "static"};
 const std::vector<const char*> ops = {
-    ">=", "==", "!=", "<=", "->", "+=", "-=", "*=", "/=", "++", "--", "%="};
+    ">=", "==", "!=", "<=", "->", "+=", "-=", "*=", "/=", "++", "--", "%=", "&=", "|=", "^="};
 
 // read punction.
 inline int ReadPunct(const char* p) {

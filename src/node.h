@@ -42,6 +42,9 @@ enum NodeKind {
   ND_DEREF,      // *
   ND_NOT,        // !
   ND_BITNOT,     // ~
+  ND_BITAND,     // &
+  ND_BITOR,      // |
+  ND_BITXOR,     // ^
   ND_EXPR_STMT,  // expression statement
   ND_STMT_EXPR,  // statement expression
   ND_RETURN,     // return
