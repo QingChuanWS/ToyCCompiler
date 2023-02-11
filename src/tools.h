@@ -51,7 +51,7 @@ inline bool IsAlnum(const char c) { return IsAlpha(c) || ('0' <= c && c <= '9');
 // round up `n` to the nearest multiple of `align`.
 inline int AlignTo(const int n, const int align) { return (n + align - 1) / align * align; }
 // create a unique name.
-String CreateUniqueName();
+String CreateUniqueName(String prefix = ".L..");
 // compiler helper function.
 void Usage(int state);
 // parse input arguement.

@@ -65,7 +65,7 @@ class StringFormator {
   std::stringstream sprint;
 };
 
-String CreateUniqueName() {
+String CreateUniqueName(String prefix) {
   static int id = 0;
   StringFormat(".L..", id++);
   return StringFormator::GetString();

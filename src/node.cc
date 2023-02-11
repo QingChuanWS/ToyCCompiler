@@ -178,3 +178,31 @@ NodePtr Node::CreateCastNode(TokenPtr node_name, NodePtr expr, TypePtr ty) {
   res->ty = ty;
   return res;
 }
+
+// Convert `A op= B` to `tmp = &A, *tmp = *tmp op B`
+// where tmp is a fresh pointer variable.
+NodePtr Node::CreateCombinedNode(NodePtr binary) {
+  Type::TypeInfer(binary->lhs);
+  Type::TypeInfer(binary->rhs);
+
+  TokenPtr root_name = binary->name;
+  // generate fresh pointer variable.
+  ObjectPtr var = Object::CreateLocalVar("", Type::CreatePointerType(binary->lhs->ty), &locals);
+  NodePtr var_node = CreateVarNode(var, root_name);
+  // &A
+  NodePtr lhs_addr = CreateUnaryNode(ND_ADDR, root_name, binary->lhs);
+  // tmp = &A 
+  NodePtr expr1 = CreateBinaryNode(ND_ASSIGN, root_name, var_node, lhs_addr);
+
+  // *tmp(as left val)
+  NodePtr deref_lval /*dereference and as the left value*/ =
+      CreateUnaryNode(ND_DEREF, root_name, lhs_addr);
+  // *tmp(as right val)
+  NodePtr deref_rval /*dereference and as the right value*/ =
+      CreateUnaryNode(ND_DEREF, root_name, lhs_addr);
+  // *tmp op rhs
+  NodePtr compute = CreateBinaryNode(binary->kind, root_name, deref_rval, binary->rhs);
+  // *tmp = *tmp op rhs.
+  NodePtr expr2 = CreateBinaryNode(ND_ASSIGN, root_name, deref_lval, compute);
+  return CreateBinaryNode(ND_COMMON, root_name, expr1, expr2);
+}

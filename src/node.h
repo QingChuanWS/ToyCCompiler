@@ -61,7 +61,6 @@ class Node {
   // error print
   void Error(const char* fmt, ...) const;
 
-
   // create const node with type == ty_long.
   static NodePtr CreateLongConstNode(int64_t val, TokenPtr node_name);
   // create const node.
@@ -92,6 +91,8 @@ class Node {
   static NodePtr CreateMemberNode(NodePtr parent, TokenPtr node_name);
   // create cast node.
   static NodePtr CreateCastNode(TokenPtr node_name, NodePtr expr, TypePtr ty);
+  // create a combined arithmatic node, such as "+=", "-="...
+  static NodePtr CreateCombinedNode(NodePtr binary);
 
  private:
   friend class CodeGenerator;

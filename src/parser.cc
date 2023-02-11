@@ -499,6 +499,22 @@ NodePtr Parser::Assign(TokenPtr* rest, TokenPtr tok) {
   if (tok->Equal("=")) {
     return Node::CreateBinaryNode(ND_ASSIGN, tok, node, Assign(rest, Token::GetNext<1>(tok)));
   }
+  if (tok->Equal("+=")) {
+    return Node::CreateCombinedNode(
+        Node::CreateAddNode(tok, node, Assign(rest, Token::GetNext<1>(tok))));
+  }
+  if (tok->Equal("-=")) {
+    return Node::CreateCombinedNode(
+        Node::CreateSubNode(tok, node, Assign(rest, Token::GetNext<1>(tok))));
+  }
+  if (tok->Equal("*=")) {
+    return Node::CreateCombinedNode(
+        Node::CreateBinaryNode(ND_MUL, tok, node, Assign(rest, Token::GetNext<1>(tok))));
+  }
+  if (tok->Equal("/=")) {
+    return Node::CreateCombinedNode(
+        Node::CreateBinaryNode(ND_DIV, tok, node, Assign(rest, Token::GetNext<1>(tok))));
+  }
   *rest = tok;
   return node;
 }
