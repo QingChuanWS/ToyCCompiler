@@ -12,8 +12,6 @@
 #ifndef OBJECT_GRUAD
 #define OBJECT_GRUAD
 
-#include <memory>
-
 #include "parser.h"
 #include "tools.h"
 #include "type.h"
@@ -54,7 +52,7 @@ class Object {
   // create a string literal variable
   static ObjectPtr CreateStringVar(const String& name);
   // create function parameter list.
-  static void CreateParamVar(TypePtr param);
+  static void CreateParamVar(TypeVector& param);
   // parsing token list and generate AST.
   static ObjectPtr Parse(TokenPtr tok);
   // Lookahead tokens and returns true if a given token is a start

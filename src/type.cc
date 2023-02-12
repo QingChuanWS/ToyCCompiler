@@ -11,9 +11,6 @@
 
 #include "type.h"
 
-#include <cstddef>
-#include <memory>
-
 #include "node.h"
 #include "struct.h"
 #include "tools.h"
@@ -26,6 +23,23 @@ TypePtr ty_char = std::make_shared<Type>(TY_CHAR, 1, 1);
 TypePtr ty_void = std::make_shared<Type>(TY_VOID, 1, 1);
 TypePtr ty_bool = std::make_shared<Type>(TY_BOOL, 1, 1);
 
+const Type& Type::Copy(const Type& ty) {
+  *this = ty;
+  // if (ty.base) {
+  //   this->base = std::make_shared<Type>(*ty.base);
+  // }
+  // if (ty.mem) {
+  //   this->mem = std::make_shared<Member>(*ty.mem);  /// copy array
+  // }
+  // if (ty.return_ty) {
+  //   this->return_ty = std::make_shared<Type>(*ty.return_ty);
+  // }
+  // if (!ty.params.empty()) {
+  //   // copy list.
+  // }
+  return *this;
+}
+
 bool Type::IsInteger() const {
   return kind == TY_BOOL || kind == TY_INT || kind == TY_CHAR || kind == TY_SHORT ||
          kind == TY_LONG || kind == TY_ENUM;
@@ -37,7 +51,7 @@ TypePtr Type::CreatePointerType(TypePtr base) {
   return ty;
 }
 
-TypePtr Type::CreateFunctionType(TypePtr ret_type, TypePtr params) {
+TypePtr Type::CreateFunctionType(TypePtr ret_type, const TypeVector& params) {
   auto ty = std::make_shared<Type>(TY_FUNC, ret_type->size, 0);
   ty->return_ty = ret_type;
   ty->params = params;
@@ -50,7 +64,7 @@ TypePtr Type::CreateArrayType(TypePtr base, int array_len) {
   return ty;
 }
 
-TypePtr Type::CreateStructType(MemberPtr mem) {
+TypePtr Type::CreateStructType(MemberVector mem) {
   auto ty = std::make_shared<Type>(TY_STRUCT, 1, 1);
   ty->align = Member::CalcuStructAlign(mem);
   ty->size = AlignTo(Member::CalcuStructOffset(mem), ty->align);
@@ -58,9 +72,9 @@ TypePtr Type::CreateStructType(MemberPtr mem) {
   return ty;
 }
 
-TypePtr Type::CreateUnionType(MemberPtr mem) {
+TypePtr Type::CreateUnionType(MemberVector mem) {
   auto ty = std::make_shared<Type>(TY_UNION, 1, 1);
-  for (MemberPtr m = mem; m != nullptr; m = m->next) {
+  for (auto m : mem) {
     if (ty->align < m->ty->align) {
       ty->align = m->ty->align;
     }
@@ -82,7 +96,7 @@ const TokenPtr& Type::GetName() const {
 
 // get struct member based on token.
 MemberPtr Type::GetStructMember(TokenPtr tok) const {
-  for (MemberPtr m = mem; m != nullptr; m = m->next) {
+  for (auto m : mem) {
     if (tok->Equal(m->name)) {
       return m;
     }

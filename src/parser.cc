@@ -11,10 +11,6 @@
 
 #include "parser.h"
 
-#include <cstddef>
-#include <memory>
-#include <unordered_map>
-
 #include "node.h"
 #include "scope.h"
 #include "token.h"
@@ -41,8 +37,8 @@ NodePtr Parser::CompoundStmt(TokenPtr* rest, TokenPtr tok) {
       TypePtr basety = Declspec(&tok, tok, attr);
 
       if (attr->is_typedef) {
-        TypePtr ty_list = TypedefDecl(&tok, tok, basety);
-        for (TypePtr t = ty_list; t; t = t->next) {
+        TypeVector ty_list = TypedefDecl(&tok, tok, basety);
+        for (auto t : ty_list) {
           Scope::PushVarScope(t->name->GetIdent())->tydef = t;
         }
         continue;
@@ -264,19 +260,20 @@ TypePtr Parser::TypeSuffix(TokenPtr* rest, TokenPtr tok, TypePtr ty) {
   return ty;
 }
 
-TypePtr Parser::TypedefDecl(TokenPtr* rest, TokenPtr tok, TypePtr basety) {
+TypeVector Parser::TypedefDecl(TokenPtr* rest, TokenPtr tok, TypePtr basety) {
   auto head = std::make_shared<Type>(TY_END, 1, 1);
   TypePtr cur = head;
   bool first = true;
+  TypeVector res;
   while (!tok->Equal(";")) {
     if (!first) {
       tok = tok->SkipToken(",");
     }
     first = false;
-    cur = cur->next = Declarator(&tok, tok, basety);
+    res.push_back(Declarator(&tok, tok, basety));
   }
   *rest = tok->SkipToken(";");
-  return head->next;
+  return res;
 }
 
 // abstract-declarator = "*"* ("(" abstract-declarator ")")? type-suffix
@@ -308,12 +305,14 @@ TypePtr Parser::Typename(TokenPtr* rest, TokenPtr tok) {
 // param = declspec declarator
 TypePtr Parser::FunctionParam(TokenPtr* rest, TokenPtr tok, TypePtr ty) {
   auto params = std::make_shared<Type>(TY_END, 0, 0);
-  TypePtr cur = params;
+  TypeVector param;
+  bool first = true;
 
   while (!tok->Equal(")")) {
-    if (cur != params) {
+    if (!first) {
       tok = tok->SkipToken(",");
     }
+    first = false;
     TypePtr param_ty = Declspec(&tok, tok, nullptr);
     param_ty = Declarator(&tok, tok, param_ty);
 
@@ -323,10 +322,9 @@ TypePtr Parser::FunctionParam(TokenPtr* rest, TokenPtr tok, TypePtr ty) {
       param_ty = Type::CreatePointerType(param_ty->GetBase());
       param_ty->name = name;
     }
-
-    cur = cur->next = std::make_shared<Type>(*param_ty);
+    param.push_back(std::make_shared<Type>(*param_ty));
   }
-  ty = Type::CreateFunctionType(ty, params->next);
+  ty = Type::CreateFunctionType(ty, param);
 
   *rest = Token::GetNext<1>(tok);
   return ty;
@@ -355,7 +353,7 @@ static TypePtr StructOrUnionDecl(TypeKind kind, TokenPtr* rest, TokenPtr tok) {
     }
   }
 
-  MemberPtr mem = Member::MemberDecl(rest, tok);
+  MemberVector mem = Member::MemberDecl(rest, tok);
   if (kind == TY_STRUCT) {
     ty = Type::CreateStructType(mem);
   } else {
@@ -873,11 +871,12 @@ NodePtr Parser::Call(TokenPtr* rest, TokenPtr tok) {
     start->ErrorTok("not a function.");
   }
 
-  TypePtr ty = sc->var->GetType();
-  TypePtr param_ty = ty->params;
-
+  auto ty = sc->var->GetType();
   auto head = std::make_shared<Node>(ND_END, tok);
   NodePtr cur = head;
+
+  auto params_ty = ty->params;
+  int pt_idx = 0;
 
   while (!tok->Equal(")")) {
     if (cur != head) {
@@ -886,12 +885,12 @@ NodePtr Parser::Call(TokenPtr* rest, TokenPtr tok) {
     NodePtr arg = Assign(&tok, tok);
     Type::TypeInfer(arg);
 
-    if (param_ty) {
-      if (param_ty->Is<TY_STRUCT>() || param_ty->Is<TY_UNION>()) {
+    if (pt_idx < params_ty.size() && params_ty[pt_idx]) {
+      if (params_ty[pt_idx]->Is<TY_STRUCT>() || params_ty[pt_idx]->Is<TY_UNION>()) {
         arg->name->ErrorTok("passing struct or union is not support yet");
       }
-      arg = Node::CreateCastNode(arg->name, arg, param_ty);
-      param_ty = param_ty->next;
+      arg = Node::CreateCastNode(arg->name, arg, params_ty[pt_idx]);
+      pt_idx++;
     }
 
     cur = cur->next = arg;

@@ -32,7 +32,7 @@ class Parser {
   // enum-list = ident ("=" num)? ("," ident ("=" num)? )*
   static TypePtr EnumDecl(TokenPtr* rest, TokenPtr tok);
   // typedef = declspec (ident (",")? ) + ";"
-  static TypePtr TypedefDecl(TokenPtr* rest, TokenPtr tok, TypePtr basety);
+  static TypeVector TypedefDecl(TokenPtr* rest, TokenPtr tok, TypePtr basety);
   // declarator = "*"* ident type-suffix
   static TypePtr Declarator(TokenPtr* rest, TokenPtr tok, TypePtr ty);
   // type-suffix = "(" func-params | "[" num "]" | ɛ )

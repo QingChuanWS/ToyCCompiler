@@ -15,6 +15,7 @@
 #include <cstdlib>
 #include <cstring>
 #include <memory>
+#include <vector>
 
 #include "node.h"
 #include "parser.h"
@@ -94,10 +95,9 @@ TokenPtr Object::CreateFunction(TokenPtr tok, TypePtr basety, VarAttrPtr attr, O
   return tok;
 }
 
-void Object::CreateParamVar(TypePtr param) {
-  if (param != nullptr) {
-    CreateParamVar(param->next);
-    ObjectPtr v = CreateLocalVar(param->name->GetIdent(), param, &locals);
+void Object::CreateParamVar(TypeVector& params) {
+  for (auto i = params.rbegin(); i != params.rend(); ++i) {
+    ObjectPtr v = CreateLocalVar((*i)->name->GetIdent(), *i, &locals);
   }
 }
 
@@ -127,8 +127,8 @@ ObjectPtr Object::Parse(TokenPtr tok) {
     TypePtr basety = Parser::Declspec(&tok, tok, attr);
 
     if (attr->is_typedef) {
-      TypePtr ty_list = Parser::TypedefDecl(&tok, tok, basety);
-      for (TypePtr t = ty_list; t; t = t->next) {
+      TypeVector ty_list = Parser::TypedefDecl(&tok, tok, basety);
+      for (auto t : ty_list) {
         Scope::PushVarScope(t->name->GetIdent())->tydef = t;
       }
       continue;

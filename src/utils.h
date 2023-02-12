@@ -14,6 +14,7 @@
 
 #include <stdint.h>
 
+#include <cstddef>
 #include <fstream>
 #include <iostream>
 #include <memory>
@@ -33,6 +34,7 @@ struct VarAttr;
 
 using TokenPtr = std::shared_ptr<Token>;
 using TypePtr = std::shared_ptr<Type>;
+using TypeVector = std::vector<TypePtr>;
 using NodePtr = std::shared_ptr<Node>;
 using ObjectPtr = std::shared_ptr<Object>;
 using StringPtr = std::shared_ptr<std::string>;
@@ -42,6 +44,7 @@ using ScopePtr = std::shared_ptr<Scope>;
 using VarScopePtr = std::shared_ptr<VarScope>;
 using TagScopePtr = std::shared_ptr<TagScope>;
 using MemberPtr = std::shared_ptr<Member>;
+using MemberVector = std::vector<MemberPtr>;
 using VarAttrPtr = std::shared_ptr<VarAttr>;
 using String = std::string;
 using VarScopePtr = std::shared_ptr<VarScope>;

@@ -11,16 +11,14 @@
 
 #include "struct.h"
 
-#include <memory>
-
 #include "parser.h"
 #include "tools.h"
 #include "type.h"
 #include "utils.h"
 
-int Member::CalcuStructAlign(MemberPtr mem) {
+int Member::CalcuStructAlign(const MemberVector& mem) {
   int align = 1;
-  for (MemberPtr m = mem; m != nullptr; m = m->next) {
+  for (auto m : mem) {
     if (align < m->ty->GetAlign()) {
       align = m->ty->GetAlign();
     }
@@ -28,9 +26,9 @@ int Member::CalcuStructAlign(MemberPtr mem) {
   return align;
 }
 
-int Member::CalcuStructOffset(MemberPtr mem) {
+int Member::CalcuStructOffset(const MemberVector& mem) {
   int offset = 0;
-  for (MemberPtr m = mem; m != nullptr; m = m->next) {
+  for (MemberPtr m : mem) {
     offset = AlignTo(offset, m->ty->GetAlign());
     m->offset = offset;
     offset += m->ty->Size();
@@ -39,25 +37,25 @@ int Member::CalcuStructOffset(MemberPtr mem) {
 }
 
 // struct-decl = "{" struct or union member
-MemberPtr Member::MemberDecl(TokenPtr* rest, TokenPtr tok) {
+MemberVector Member::MemberDecl(TokenPtr* rest, TokenPtr tok) {
   tok = tok->SkipToken("{");
   auto head = std::make_shared<Member>();
-  MemberPtr cur = head;
+  MemberVector mem_vec;
 
   while (!tok->Equal("}")) {
     TypePtr basety = Parser::Declspec(&tok, tok, nullptr);
 
-    int i = 0;
+    bool first = true;
     while (!tok->Equal(";")) {
-      if (i++) {
+      if (!first) {
         tok = tok->SkipToken(",");
       }
+      first = false;
       TypePtr ty = Parser::Declarator(&tok, tok, basety);
-      cur->next = std::make_shared<Member>(ty, ty->GetName());
-      cur = cur->next;
+      mem_vec.push_back(std::make_shared<Member>(ty, ty->GetName()));
     }
     tok = tok->SkipToken(";");
   }
   *rest = Token::GetNext<1>(tok);
-  return head->next;
+  return mem_vec;
 }

@@ -12,9 +12,6 @@
 #ifndef TYPE_GRUAD
 #define TYPE_GRUAD
 
-#include <cstddef>
-#include <memory>
-
 #include "struct.h"
 #include "token.h"
 #include "utils.h"
@@ -38,6 +35,9 @@ enum TypeKind {
 class Type {
  public:
   Type(TypeKind kind, int size, int align) : kind(kind), size(size), align(align) {}
+  // deep copy
+  const Type& Copy(const Type& ty);
+  // copy type list.
   // whether the type is integer.
   bool IsInteger() const;
   // whether the type is T.
@@ -66,13 +66,13 @@ class Type {
   // create pointer type.
   static TypePtr CreatePointerType(TypePtr base);
   // create function type.
-  static TypePtr CreateFunctionType(TypePtr ret_type, TypePtr params);
+  static TypePtr CreateFunctionType(TypePtr ret_type, const TypeVector& params);
   // create array type.
   static TypePtr CreateArrayType(TypePtr base, int array_len);
   // create struct type.
-  static TypePtr CreateStructType(MemberPtr mem);
+  static TypePtr CreateStructType(MemberVector mem);
   // create union type.
-  static TypePtr CreateUnionType(MemberPtr mem);
+  static TypePtr CreateUnionType(MemberVector mem);
   // create enum type.
   static TypePtr CreateEnumType();
   // Inference Node Type
@@ -92,8 +92,6 @@ class Type {
   TypeKind kind = TY_END;
   // Declaration.
   TokenPtr name = nullptr;
-  // for params type list.
-  TypePtr next = nullptr;
   // sizeof() value.
   int size = 0;
   // alignment
@@ -108,13 +106,13 @@ class Type {
   int array_len = 0;
 
   // ---- Member---
-  MemberPtr mem = nullptr;
+  MemberVector mem{};
 
   // --- function ---
   // Function type.
   TypePtr return_ty = nullptr;
   // function params type list.
-  TypePtr params = nullptr;
+  TypeVector params{};
 };
 
 #endif  // !TYPE_GRUAD
