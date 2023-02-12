@@ -62,6 +62,13 @@ class Scope {
   static const TypePtr FindTypedef(const TokenPtr& tok);
   // create a varscope.
   static VarScopePtr& PushVarScope(const String& name);
+  // create a tag
+  static void PushTagScope(const String& name, TypePtr ty);
+  // get Next.
+  template <const int nth>
+  static const ScopePtr& GetNext(ScopePtr& sc) {
+    return GetNext<nth - 1>(sc->next);
+  };
 
  private:
   // scope link list.
@@ -72,5 +79,8 @@ class Scope {
   // Scope for struct, union or enum tags
   TagScopeMap tags = TagScopeMap();
 };
+
+template <>
+const ScopePtr& Scope::GetNext<1>(ScopePtr& sc);
 
 #endif  // SCOPE_GRUAD

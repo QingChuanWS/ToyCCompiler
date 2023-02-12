@@ -15,6 +15,7 @@
 #include <cstddef>
 #include <memory>
 
+#include "struct.h"
 #include "token.h"
 #include "utils.h"
 
@@ -37,8 +38,6 @@ enum TypeKind {
 class Type {
  public:
   Type(TypeKind kind, int size, int align) : kind(kind), size(size), align(align) {}
-  // copy construct.
-  Type(const Type& ty) = default;
   // whether the type is integer.
   bool IsInteger() const;
   // whether the type is T.
@@ -89,7 +88,6 @@ class Type {
   // usual arithmetic convert
   static void UsualArithConvert(NodePtr& lhs, NodePtr& rhs);
 
- private:
   // type kind
   TypeKind kind = TY_END;
   // Declaration.

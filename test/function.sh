@@ -22,8 +22,9 @@ memory_check(){
   ret=$?
   
   if [ $ret != 0 ]; then
-    echo "test case : "
-    echo "$1"" find memory error, check memory, see tmp.txt for the details."
+    cp $output $gene_dir"/error.txt"
+    echo "test case : ""$1"
+    echo " find memory error, check memory, see error.txt for the details."
   fi
   echo $ut" memory check pass."
   echo "---------------------------------" 

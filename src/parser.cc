@@ -335,17 +335,22 @@ TypePtr Parser::FunctionParam(TokenPtr* rest, TokenPtr tok, TypePtr ty) {
 static TypePtr StructOrUnionDecl(TypeKind kind, TokenPtr* rest, TokenPtr tok) {
   DEBUG(kind == TY_STRUCT || kind == TY_UNION);
   // read struct or union tag.
-  TokenPtr tag = nullptr;
   TypePtr ty = nullptr;
+  TokenPtr tag = nullptr;
   if (tok->Is<TK_IDENT>() == TK_IDENT) {
     tag = tok;
     tok = Token::GetNext<1>(tok);
-    if (!tok->Equal("{")) {
-      ty = Scope::FindTag(tag->GetIdent());
-      if (!ty) {
-        tok->ErrorTok("unknow struct tag.");
-      }
-      *rest = tok;
+  }
+
+  if (tag && !tok->Equal("{")) {
+    *rest = tok;
+    ty = Scope::FindTag(tag->GetIdent());
+    if (ty != nullptr) {
+      return ty;
+    } else {
+      // imcompleted type.
+      auto ty = std::make_shared<Type>(TY_STRUCT, -1, 1);
+      Scope::PushTagScope(tag->GetIdent(), ty);
       return ty;
     }
   }
@@ -357,7 +362,18 @@ static TypePtr StructOrUnionDecl(TypeKind kind, TokenPtr* rest, TokenPtr tok) {
     ty = Type::CreateUnionType(mem);
   }
   if (tag) {
-    scope->GetTagScope()[tag->GetIdent()] = ty;
+    // If this is a redefinition, overwrite a previous type.
+    // Otherwise, register the struct type.
+    const String& name = tag->GetIdent();
+    auto t = scope->GetTagScope().find(name);
+    if (t != scope->GetTagScope().end()) {
+      // occurs loop reference.
+      // such as struct T{ struct T* next, int a} t;
+      // which struct T and struct T* next is dependent each other.
+      *(t->second) = *ty;
+      return t->second;
+    }
+    Scope::PushTagScope(tag->GetIdent(), ty);
   }
   return ty;
 }
@@ -378,18 +394,19 @@ TypePtr Parser::EnumDecl(TokenPtr* rest, TokenPtr tok) {
   if (tok->Is<TK_IDENT>()) {
     tag = tok;
     tok = Token::GetNext<1>(tok);
-    if (tag && !tok->Equal("{")) {
-      TypePtr res = Scope::FindTag(tag->GetIdent());
-      if (!res) {
-        tok->ErrorTok("unknow enum tag");
-      }
-      if (!res->Is<TY_ENUM>()) {
-        tok->ErrorTok("not a enum tag");
-      }
-      *rest = tok;
-      return res;
-    }
   }
+  if (tag && !tok->Equal("{")) {
+    *rest = tok;
+    TypePtr res = Scope::FindTag(tag->GetIdent());
+    if (!res) {
+      tok->ErrorTok("unknow enum tag");
+    }
+    if (!res->Is<TY_ENUM>()) {
+      tok->ErrorTok("not a enum tag");
+    }
+    return res;
+  }
+
   tok = tok->SkipToken("{");
   int i = 0;
   int val = 0;
@@ -409,7 +426,7 @@ TypePtr Parser::EnumDecl(TokenPtr* rest, TokenPtr tok) {
   }
   *rest = tok->SkipToken("}");
   if (tag) {
-    scope->GetTagScope()[tag->GetIdent()] = ty;
+    Scope::PushTagScope(tag->GetIdent(), ty);
   }
   return ty;
 }

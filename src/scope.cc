@@ -27,6 +27,10 @@ VarScopePtr& Scope::PushVarScope(const String& name) {
   return scope->vars[name];
 }
 
+void Scope::PushTagScope(const String& name, TypePtr ty) {
+  scope->tags[name] = ty;
+}
+
 VarScopePtr Scope::FindVarScope(const String& name) {
   for (ScopePtr sc = scope; sc != nullptr; sc = sc->next) {
     auto v = sc->vars.find(name);
@@ -55,4 +59,9 @@ const TypePtr Scope::FindTypedef(const TokenPtr& tok) {
     }
   }
   return nullptr;
+}
+
+template <>
+const ScopePtr& Scope::GetNext<1>(ScopePtr& sc) {
+  return sc->next;
 }
