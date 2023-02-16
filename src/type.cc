@@ -10,6 +10,7 @@
  */
 
 #include "type.h"
+#include <memory>
 
 #include "node.h"
 #include "struct.h"
@@ -83,6 +84,11 @@ const TokenPtr& Type::GetName() const {
   return name;
 }
 
+bool Type::IsSameStruct(TypePtr ty1) {
+  return ty1->Is<TY_STRUCT>() && this->Is<TY_STRUCT>() &&
+         ty1->tag->GetIdent() == this->tag->GetIdent();
+}
+
 void Type::UpdateStructMember(const MemberVector& mem) {
   if (mem.empty()) return;
   for (auto& m : mem) {
@@ -96,7 +102,7 @@ void Type::UpdateStructMember(const MemberVector& mem) {
       last = cur;
       cur = cur->base;
     }
-    if (cur->IsSameStruct(this->tag)) {
+    if (this->IsSameStruct(cur)) {
       // occurs cyclic reference.
       // such as struct T{ struct T* next, int a} t;
       // which struct T and struct T* next is dependent each other.

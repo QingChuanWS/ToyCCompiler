@@ -76,9 +76,6 @@ class Type {
   // Inference Node Type
   static void TypeInfer(NodePtr node);
   // Is same Struct
-  bool IsSameStruct(TokenPtr tag) {
-    return this->Is<TY_STRUCT>() && tag->GetIdent() == this->tag->GetIdent();
-  }
   void UpdateStructMember(const MemberVector& mem);
 
  private:
@@ -90,6 +87,8 @@ class Type {
   static TypePtr GetCommonType(const TypePtr& ty1, const TypePtr& ty2);
   // usual arithmetic convert
   static void UsualArithConvert(NodePtr& lhs, NodePtr& rhs);
+  // whether two struct has same tag in same scope.
+  bool IsSameStruct(TypePtr ty1);
 
   // type kind
   TypeKind kind = TY_END;
