@@ -11,6 +11,9 @@
 
 #include "parser.h"
 
+#include <cstddef>
+#include <memory>
+
 #include "node.h"
 #include "scope.h"
 #include "token.h"
@@ -355,9 +358,9 @@ static TypePtr StructOrUnionDecl(TypeKind kind, TokenPtr* rest, TokenPtr tok) {
 
   MemberVector mem = Member::MemberDecl(rest, tok);
   if (kind == TY_STRUCT) {
-    ty = Type::CreateStructType(mem);
+    ty = Type::CreateStructType(mem, tag);
   } else {
-    ty = Type::CreateUnionType(mem);
+    ty = Type::CreateUnionType(mem, tag);
   }
   if (tag) {
     // If this is a redefinition, overwrite a previous type.
@@ -365,10 +368,9 @@ static TypePtr StructOrUnionDecl(TypeKind kind, TokenPtr* rest, TokenPtr tok) {
     const String& name = tag->GetIdent();
     auto t = scope->GetTagScope().find(name);
     if (t != scope->GetTagScope().end()) {
-      // occurs loop reference.
-      // such as struct T{ struct T* next, int a} t;
-      // which struct T and struct T* next is dependent each other.
       *(t->second) = *ty;
+      // avoid cyclic reference
+      t->second->UpdateStructMember(mem);
       return t->second;
     }
     Scope::PushTagScope(tag->GetIdent(), ty);

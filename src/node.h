@@ -63,7 +63,7 @@ class Node {
  public:
   Node(NodeKind kind, TokenPtr tok) : kind(kind), name(tok) {}
   // whether the node is point.
-  inline bool IsPointerNode() const { return ty->IsPointer(); }
+  inline bool IsPointerNode() const { return ty->Is<TY_PRT>(); }
   // whether the node is array node.
   inline bool IsArrayNode() const { return ty->Is<TY_ARRAY>(); }
   // error print

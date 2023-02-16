@@ -23,26 +23,14 @@ TypePtr ty_char = std::make_shared<Type>(TY_CHAR, 1, 1);
 TypePtr ty_void = std::make_shared<Type>(TY_VOID, 1, 1);
 TypePtr ty_bool = std::make_shared<Type>(TY_BOOL, 1, 1);
 
-const Type& Type::Copy(const Type& ty) {
-  *this = ty;
-  // if (ty.base) {
-  //   this->base = std::make_shared<Type>(*ty.base);
-  // }
-  // if (ty.mem) {
-  //   this->mem = std::make_shared<Member>(*ty.mem);  /// copy array
-  // }
-  // if (ty.return_ty) {
-  //   this->return_ty = std::make_shared<Type>(*ty.return_ty);
-  // }
-  // if (!ty.params.empty()) {
-  //   // copy list.
-  // }
-  return *this;
-}
-
 bool Type::IsInteger() const {
   return kind == TY_BOOL || kind == TY_INT || kind == TY_CHAR || kind == TY_SHORT ||
          kind == TY_LONG || kind == TY_ENUM;
+}
+
+template <>
+bool Type::Is<TY_PRT>() const {
+  return kind == TY_PRT || base != nullptr;
 }
 
 TypePtr Type::CreatePointerType(TypePtr base) {
@@ -64,15 +52,16 @@ TypePtr Type::CreateArrayType(TypePtr base, int array_len) {
   return ty;
 }
 
-TypePtr Type::CreateStructType(MemberVector mem) {
+TypePtr Type::CreateStructType(MemberVector mem, TokenPtr tag) {
   auto ty = std::make_shared<Type>(TY_STRUCT, 1, 1);
   ty->align = Member::CalcuStructAlign(mem);
   ty->size = AlignTo(Member::CalcuStructOffset(mem), ty->align);
   ty->mem = mem;
+  ty->tag = tag;
   return ty;
 }
 
-TypePtr Type::CreateUnionType(MemberVector mem) {
+TypePtr Type::CreateUnionType(MemberVector mem, TokenPtr tag) {
   auto ty = std::make_shared<Type>(TY_UNION, 1, 1);
   for (auto m : mem) {
     if (ty->align < m->ty->align) {
@@ -94,11 +83,44 @@ const TokenPtr& Type::GetName() const {
   return name;
 }
 
+void Type::UpdateStructMember(const MemberVector& mem) {
+  if (mem.empty()) return;
+  for (auto& m : mem) {
+    TypePtr cur = m->ty;
+    if (!cur->Is<TY_PRT>()) {
+      continue;
+    }
+    TypePtr last = cur;
+    cur = cur->base;
+    while (cur->Is<TY_PRT>()) {
+      last = cur;
+      cur = cur->base;
+    }
+    if (cur->IsSameStruct(this->tag)) {
+      // occurs cyclic reference.
+      // such as struct T{ struct T* next, int a} t;
+      // which struct T and struct T* next is dependent each other.
+      last->base = std::make_shared<Type>(TY_STRUCT, -1, 0);
+      last->base->is_self_pointer = true;
+      last->base->base_weak = TypeWeakPtr(cur);
+    }
+  }
+}
+
 // get struct member based on token.
 MemberPtr Type::GetStructMember(TokenPtr tok) const {
-  for (auto m : mem) {
-    if (tok->Equal(m->name)) {
-      return m;
+  if (is_self_pointer) {
+    TypePtr t = base_weak.lock();
+    for (auto m : t->mem) {
+      if (tok->Equal(m->name)) {
+        return m;
+      }
+    }
+  } else {
+    for (auto m : mem) {
+      if (tok->Equal(m->name)) {
+        return m;
+      }
     }
   }
   tok->ErrorTok("no such member.");
@@ -108,7 +130,7 @@ MemberPtr Type::GetStructMember(TokenPtr tok) const {
 TypePtr Type::CreateEnumType() { return std::make_shared<Type>(TY_ENUM, 4, 4); }
 
 TypePtr Type::GetCommonType(const TypePtr& ty1, const TypePtr& ty2) {
-  if (ty1->IsPointer()) {
+  if (ty1->Is<TY_PRT>()) {
     return Type::CreatePointerType(ty1->base);
   }
   if (ty1->size == 8 || ty2->size == 8) {

@@ -34,6 +34,7 @@ struct VarAttr;
 
 using TokenPtr = std::shared_ptr<Token>;
 using TypePtr = std::shared_ptr<Type>;
+using TypeWeakPtr = std::weak_ptr<Type>;
 using TypeVector = std::vector<TypePtr>;
 using NodePtr = std::shared_ptr<Node>;
 using ObjectPtr = std::shared_ptr<Object>;

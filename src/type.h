@@ -12,6 +12,8 @@
 #ifndef TYPE_GRUAD
 #define TYPE_GRUAD
 
+#include <memory>
+
 #include "struct.h"
 #include "token.h"
 #include "utils.h"
@@ -35,8 +37,6 @@ enum TypeKind {
 class Type {
  public:
   Type(TypeKind kind, int size, int align) : kind(kind), size(size), align(align) {}
-  // deep copy
-  const Type& Copy(const Type& ty);
   // copy type list.
   // whether the type is integer.
   bool IsInteger() const;
@@ -45,8 +45,6 @@ class Type {
   inline bool Is() const {
     return kind == T;
   }
-  // whether the type is points.
-  inline bool IsPointer() const { return base != nullptr; }
   // whether the type contains the tok name.
   inline bool HasName() const { return name != nullptr; }
   // get data size.
@@ -70,13 +68,18 @@ class Type {
   // create array type.
   static TypePtr CreateArrayType(TypePtr base, int array_len);
   // create struct type.
-  static TypePtr CreateStructType(MemberVector mem);
+  static TypePtr CreateStructType(MemberVector mem, TokenPtr tag);
   // create union type.
-  static TypePtr CreateUnionType(MemberVector mem);
+  static TypePtr CreateUnionType(MemberVector mem, TokenPtr tag);
   // create enum type.
   static TypePtr CreateEnumType();
   // Inference Node Type
   static void TypeInfer(NodePtr node);
+  // Is same Struct
+  bool IsSameStruct(TokenPtr tag) {
+    return this->Is<TY_STRUCT>() && tag->GetIdent() == this->tag->GetIdent();
+  }
+  void UpdateStructMember(const MemberVector& mem);
 
  private:
   friend class Parser;
@@ -101,11 +104,14 @@ class Type {
   // Pointer-to or array type. Using a same member to
   // represent pointer/array duality in C.
   TypePtr base = nullptr;
+  TypeWeakPtr base_weak;
+  bool is_self_pointer = false;
 
   // ---- Array ----
   int array_len = 0;
 
   // ---- Member---
+  TokenPtr tag = nullptr;
   MemberVector mem{};
 
   // --- function ---
@@ -114,5 +120,8 @@ class Type {
   // function params type list.
   TypeVector params{};
 };
+
+template <>
+bool Type::Is<TY_PRT>() const;
 
 #endif  // !TYPE_GRUAD
