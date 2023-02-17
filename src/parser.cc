@@ -36,7 +36,7 @@ NodePtr Parser::CompoundStmt(TokenPtr* rest, TokenPtr tok) {
 
   while (!tok->Equal("}")) {
     // parser declaration.
-    if (tok->IsTypename()) {
+    if (tok->IsTypename() && !Token::GetNext<1>(tok)->Equal(":")) {
       auto attr = std::make_shared<VarAttr>();
       TypePtr basety = Declspec(&tok, tok, attr);
 
@@ -138,7 +138,7 @@ TypePtr Parser::Declspec(TokenPtr* rest, TokenPtr tok, VarAttrPtr attr) {
       } else {
         attr->is_static = true;
       }
-      if (attr->is_typedef + attr->is_static > 1) {
+      if (attr->is_typedef && attr->is_static) {
         tok->ErrorTok("typedef and static may not be used together.");
       }
 
