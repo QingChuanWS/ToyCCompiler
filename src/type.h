@@ -64,19 +64,19 @@ class Type {
   // create pointer type.
   static TypePtr CreatePointerType(TypePtr base);
   // create function type.
-  static TypePtr CreateFunctionType(TypePtr ret_type, const TypeVector& params);
+  static TypePtr CreateFunctionType(TypePtr ret_type, const TypePtrVector& params);
   // create array type.
   static TypePtr CreateArrayType(TypePtr base, int array_len);
   // create struct type.
-  static TypePtr CreateStructType(MemberVector mem, TokenPtr tag);
+  static TypePtr CreateStructType(MemPtrVector mem, TokenPtr tag);
   // create union type.
-  static TypePtr CreateUnionType(MemberVector mem, TokenPtr tag);
+  static TypePtr CreateUnionType(MemPtrVector mem, TokenPtr tag);
   // create enum type.
   static TypePtr CreateEnumType();
   // Inference Node Type
   static void TypeInfer(NodePtr node);
   // Is same Struct
-  void UpdateStructMember(const MemberVector& mem);
+  void UpdateStructMember(const MemPtrVector& mem);
 
  private:
   friend class Parser;
@@ -111,13 +111,13 @@ class Type {
 
   // ---- Member---
   TokenPtr tag = nullptr;
-  MemberVector mem{};
+  MemPtrVector mem{};
 
   // --- function ---
   // Function type.
   TypePtr return_ty = nullptr;
   // function params type list.
-  TypeVector params{};
+  TypePtrVector params{};
 };
 
 template <>

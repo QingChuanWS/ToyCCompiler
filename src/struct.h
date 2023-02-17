@@ -23,11 +23,11 @@ class Member {
   inline int GetOffset() const { return offset; }
 
   // calculate struct align based on a list of Struct member.
-  static int CalcuStructAlign(const MemberVector& mem);
+  static int CalcuStructAlign(const MemPtrVector& mem);
   // init struct member list offset, return the sum of offset.
-  static int CalcuStructOffset(const MemberVector& mem);
+  static int CalcuStructOffset(const MemPtrVector& mem);
   // struct-decl = "{" struct-member
-  static MemberVector MemberDecl(TokenPtr* rest, TokenPtr tok);
+  static MemPtrVector MemberDecl(TokenPtr* rest, TokenPtr tok);
 
  private:
   friend Node;

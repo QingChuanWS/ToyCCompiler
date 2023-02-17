@@ -16,7 +16,7 @@
 #include "type.h"
 #include "utils.h"
 
-int Member::CalcuStructAlign(const MemberVector& mem) {
+int Member::CalcuStructAlign(const MemPtrVector& mem) {
   int align = 1;
   for (auto m : mem) {
     if (align < m->ty->GetAlign()) {
@@ -26,7 +26,7 @@ int Member::CalcuStructAlign(const MemberVector& mem) {
   return align;
 }
 
-int Member::CalcuStructOffset(const MemberVector& mem) {
+int Member::CalcuStructOffset(const MemPtrVector& mem) {
   int offset = 0;
   for (MemberPtr m : mem) {
     offset = AlignTo(offset, m->ty->GetAlign());
@@ -37,10 +37,10 @@ int Member::CalcuStructOffset(const MemberVector& mem) {
 }
 
 // struct-decl = "{" struct or union member
-MemberVector Member::MemberDecl(TokenPtr* rest, TokenPtr tok) {
+MemPtrVector Member::MemberDecl(TokenPtr* rest, TokenPtr tok) {
   tok = tok->SkipToken("{");
   auto head = std::make_shared<Member>();
-  MemberVector mem_vec;
+  MemPtrVector mem_vec;
 
   while (!tok->Equal("}")) {
     TypePtr basety = Parser::Declspec(&tok, tok, nullptr);

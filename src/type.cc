@@ -40,7 +40,7 @@ TypePtr Type::CreatePointerType(TypePtr base) {
   return ty;
 }
 
-TypePtr Type::CreateFunctionType(TypePtr ret_type, const TypeVector& params) {
+TypePtr Type::CreateFunctionType(TypePtr ret_type, const TypePtrVector& params) {
   auto ty = std::make_shared<Type>(TY_FUNC, ret_type->size, 0);
   ty->return_ty = ret_type;
   ty->params = params;
@@ -53,7 +53,7 @@ TypePtr Type::CreateArrayType(TypePtr base, int array_len) {
   return ty;
 }
 
-TypePtr Type::CreateStructType(MemberVector mem, TokenPtr tag) {
+TypePtr Type::CreateStructType(MemPtrVector mem, TokenPtr tag) {
   auto ty = std::make_shared<Type>(TY_STRUCT, 1, 1);
   ty->align = Member::CalcuStructAlign(mem);
   ty->size = AlignTo(Member::CalcuStructOffset(mem), ty->align);
@@ -62,7 +62,7 @@ TypePtr Type::CreateStructType(MemberVector mem, TokenPtr tag) {
   return ty;
 }
 
-TypePtr Type::CreateUnionType(MemberVector mem, TokenPtr tag) {
+TypePtr Type::CreateUnionType(MemPtrVector mem, TokenPtr tag) {
   auto ty = std::make_shared<Type>(TY_UNION, 1, 1);
   for (auto m : mem) {
     if (ty->align < m->ty->align) {
@@ -89,7 +89,7 @@ bool Type::IsSameStruct(TypePtr ty1) {
          ty1->tag->GetIdent() == this->tag->GetIdent();
 }
 
-void Type::UpdateStructMember(const MemberVector& mem) {
+void Type::UpdateStructMember(const MemPtrVector& mem) {
   if (mem.empty()) return;
   for (auto& m : mem) {
     TypePtr cur = m->ty;

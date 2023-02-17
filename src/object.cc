@@ -92,10 +92,12 @@ TokenPtr Object::CreateFunction(TokenPtr tok, TypePtr basety, VarAttrPtr attr, O
   *next = fn;
   // leave scope.
   Scope::LevarScope(scope);
+  
+  Node::UpdateGotoLabel();
   return tok;
 }
 
-void Object::CreateParamVar(TypeVector& params) {
+void Object::CreateParamVar(TypePtrVector& params) {
   for (auto i = params.rbegin(); i != params.rend(); ++i) {
     ObjectPtr v = CreateLocalVar((*i)->name->GetIdent(), *i, &locals);
   }
@@ -127,7 +129,7 @@ ObjectPtr Object::Parse(TokenPtr tok) {
     TypePtr basety = Parser::Declspec(&tok, tok, attr);
 
     if (attr->is_typedef) {
-      TypeVector ty_list = Parser::TypedefDecl(&tok, tok, basety);
+      TypePtrVector ty_list = Parser::TypedefDecl(&tok, tok, basety);
       for (auto t : ty_list) {
         Scope::PushVarScope(t->name->GetIdent())->tydef = t;
       }

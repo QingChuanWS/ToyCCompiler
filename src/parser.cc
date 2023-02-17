@@ -13,6 +13,7 @@
 
 #include <cstddef>
 #include <memory>
+#include <vector>
 
 #include "node.h"
 #include "scope.h"
@@ -40,7 +41,7 @@ NodePtr Parser::CompoundStmt(TokenPtr* rest, TokenPtr tok) {
       TypePtr basety = Declspec(&tok, tok, attr);
 
       if (attr->is_typedef) {
-        TypeVector ty_list = TypedefDecl(&tok, tok, basety);
+        TypePtrVector ty_list = TypedefDecl(&tok, tok, basety);
         for (auto t : ty_list) {
           Scope::PushVarScope(t->name->GetIdent())->tydef = t;
         }
@@ -263,11 +264,11 @@ TypePtr Parser::TypeSuffix(TokenPtr* rest, TokenPtr tok, TypePtr ty) {
   return ty;
 }
 
-TypeVector Parser::TypedefDecl(TokenPtr* rest, TokenPtr tok, TypePtr basety) {
+TypePtrVector Parser::TypedefDecl(TokenPtr* rest, TokenPtr tok, TypePtr basety) {
   auto head = std::make_shared<Type>(TY_END, 1, 1);
   TypePtr cur = head;
   bool first = true;
-  TypeVector res;
+  TypePtrVector res;
   while (!tok->Equal(";")) {
     if (!first) {
       tok = tok->SkipToken(",");
@@ -308,7 +309,7 @@ TypePtr Parser::Typename(TokenPtr* rest, TokenPtr tok) {
 // param = declspec declarator
 TypePtr Parser::FunctionParam(TokenPtr* rest, TokenPtr tok, TypePtr ty) {
   auto params = std::make_shared<Type>(TY_END, 0, 0);
-  TypeVector param;
+  TypePtrVector param;
   bool first = true;
 
   while (!tok->Equal(")")) {
@@ -356,7 +357,7 @@ static TypePtr StructOrUnionDecl(TypeKind kind, TokenPtr* rest, TokenPtr tok) {
     }
   }
 
-  MemberVector mem = Member::MemberDecl(rest, tok);
+  MemPtrVector mem = Member::MemberDecl(rest, tok);
   if (kind == TY_STRUCT) {
     ty = Type::CreateStructType(mem, tag);
   } else {
@@ -499,6 +500,16 @@ NodePtr Parser::Stmt(TokenPtr* rest, TokenPtr tok) {
     tok = tok->SkipToken(")");
     NodePtr then = Stmt(rest, tok);
     return Node::CreateForNode(node_name, nullptr, cond, nullptr, then);
+  }
+
+  if (tok->Equal("goto")) {
+    NodePtr node = Node::CreateGotoNode(tok);
+    *rest = Token::GetNext<2>(tok)->SkipToken(";");
+    return node;
+  }
+
+  if (tok->Is<TK_IDENT>() && Token::GetNext<1>(tok)->Equal(":")) {
+    return Node::CreateGotoLableNode(tok, Stmt(rest, Token::GetNext<2>(tok)));
   }
 
   if (tok->Equal("{")) {

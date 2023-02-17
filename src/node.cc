@@ -23,6 +23,9 @@
 #include "type.h"
 #include "utils.h"
 
+NodePtrVec goto_list;
+NodePtrVec label_list;
+
 void Node::Error(const char* fmt, ...) const {
   va_list ap;
   va_start(ap, fmt);
@@ -216,4 +219,36 @@ NodePtr Node::CreateIncdecNode(TokenPtr name, NodePtr prefix, int addend) {
   NodePtr sub = CreateAddNode(name, add_assgin, CreateConstNode(-addend, name));
   // (typeof A)(A += 1) -1
   return CreateCastNode(name, sub, prefix->ty);
+}
+
+NodePtr Node::CreateGotoNode(TokenPtr label_name) {
+  auto res = std::make_shared<Node>(ND_GOTO, label_name);
+  res->label = Token::GetNext<1>(label_name)->GetIdent();
+  goto_list.push_back(res);
+  return res;
+}
+
+NodePtr Node::CreateGotoLableNode(TokenPtr label_name, NodePtr body) {
+  auto res = std::make_shared<Node>(ND_LABEL, label_name);
+  res->label = label_name->GetIdent();
+  res->unique_label = CreateUniqueName();
+  res->body = body;
+  label_list.push_back(res);
+  return res;
+}
+
+void Node::UpdateGotoLabel() {
+  for (auto g : goto_list) {
+    for (auto l : label_list) {
+      if (g->label == l->label) {
+        g->unique_label = l->unique_label;
+        break;
+      }
+    }
+    if (g->unique_label.empty()) {
+      Token::GetNext<1>(g->name)->ErrorTok("use of undeclared label.");
+    }
+  }
+  goto_list.clear();
+  label_list.clear();
 }

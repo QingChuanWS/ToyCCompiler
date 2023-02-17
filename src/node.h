@@ -51,6 +51,8 @@ enum NodeKind {
   ND_STMT_EXPR,  // statement expression
   ND_RETURN,     // return
   ND_BLOCK,      // { ... }
+  ND_GOTO,       // goto
+  ND_LABEL,      // labeled statement
   ND_CALL,       // Function call
   ND_IF,         // if
   ND_FOR,        // for and while
@@ -103,6 +105,12 @@ class Node {
   static NodePtr CreateCombinedNode(NodePtr binary);
   // create a post inc and dec node.
   static NodePtr CreateIncdecNode(TokenPtr node_name, NodePtr prefix, int addend);
+  // create a goto node.
+  static NodePtr CreateGotoNode(TokenPtr label_name);
+  // create a goto label node.
+  static NodePtr CreateGotoLableNode(TokenPtr label, NodePtr body);
+  // update goto label 
+  static void UpdateGotoLabel();
 
  private:
   friend class CodeGenerator;
@@ -142,6 +150,10 @@ class Node {
   String call = String();
   TypePtr fun_ty = nullptr;
   NodePtr args = nullptr;
+
+  // ----- goto ------;
+  String label = "";
+  String unique_label = "";
 
   //  ------ for Var ------;
   ObjectPtr var = nullptr;

@@ -257,6 +257,13 @@ void CodeGenerator::StmtGen(NodePtr& node) {
         StmtGen(n);
       }
       return;
+    case ND_GOTO:
+      ASM_GEN("  jmp ", node->unique_label);
+      return;
+    case ND_LABEL:
+      ASM_GEN(node->unique_label, ":");
+      StmtGen(node->body);
+      return ;
     case ND_RETURN:
       ExprGen(node->lhs);
       ASM_GEN("  jmp .L.return.", cur_fn->obj_name);
