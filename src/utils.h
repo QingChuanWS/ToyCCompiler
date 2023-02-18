@@ -78,6 +78,7 @@ extern NodePtrVec goto_list;
 extern NodePtrVec label_list;
 extern String cur_brk;
 extern String cur_cnt;
+extern NodePtr cur_swt;
 
 extern ScopePtr scope;
 

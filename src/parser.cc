@@ -12,6 +12,7 @@
 #include "parser.h"
 
 #include <cstddef>
+#include <cstdint>
 #include <memory>
 #include <vector>
 
@@ -502,6 +503,9 @@ TypePtr Parser::EnumDecl(TokenPtr* rest, TokenPtr tok) {
 
 // stmt = "return" expr ";" |
 //        "if" "(" expr ")" stmt ("else" stmt)? |
+//        "switch" "(" expr ")" stmt
+//        "case" num ":" stmt
+//        "default" ":" stmt
 //        "for" "(" expr-stmt expr? ";" expr? ")" stmt |
 //        "while" "(" expr ")" stmt |
 //        "goto" ident ";" |
@@ -531,6 +535,51 @@ NodePtr Parser::Stmt(TokenPtr* rest, TokenPtr tok) {
     }
     *rest = tok;
     return Node::CreateIfNode(node_name, cond, then, els);
+  }
+
+  if (tok->Equal("switch")) {
+    TokenPtr start = tok;
+    tok = Token::GetNext<1>(tok)->SkipToken("(");
+    NodePtr body = Expr(&tok, tok);
+    tok = tok->SkipToken(")");
+    // buffer current switch
+    NodePtr swt = cur_swt;
+    cur_swt = Node::CreateSwitchNode(start, body);
+    // buffer break;
+    String brk = cur_brk;
+    cur_brk = cur_swt->break_label = CreateUniqueName();
+    // parse switch body
+    cur_swt->then = Stmt(rest, tok);
+
+    cur_brk = brk;
+    NodePtr res = cur_swt;
+    cur_swt = swt;
+    return res;
+  }
+
+  if (tok->Equal("case")) {
+    if (!cur_swt) {
+      tok->ErrorTok("stary case");
+    }
+    TokenPtr start = tok;
+    int64_t v = Token::GetNext<1>(tok)->GetNumber();
+    tok = Token::GetNext<2>(tok)->SkipToken(":");
+
+    NodePtr res = Node::CreateCaseNode(start, v, Stmt(rest, tok));
+    cur_swt->case_nodes.push_back(res);
+    return res;
+  }
+
+  if (tok->Equal("default")) {
+    if (!cur_swt) {
+      tok->ErrorTok("stary case");
+    }
+    TokenPtr start = tok;
+    tok = Token::GetNext<1>(tok)->SkipToken(":");
+
+    NodePtr res = Node::CreateDefaultNode(start, Stmt(rest, tok));
+    cur_swt->default_node = res;
+    return res;
   }
 
   if (tok->Equal("for")) {
@@ -567,7 +616,7 @@ NodePtr Parser::Stmt(TokenPtr* rest, TokenPtr tok) {
     NodePtr body = Stmt(rest, tok);
 
     Scope::LevarScope(scope);
-    NodePtr res = Node::CreateForNode(node_name, init, cond, inc, body, cur_brk);
+    NodePtr res = Node::CreateForNode(node_name, init, cond, inc, body, cur_brk, cur_cnt);
     cur_brk = brk;
     cur_cnt = cnt;
     return res;
@@ -586,7 +635,7 @@ NodePtr Parser::Stmt(TokenPtr* rest, TokenPtr tok) {
     cur_cnt = CreateUniqueName();
 
     NodePtr then = Stmt(rest, tok);
-    NodePtr res = Node::CreateForNode(node_name, nullptr, cond, nullptr, then, cur_brk);
+    NodePtr res = Node::CreateForNode(node_name, nullptr, cond, nullptr, then, cur_brk, cur_cnt);
 
     cur_brk = brk;
     cur_cnt = cnt;

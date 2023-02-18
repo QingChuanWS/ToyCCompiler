@@ -13,6 +13,7 @@
 #define NODE_GRUAD
 
 #include <cstddef>
+#include <cstdint>
 #include <memory>
 #include <string>
 
@@ -55,6 +56,9 @@ enum NodeKind {
   ND_LABEL,      // labeled statement
   ND_CALL,       // Function call
   ND_IF,         // if
+  ND_SWITCH,     // switch
+  ND_CASE,       // case
+  ND_DEFAULT,    // default
   ND_FOR,        // for and while
   ND_VAR,        // variable
   ND_CAST,       // type cast
@@ -94,7 +98,7 @@ class Node {
   static NodePtr CreateIfNode(TokenPtr node_name, NodePtr cond, NodePtr then, NodePtr els);
   // create for expration node.
   static NodePtr CreateForNode(TokenPtr node_name, NodePtr init, NodePtr cond, NodePtr inc,
-                               NodePtr then, String brk_label);
+                               NodePtr then, String brk_label, String cnt_label);
   // create block expression node.
   static NodePtr CreateBlockNode(NodeKind kind, TokenPtr node_name, NodePtr body);
   // create struct member node.
@@ -106,9 +110,15 @@ class Node {
   // create a post inc and dec node.
   static NodePtr CreateIncdecNode(TokenPtr node_name, NodePtr prefix, int addend);
   // create a goto node.
-  static NodePtr CreateGotoNode(TokenPtr label, String label_name, bool need_match = true);
+  static NodePtr CreateGotoNode(TokenPtr label, String label_name, bool need_update = true);
   // create a goto label node.
   static NodePtr CreateGotoLableNode(TokenPtr label, NodePtr body);
+  // create a switch node.
+  static NodePtr CreateSwitchNode(TokenPtr node_name, NodePtr cond);
+  // create a case node.
+  static NodePtr CreateCaseNode(TokenPtr node_name, int64_t num, NodePtr body);
+  // create a default node.
+  static NodePtr CreateDefaultNode(TokenPtr node_name, NodePtr body);
   // update goto label
   static void UpdateGotoLabel();
 
@@ -144,6 +154,10 @@ class Node {
   NodePtr inc = nullptr;
   String break_label = "";     // break; label
   String continue_label = "";  // continue label
+
+  // switch node
+  NodePtrVec case_nodes{};
+  NodePtr default_node = nullptr;
 
   // struct member access.
   MemberPtr mem = nullptr;

@@ -17,12 +17,13 @@
 // parsing token list and generate AST.
 class Parser {
  public:
+  /*  ---- parse OBJECT ---- */
   // parsing token list and generate AST.
   static ObjectPtr Parse(TokenPtr tok);
   // create global variable list based on token list.
   static TypePtrVector ParseGlobalVar(TokenPtr* rest, TokenPtr tok, TypePtr basety);
 
-  // ---- parse TYPE ----
+  /*  ---- parse TYPE ---- */
   // declspec = ( "_Bool" | "void" | "char" | "int"
   //             | "short" | "long"
   //             | "typedef" | "static" | struct-decl
@@ -50,7 +51,7 @@ class Parser {
   // typename = declspec abstract-declarator
   static TypePtr Typename(TokenPtr* rest, TokenPtr tok);
 
-  // ---- parse Statemet ----
+  /*  ---- parse STATEMENT ---- */
   // program = stmt*
   static NodePtr Program(TokenPtr* rest, TokenPtr tok);
   // compound-stmt = (typedef | declaration | stmt)* "}"
@@ -61,6 +62,9 @@ class Parser {
   static NodePtr Declaration(TokenPtr* rest, TokenPtr tok, TypePtr basety);
   // stmt = "return" expr ";" |
   //        "if" "(" expr ")" stmt ("else" stmt)? |
+  //        "switch" "(" expr ")" stmt
+  //        "case" num ":" stmt
+  //        "default" ":" stmt
   //        "for" "(" expr-stmt expr? ";" expr? ")" stmt |
   //        "while" "(" expr ")" stmt |
   //        "goto" ident ";" |

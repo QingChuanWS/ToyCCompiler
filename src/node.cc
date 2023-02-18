@@ -29,6 +29,8 @@ NodePtrVec label_list{};
 String cur_brk = "";
 String cur_cnt = "";
 
+NodePtr cur_swt = nullptr;
+
 void Node::Error(const char* fmt, ...) const {
   va_list ap;
   va_start(ap, fmt);
@@ -149,13 +151,14 @@ NodePtr Node::CreateIfNode(TokenPtr node_name, NodePtr cond, NodePtr then, NodeP
 }
 
 NodePtr Node::CreateForNode(TokenPtr node_name, NodePtr init, NodePtr cond, NodePtr inc,
-                            NodePtr then, String brk_label) {
+                            NodePtr then, String brk_label, String cnt_label) {
   auto res = std::make_shared<Node>(NodeKind::ND_FOR, node_name);
   res->init = init;
   res->cond = cond;
   res->inc = inc;
   res->then = then;
   res->break_label = brk_label;
+  res->continue_label = cnt_label;
   return res;
 }
 
@@ -225,11 +228,13 @@ NodePtr Node::CreateIncdecNode(TokenPtr name, NodePtr prefix, int addend) {
   return CreateCastNode(name, sub, prefix->ty);
 }
 
-NodePtr Node::CreateGotoNode(TokenPtr label, String label_name, bool need_match) {
+NodePtr Node::CreateGotoNode(TokenPtr label, String label_name, bool need_update) {
   auto res = std::make_shared<Node>(ND_GOTO, label);
-  res->label = label_name;
-  if (need_match) {
+  if (need_update) {
+    res->label = label_name;
     goto_list.push_back(res);
+  } else {
+    res->unique_label = label_name;
   }
   return res;
 }
@@ -262,4 +267,25 @@ void Node::UpdateGotoLabel() {
   }
   goto_list.clear();
   label_list.clear();
+}
+
+NodePtr Node::CreateSwitchNode(TokenPtr node_name, NodePtr cond) {
+  NodePtr res = std::make_shared<Node>(ND_SWITCH, node_name);
+  res->cond = cond;
+  return res;
+}
+
+NodePtr Node::CreateCaseNode(TokenPtr node_name, int64_t val, NodePtr body) {
+  NodePtr res = std::make_shared<Node>(ND_CASE, node_name);
+  res->label = CreateUniqueName();
+  res->val = val;
+  res->body = body;
+  return res;
+}
+
+NodePtr Node::CreateDefaultNode(TokenPtr node_name, NodePtr body) {
+  NodePtr res = std::make_shared<Node>(ND_CASE, node_name);
+  res->label = CreateUniqueName();
+  res->body = body;
+  return res;
 }

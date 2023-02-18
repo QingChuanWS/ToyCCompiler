@@ -282,9 +282,31 @@ void CodeGenerator::StmtGen(NodePtr& node) {
       ASM_GEN(".L.end.", seq, ":");
       return;
     }
+    case ND_SWITCH:
+      ExprGen(node->cond);
+      for (auto c : node->case_nodes) {
+        const char* reg = (node->cond->ty->Size() == 8 ? "rax" : "eax");
+        ASM_GEN("  cmp ", reg, ", ", c->val);
+        ASM_GEN("  je ", c->label);
+      }
+
+      if (node->default_node) {
+        ASM_GEN("  jmp ", node->default_node->label);
+      }
+
+      ASM_GEN("  jmp ", node->break_label);
+      StmtGen(node->then);
+      ASM_GEN(node->break_label, ": ");
+      return;
+    case ND_CASE:
+      ASM_GEN(node->label, ":");
+      StmtGen(node->body);
+      return;
     case ND_FOR: {
       int seq = Count();
-      if (node->init != nullptr) StmtGen(node->init);
+      if (node->init != nullptr) {
+        StmtGen(node->init);
+      }
       ASM_GEN(".L.begin.", seq, ":");
       if (node->cond != nullptr) {
         ExprGen(node->cond);
