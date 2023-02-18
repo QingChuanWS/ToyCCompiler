@@ -17,6 +17,11 @@
 // parsing token list and generate AST.
 class Parser {
  public:
+  // parsing token list and generate AST.
+  static ObjectPtr Parse(TokenPtr tok);
+  // create global variable list based on token list.
+  static TypePtrVector ParseGlobalVar(TokenPtr* rest, TokenPtr tok, TypePtr basety);
+
   // ---- parse TYPE ----
   // declspec = ( "_Bool" | "void" | "char" | "int"
   //             | "short" | "long"

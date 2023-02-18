@@ -84,7 +84,10 @@ TokenPtr Object::CreateFunction(TokenPtr tok, TypePtr basety, VarAttrPtr attr, O
   Scope::EnterScope(scope);
 
   // funtion defination.
-  CreateParamVar(ty->params);
+  for (auto i = ty->params.rbegin(); i != ty->params.rend(); ++i) {
+    ObjectPtr v = CreateLocalVar((*i)->name->GetIdent(), *i, &locals);
+  }
+
   fn->params = locals;
   fn->body = Parser::Program(&tok, tok);
   fn->loc_list = locals;
@@ -92,78 +95,14 @@ TokenPtr Object::CreateFunction(TokenPtr tok, TypePtr basety, VarAttrPtr attr, O
   *next = fn;
   // leave scope.
   Scope::LevarScope(scope);
-  
+
   Node::UpdateGotoLabel();
   return tok;
 }
 
-void Object::CreateParamVar(TypePtrVector& params) {
-  for (auto i = params.rbegin(); i != params.rend(); ++i) {
-    ObjectPtr v = CreateLocalVar((*i)->name->GetIdent(), *i, &locals);
-  }
-}
-
-bool Object::IsFuncToks(TokenPtr tok) {
-  if (tok->Equal(";")) {
-    return false;
-  }
-  while (tok->Equal("*")) {
-    tok = Token::GetNext<1>(tok);
-  }
-  if (!tok->Is<TK_IDENT>()) {
-    tok->ErrorTok("expected a variable name.");
-  }
-  tok = Token::GetNext<1>(tok);
-  if (tok->Equal("(")) {
-    return true;
-  }
-  return false;
-}
-
-ObjectPtr Object::Parse(TokenPtr tok) {
-  globals = nullptr;
-  // enter scope
-  Scope::EnterScope(scope);
-  while (!tok->Is<TK_EOF>()) {
-    auto attr = std::make_shared<VarAttr>();
-    TypePtr basety = Parser::Declspec(&tok, tok, attr);
-
-    if (attr->is_typedef) {
-      TypePtrVector ty_list = Parser::TypedefDecl(&tok, tok, basety);
-      for (auto t : ty_list) {
-        Scope::PushVarScope(t->name->GetIdent())->tydef = t;
-      }
-      continue;
-    }
-
-    if (IsFuncToks(tok)) {
-      tok = CreateFunction(tok, basety, attr, &globals);
-      continue;
-    }
-    tok = ParseGlobalVar(tok, basety);
-  }
-  // leave scope.
-  Scope::LevarScope(scope);
-  return globals;
-}
-
-TokenPtr Object::ParseGlobalVar(TokenPtr tok, TypePtr basety) {
-  bool first = true;
-
-  while (!tok->Equal(";")) {
-    if (!first) {
-      tok = tok->SkipToken(",");
-    }
-    first = false;
-    TypePtr ty = Parser::Declarator(&tok, tok, basety);
-    ObjectPtr gv = CreateGlobalVar(ty->name->GetIdent(), ty, &globals);
-  }
-  return tok->SkipToken(";");
-}
-
 void Object::OffsetCal() {
   for (Object* fn = this; fn != nullptr; fn = fn->next.get()) {
-    if (!fn->IsFunction()) {
+    if (!fn->Is<OB_FUNCTION>()) {
       continue;
     }
 
@@ -175,4 +114,9 @@ void Object::OffsetCal() {
     }
     fn->stack_size = AlignTo(ofs, 16);
   }
+}
+
+template <>
+bool Object::Is<OB_FUNCTION>() {
+  return this->kind == Objectkind::OB_FUNCTION || this->is_defination == true;
 }

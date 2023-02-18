@@ -20,6 +20,7 @@
 #include "codegen.h"
 #include "node.h"
 #include "object.h"
+#include "parser.h"
 #include "token.h"
 #include "tools.h"
 #include "utils.h"
@@ -30,7 +31,7 @@ int main(int argc, char** argv) {
   // read source code file and generate token list.
   TokenPtr cur = Token::TokenizeFile(cfg.input_path);
   // parse token list generate AST.
-  ObjectPtr prog = Object::Parse(cur);
+  ObjectPtr prog = Parser::Parse(cur);
   // config code generator.
   CodeGenerator gene(cfg);
   // generate source code.

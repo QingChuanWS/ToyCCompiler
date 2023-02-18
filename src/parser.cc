@@ -16,11 +16,78 @@
 #include <vector>
 
 #include "node.h"
+#include "object.h"
 #include "scope.h"
 #include "token.h"
 #include "tools.h"
 #include "type.h"
 #include "utils.h"
+
+// Lookahead tokens and returns true if a given token is a start
+// of a function definition or declaration.
+static bool IsFuncToks(TokenPtr tok) {
+  if (tok->Equal(";")) {
+    return false;
+  }
+  while (tok->Equal("*")) {
+    tok = Token::GetNext<1>(tok);
+  }
+  if (!tok->Is<TK_IDENT>()) {
+    tok->ErrorTok("expected a variable name.");
+  }
+  tok = Token::GetNext<1>(tok);
+  if (tok->Equal("(")) {
+    return true;
+  }
+  return false;
+}
+
+ObjectPtr Parser::Parse(TokenPtr tok) {
+  globals = nullptr;
+  // enter scope
+  Scope::EnterScope(scope);
+  while (!tok->Is<TK_EOF>()) {
+    auto attr = std::make_shared<VarAttr>();
+    TypePtr basety = Parser::Declspec(&tok, tok, attr);
+    // parse typedef statement.
+    if (attr->is_typedef) {
+      TypePtrVector ty_list = Parser::TypedefDecl(&tok, tok, basety);
+      for (auto t : ty_list) {
+        Scope::PushVarScope(t->name->GetIdent())->tydef = t;
+      }
+      continue;
+    }
+    // parse function.
+    if (IsFuncToks(tok)) {
+      tok = Object::CreateFunction(tok, basety, attr, &globals);
+      continue;
+    }
+    // parse global variable.
+    TypePtrVector gtype_vec = ParseGlobalVar(&tok, tok, basety);
+    for (auto gty : gtype_vec) {
+      Object::CreateGlobalVar(gty->name->GetIdent(), gty, &globals);
+    }
+  }
+  // leave scope.
+  Scope::LevarScope(scope);
+  return globals;
+}
+
+TypePtrVector Parser::ParseGlobalVar(TokenPtr* rest, TokenPtr tok, TypePtr basety) {
+  bool first = true;
+
+  TypePtrVector res;
+  while (!tok->Equal(";")) {
+    if (!first) {
+      tok = tok->SkipToken(",");
+    }
+    first = false;
+    TypePtr ty = Declarator(&tok, tok, basety);
+    res.push_back(ty);
+  }
+  *rest = tok->SkipToken(";");
+  return res;
+}
 
 NodePtr Parser::Program(TokenPtr* rest, TokenPtr tok) {
   tok = tok->SkipToken("{");
@@ -433,16 +500,16 @@ TypePtr Parser::EnumDecl(TokenPtr* rest, TokenPtr tok) {
   return ty;
 }
 
-  // stmt = "return" expr ";" |
-  //        "if" "(" expr ")" stmt ("else" stmt)? |
-  //        "for" "(" expr-stmt expr? ";" expr? ")" stmt |
-  //        "while" "(" expr ")" stmt |
-  //        "goto" ident ";" |
-  //        "break" ";" |
-  //        "continue" ";" |
-  //        "ident" ":" stmt |
-  //        "{" compuound-stmt |
-  //        expr-stmt
+// stmt = "return" expr ";" |
+//        "if" "(" expr ")" stmt ("else" stmt)? |
+//        "for" "(" expr-stmt expr? ";" expr? ")" stmt |
+//        "while" "(" expr ")" stmt |
+//        "goto" ident ";" |
+//        "break" ";" |
+//        "continue" ";" |
+//        "ident" ":" stmt |
+//        "{" compuound-stmt |
+//        expr-stmt
 NodePtr Parser::Stmt(TokenPtr* rest, TokenPtr tok) {
   if (tok->Equal("return")) {
     NodePtr expr = Expr(&tok, Token::GetNext<1>(tok));
@@ -517,7 +584,7 @@ NodePtr Parser::Stmt(TokenPtr* rest, TokenPtr tok) {
     String cnt = cur_cnt;
     cur_brk = CreateUniqueName();
     cur_cnt = CreateUniqueName();
-    
+
     NodePtr then = Stmt(rest, tok);
     NodePtr res = Node::CreateForNode(node_name, nullptr, cond, nullptr, then, cur_brk);
 
@@ -922,7 +989,7 @@ NodePtr Parser::Call(TokenPtr* rest, TokenPtr tok) {
   if (!sc) {
     start->ErrorTok("implicit declaration of a function");
   }
-  if (!sc->var || !sc->var->IsFunction()) {
+  if (!sc->var || !sc->var->Is<OB_FUNCTION>()) {
     start->ErrorTok("not a function.");
   }
 
@@ -930,7 +997,7 @@ NodePtr Parser::Call(TokenPtr* rest, TokenPtr tok) {
   auto head = std::make_shared<Node>(ND_END, tok);
   NodePtr cur = head;
 
-  auto params_ty = ty->params;
+  const auto& params_ty = ty->params;
   int pt_idx = 0;
 
   while (!tok->Equal(")")) {
@@ -945,7 +1012,7 @@ NodePtr Parser::Call(TokenPtr* rest, TokenPtr tok) {
         arg->name->ErrorTok("passing struct or union is not support yet");
       }
       arg = Node::CreateCastNode(arg->name, arg, params_ty[pt_idx]);
-      pt_idx++;
+      ++pt_idx;
     }
 
     cur = cur->next = arg;

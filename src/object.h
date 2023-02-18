@@ -30,13 +30,10 @@ class Object {
       : kind(kind), obj_name(name), ty(ty) {}
   // calculate the function local variable offset.
   void OffsetCal();
-  // check whether is a local variable
-  inline bool IsLocal() const { return kind == Objectkind::OB_LOCAL; }
-  // check whether is a global variable
-  inline bool IsGlobal() const { return kind == Objectkind::OB_GLOBAL; }
-  // check whether is a global variable or function
-  inline bool IsFunction() const {
-    return kind == Objectkind::OB_FUNCTION || is_defination == true;
+  // whether the object is a <kind> object
+  template <Objectkind kind>
+  bool Is() {
+    return this->kind == kind;
   }
   // get the object var type.
   inline const TypePtr& GetType() const { return ty; }
@@ -51,15 +48,6 @@ class Object {
   static TokenPtr CreateFunction(TokenPtr tok, TypePtr basety, VarAttrPtr attr, ObjectPtr* next);
   // create a string literal variable
   static ObjectPtr CreateStringVar(const String& name);
-  // create function parameter list.
-  static void CreateParamVar(TypePtrVector& param);
-  // parsing token list and generate AST.
-  static ObjectPtr Parse(TokenPtr tok);
-  // Lookahead tokens and returns true if a given token is a start
-  // of a function definition or declaration.
-  static bool IsFuncToks(TokenPtr tok);
-  // create global variable list based on token list.
-  static TokenPtr ParseGlobalVar(TokenPtr tok, TypePtr basety);
 
  private:
   friend class CodeGenerator;
@@ -93,5 +81,8 @@ class Object {
   // function is a static function
   bool is_static = false;
 };
+
+template <>
+bool Object::Is<OB_FUNCTION>();
 
 #endif  // OBJECT_GRUAD

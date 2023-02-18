@@ -37,7 +37,7 @@ static const char* argreg64[] = {"rdi", "rsi", "rdx", "rcx", "r8", "r9"};
 void CodeGenerator::GetVarAddr(NodePtr& node) {
   switch (node->kind) {
     case ND_VAR:
-      if (node->var->IsLocal()) {
+      if (node->var->Is<OB_LOCAL>()) {
         ASM_GEN("  lea rax, [rbp - ", node->var->offset, "]");
       } else {
         ASM_GEN("  lea rax, [rip + ", node->var->obj_name, "]");
@@ -170,7 +170,7 @@ void CodeGenerator::CodeGen(ObjectPtr program) {
 
 void CodeGenerator::EmitData(ObjectPtr prog) {
   for (ObjectPtr var = prog; var != nullptr; var = var->next) {
-    if (var->IsFunction()) {
+    if (var->Is<OB_FUNCTION>()) {
       continue;
     }
     ASM_GEN("  .data");
@@ -210,7 +210,7 @@ void CodeGenerator::EmitText(ObjectPtr prog) {
   // e.g. op dst, src
   ASM_GEN("  .intel_syntax noprefix");
   for (ObjectPtr fn = prog; fn != nullptr; fn = fn->next) {
-    if (fn->IsGlobal()) {
+    if (fn->Is<OB_GLOBAL>()) {
       continue;
     }
 
