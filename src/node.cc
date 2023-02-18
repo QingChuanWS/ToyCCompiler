@@ -23,8 +23,10 @@
 #include "type.h"
 #include "utils.h"
 
-NodePtrVec goto_list;
-NodePtrVec label_list;
+NodePtrVec goto_list{};
+NodePtrVec label_list{};
+
+String break_label = "";
 
 void Node::Error(const char* fmt, ...) const {
   va_list ap;
@@ -146,12 +148,13 @@ NodePtr Node::CreateIfNode(TokenPtr node_name, NodePtr cond, NodePtr then, NodeP
 }
 
 NodePtr Node::CreateForNode(TokenPtr node_name, NodePtr init, NodePtr cond, NodePtr inc,
-                            NodePtr then) {
+                            NodePtr then, String brk_label) {
   auto res = std::make_shared<Node>(NodeKind::ND_FOR, node_name);
   res->init = init;
   res->cond = cond;
   res->inc = inc;
   res->then = then;
+  res->break_label = brk_label;
   return res;
 }
 
@@ -221,10 +224,12 @@ NodePtr Node::CreateIncdecNode(TokenPtr name, NodePtr prefix, int addend) {
   return CreateCastNode(name, sub, prefix->ty);
 }
 
-NodePtr Node::CreateGotoNode(TokenPtr label_name) {
-  auto res = std::make_shared<Node>(ND_GOTO, label_name);
-  res->label = Token::GetNext<1>(label_name)->GetIdent();
-  goto_list.push_back(res);
+NodePtr Node::CreateGotoNode(TokenPtr label, String label_name, bool need_match) {
+  auto res = std::make_shared<Node>(ND_GOTO, label);
+  res->label = label_name;
+  if (need_match) {
+    goto_list.push_back(res);
+  }
   return res;
 }
 
@@ -237,6 +242,11 @@ NodePtr Node::CreateGotoLableNode(TokenPtr label_name, NodePtr body) {
   return res;
 }
 
+// This function matches gotos with labels.
+//
+// We cannot resolve gotos as we parse a function because gotos
+// can refer a label that appears later in the function.
+// So, we need to do this after we parse the entire function.
 void Node::UpdateGotoLabel() {
   for (auto g : goto_list) {
     for (auto l : label_list) {

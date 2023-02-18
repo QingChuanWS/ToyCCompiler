@@ -94,7 +94,7 @@ class Node {
   static NodePtr CreateIfNode(TokenPtr node_name, NodePtr cond, NodePtr then, NodePtr els);
   // create for expration node.
   static NodePtr CreateForNode(TokenPtr node_name, NodePtr init, NodePtr cond, NodePtr inc,
-                               NodePtr then);
+                               NodePtr then, String brk_label);
   // create block expression node.
   static NodePtr CreateBlockNode(NodeKind kind, TokenPtr node_name, NodePtr body);
   // create struct member node.
@@ -106,10 +106,10 @@ class Node {
   // create a post inc and dec node.
   static NodePtr CreateIncdecNode(TokenPtr node_name, NodePtr prefix, int addend);
   // create a goto node.
-  static NodePtr CreateGotoNode(TokenPtr label_name);
+  static NodePtr CreateGotoNode(TokenPtr label, String label_name, bool need_match = true);
   // create a goto label node.
   static NodePtr CreateGotoLableNode(TokenPtr label, NodePtr body);
-  // update goto label 
+  // update goto label
   static void UpdateGotoLabel();
 
  private:
@@ -124,24 +124,25 @@ class Node {
   // node type
   TypePtr ty = nullptr;
 
-  // for compound-stmt
+  // compound-stmt
   NodePtr next = nullptr;
 
-  // for operation +-/*
+  //  operation +-/*
   NodePtr lhs = nullptr;  // left-head side
   NodePtr rhs = nullptr;  // right-head side
 
-  // for block or statment expression.
+  // block or statment expression.
   NodePtr body = nullptr;
 
-  // for "if" statement
+  // "if" statement
   NodePtr cond = nullptr;
   NodePtr then = nullptr;
   NodePtr els = nullptr;
 
-  // for "for" statement
+  // "for" statement
   NodePtr init = nullptr;
   NodePtr inc = nullptr;
+  String break_label = "";  // break;
 
   // struct member access.
   MemberPtr mem = nullptr;
@@ -155,10 +156,10 @@ class Node {
   String label = "";
   String unique_label = "";
 
-  //  ------ for Var ------;
+  //  ------  Var ------;
   ObjectPtr var = nullptr;
 
-  //  ------ for const ------;
+  //  ------  const ------;
   int64_t val = 0;
 };
 

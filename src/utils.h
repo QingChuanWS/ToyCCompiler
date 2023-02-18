@@ -58,12 +58,6 @@ using ObjectList = std::vector<ObjectPtr>;
 template <typename T>
 using Matrix = std::vector<std::vector<T>>;
 
-extern ObjectPtr locals;
-extern ObjectPtr globals;
-extern ObjectPtr cur_fn;
-
-extern ScopePtr scope;
-
 struct VarAttr {
   VarAttr() = default;
   bool is_typedef = false;
@@ -75,6 +69,16 @@ struct Config {
   String output_path = "-";
   String input_path = "-";
 };
+
+extern ObjectPtr locals;
+extern ObjectPtr globals;
+
+extern ObjectPtr cur_fn;
+extern NodePtrVec goto_list;
+extern NodePtrVec label_list;
+extern String break_label;
+
+extern ScopePtr scope;
 
 extern TypePtr ty_void;
 extern TypePtr ty_char;

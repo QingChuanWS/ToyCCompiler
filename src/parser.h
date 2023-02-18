@@ -58,8 +58,11 @@ class Parser {
   //        "if" "(" expr ")" stmt ("else" stmt)? |
   //        "for" "(" expr-stmt expr? ";" expr? ")" stmt |
   //        "while" "(" expr ")" stmt |
+  //        "goto" ident ";"
+  //        "break" ";"
+  //        "ident" ":" stmt
   //        "{" compuound-stmt |
-  // expr-stmt
+  //        expr-stmt
   static NodePtr Stmt(TokenPtr* rest, TokenPtr tok);
   // expr-stmt = expr ";"
   static NodePtr ExprStmt(TokenPtr* rest, TokenPtr tok);

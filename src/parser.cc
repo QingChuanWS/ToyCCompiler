@@ -36,6 +36,7 @@ NodePtr Parser::CompoundStmt(TokenPtr* rest, TokenPtr tok) {
 
   while (!tok->Equal("}")) {
     // parser declaration.
+    // handle conflict between label and typedef.
     if (tok->IsTypename() && !Token::GetNext<1>(tok)->Equal(":")) {
       auto attr = std::make_shared<VarAttr>();
       TypePtr basety = Declspec(&tok, tok, attr);
@@ -433,10 +434,14 @@ TypePtr Parser::EnumDecl(TokenPtr* rest, TokenPtr tok) {
 }
 
 // stmt = "return" expr ";" |
-// "if" "(" expr ")" stmt ("else" stmt)? |
-// "for" "(" expr-stmt expr? ";" expr? ")" stmt |
-// "{" compuound-stmt |
-// expr-stmt
+//        "if" "(" expr ")" stmt ("else" stmt)? |
+//        "for" "(" expr-stmt expr? ";" expr? ")" stmt |
+//        "while" "(" expr ")" stmt |
+//        "goto" ident ";"
+//        "break" ";"
+//        "ident" ":" stmt
+//        "{" compuound-stmt |
+//        expr-stmt
 NodePtr Parser::Stmt(TokenPtr* rest, TokenPtr tok) {
   if (tok->Equal("return")) {
     NodePtr expr = Expr(&tok, Token::GetNext<1>(tok));
@@ -470,6 +475,9 @@ NodePtr Parser::Stmt(TokenPtr* rest, TokenPtr tok) {
 
     Scope::EnterScope(scope);
 
+    String brk = break_label;
+    break_label = CreateUniqueName();
+
     if (tok->IsTypename()) {
       TypePtr basety = Declspec(&tok, tok, nullptr);
       init = Declaration(&tok, tok, basety);
@@ -489,7 +497,9 @@ NodePtr Parser::Stmt(TokenPtr* rest, TokenPtr tok) {
     NodePtr body = Stmt(rest, tok);
 
     Scope::LevarScope(scope);
-    return Node::CreateForNode(node_name, init, cond, inc, body);
+    NodePtr res = Node::CreateForNode(node_name, init, cond, inc, body, break_label);
+    break_label = brk;
+    return res;
   }
 
   if (tok->Equal("while")) {
@@ -498,14 +508,27 @@ NodePtr Parser::Stmt(TokenPtr* rest, TokenPtr tok) {
 
     NodePtr cond = Expr(&tok, tok);
     tok = tok->SkipToken(")");
+    String brk = break_label;
+    break_label = CreateUniqueName();
     NodePtr then = Stmt(rest, tok);
-    return Node::CreateForNode(node_name, nullptr, cond, nullptr, then);
+    NodePtr res = Node::CreateForNode(node_name, nullptr, cond, nullptr, then, break_label);
+    break_label = brk;
+    return res;
   }
 
   if (tok->Equal("goto")) {
-    NodePtr node = Node::CreateGotoNode(tok);
+    NodePtr node = Node::CreateGotoNode(tok, Token::GetNext<1>(tok)->GetIdent());
     *rest = Token::GetNext<2>(tok)->SkipToken(";");
     return node;
+  }
+
+  if (tok->Equal("break")) {
+    if (break_label.empty()) {
+      tok->ErrorTok("stray break");
+    }
+    NodePtr res = Node::CreateGotoNode(tok, break_label, false);
+    *rest = Token::GetNext<1>(tok)->SkipToken(";");
+    return res;
   }
 
   if (tok->Is<TK_IDENT>() && Token::GetNext<1>(tok)->Equal(":")) {

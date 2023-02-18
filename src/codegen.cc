@@ -263,7 +263,7 @@ void CodeGenerator::StmtGen(NodePtr& node) {
     case ND_LABEL:
       ASM_GEN(node->unique_label, ":");
       StmtGen(node->body);
-      return ;
+      return;
     case ND_RETURN:
       ExprGen(node->lhs);
       ASM_GEN("  jmp .L.return.", cur_fn->obj_name);
@@ -289,14 +289,14 @@ void CodeGenerator::StmtGen(NodePtr& node) {
       if (node->cond != nullptr) {
         ExprGen(node->cond);
         ASM_GEN("  cmp rax, 0");
-        ASM_GEN("  je .L.end.", seq);
+        ASM_GEN("  je ", node->break_label);
       }
       StmtGen(node->then);
       if (node->inc != nullptr) {
         ExprGen(node->inc);
       }
       ASM_GEN("  jmp .L.begin.", seq);
-      ASM_GEN(".L.end.", seq, ":");
+      ASM_GEN(node->break_label, ":");
       return;
     }
     default:
