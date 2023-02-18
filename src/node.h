@@ -142,7 +142,8 @@ class Node {
   // "for" statement
   NodePtr init = nullptr;
   NodePtr inc = nullptr;
-  String break_label = "";  // break;
+  String break_label = "";     // break; label
+  String continue_label = "";  // continue label
 
   // struct member access.
   MemberPtr mem = nullptr;

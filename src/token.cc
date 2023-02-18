@@ -38,7 +38,7 @@ StringPtr prg;
 
 const std::vector<const char*> keyword = {
     "return", "if",   "else", "for",     "while", "int",  "sizeof", "char", "struct", "union",
-    "short",  "long", "void", "typedef", "_Bool", "enum", "static", "goto", "break"};
+    "short",  "long", "void", "typedef", "_Bool", "enum", "static", "goto", "break",  "continue"};
 
 const std::vector<const char*> type_name = {"void",    "char",   "short", "int",
                                             "long",    "struct", "union", "struct",

@@ -292,6 +292,7 @@ void CodeGenerator::StmtGen(NodePtr& node) {
         ASM_GEN("  je ", node->break_label);
       }
       StmtGen(node->then);
+      ASM_GEN(node->continue_label, ":");
       if (node->inc != nullptr) {
         ExprGen(node->inc);
       }

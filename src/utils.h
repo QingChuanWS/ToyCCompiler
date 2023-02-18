@@ -76,7 +76,8 @@ extern ObjectPtr globals;
 extern ObjectPtr cur_fn;
 extern NodePtrVec goto_list;
 extern NodePtrVec label_list;
-extern String break_label;
+extern String cur_brk;
+extern String cur_cnt;
 
 extern ScopePtr scope;
 

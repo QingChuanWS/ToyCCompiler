@@ -26,7 +26,8 @@
 NodePtrVec goto_list{};
 NodePtrVec label_list{};
 
-String break_label = "";
+String cur_brk = "";
+String cur_cnt = "";
 
 void Node::Error(const char* fmt, ...) const {
   va_list ap;
