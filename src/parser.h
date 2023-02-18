@@ -93,8 +93,10 @@ class Parser {
   static NodePtr BitAnd(TokenPtr* rest, TokenPtr tok);
   // equality = relational ("==" relational | "!=" relational)
   static NodePtr Equality(TokenPtr* rest, TokenPtr tok);
-  // relational = add ("<" add | "<=" add | ">" add | ">=" add)
+  // relational = shirt ("<" shirt | "<=" shirt | ">" shirt | ">=" shirt)
   static NodePtr Relational(TokenPtr* rest, TokenPtr tok);
+  // shift = add ("<<" add | add ">>" add)*
+  static NodePtr Shift(TokenPtr* rest, TokenPtr tok);
   // add = mul ("+"mul | "-" mul)
   static NodePtr Add(TokenPtr* rest, TokenPtr tok);
   // mul = cast ("*" cast | "/" cast)

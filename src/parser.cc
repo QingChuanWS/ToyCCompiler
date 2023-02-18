@@ -727,6 +727,8 @@ NodePtr Parser::Assign(TokenPtr* rest, TokenPtr tok) {
   CREATE_COMBINE_NODE("&=", ND_BITAND)
   CREATE_COMBINE_NODE("|=", ND_BITOR)
   CREATE_COMBINE_NODE("^=", ND_BITXOR)
+  CREATE_COMBINE_NODE("<<=", ND_SHL)
+  CREATE_COMBINE_NODE(">>=", ND_SHR)
 
 #undef CREATE_COMBINE_NODE
 
@@ -811,9 +813,9 @@ NodePtr Parser::Equality(TokenPtr* rest, TokenPtr tok) {
   }
 }
 
-// relational = add ("<" add | "<=" add | ">" add | ">=" add)
+// relational = shirt ("<" shirt | "<=" shirt | ">" shirt | ">=" shirt)
 NodePtr Parser::Relational(TokenPtr* rest, TokenPtr tok) {
-  NodePtr node = Add(&tok, tok);
+  NodePtr node = Shift(&tok, tok);
 
   for (;;) {
     TokenPtr node_name = tok;
@@ -824,12 +826,39 @@ NodePtr Parser::Relational(TokenPtr* rest, TokenPtr tok) {
     continue;                                                               \
   }
 
-    CREATE_REATIONAL_NODE("<", ND_LT, node, Add(&tok, Token::GetNext<1>(tok)))
-    CREATE_REATIONAL_NODE("<=", ND_LE, node, Add(&tok, Token::GetNext<1>(tok)))
-    CREATE_REATIONAL_NODE(">", ND_LT, Add(&tok, Token::GetNext<1>(tok)), node)
-    CREATE_REATIONAL_NODE(">=", ND_LE, Add(&tok, Token::GetNext<1>(tok)), node)
+    CREATE_REATIONAL_NODE("<", ND_LT, node, Shift(&tok, Token::GetNext<1>(tok)))
+    CREATE_REATIONAL_NODE("<=", ND_LE, node, Shift(&tok, Token::GetNext<1>(tok)))
+    CREATE_REATIONAL_NODE(">", ND_LT, Shift(&tok, Token::GetNext<1>(tok)), node)
+    CREATE_REATIONAL_NODE(">=", ND_LE, Shift(&tok, Token::GetNext<1>(tok)), node)
 
 #undef CREATE_REATIONAL_NODE
+
+    *rest = tok;
+    return node;
+  }
+}
+
+// shift = add ("<<" add | add ">>" add)*
+NodePtr Parser::Shift(TokenPtr* rest, TokenPtr tok) {
+  NodePtr node = Add(&tok, tok);
+
+  for (;;) {
+    TokenPtr start = tok;
+
+#define CREATE_SHIFT_NODE(op, lable, node_left, node_right)                 \
+  if (tok->Equal(op)) {                                                     \
+    node = Node::CreateBinaryNode(lable, node_name, node_left, node_right); \
+    continue;                                                               \
+  }
+
+    if (tok->Equal("<<")) {
+      node = Node::CreateBinaryNode(ND_SHL, start, node, Add(&tok, Token::GetNext<1>(tok)));
+      continue;
+    }
+    if (tok->Equal(">>")) {
+      node = Node::CreateBinaryNode(ND_SHR, start, node, Add(&tok, Token::GetNext<1>(tok)));
+      continue;
+    }
 
     *rest = tok;
     return node;

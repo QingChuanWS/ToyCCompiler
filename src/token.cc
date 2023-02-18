@@ -45,14 +45,15 @@ const std::vector<const char*> type_name = {"void",    "char",   "short", "int",
                                             "long",    "struct", "union", "struct",
                                             "typedef", "_Bool",  "enum",  "static"};
 
-const std::vector<const char*> ops = {">=", "==", "!=", "<=", "->", "+=", "-=", "*=", "/=",
-                                      "++", "--", "%=", "&=", "|=", "^=", "&&", "||"};
+const std::vector<const char*> ops = {"<<=", ">>=", ">=", "==", "!=", "<=", "->",
+                                      "+=",  "-=",  "*=", "/=", "++", "--", "%=",
+                                      "&=",  "|=",  "^=", "&&", "||", "<<", ">>"};
 
 // read punction.
 inline int ReadPunct(const char* p) {
   for (auto& op : ops) {
-    if (StrEqual(p, op, 2)) {
-      return 2;
+    if (StrEqual(p, op, strlen(op))) {
+      return strlen(op);
     }
   }
   return std::ispunct(*p) ? 1 : 0;

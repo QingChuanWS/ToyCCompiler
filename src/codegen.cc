@@ -494,6 +494,18 @@ void CodeGenerator::ExprGen(NodePtr& node) {
       ASM_GEN("  setle al");
       ASM_GEN("  movzb rax, al");
       return;
+    case ND_SHL:
+      ASM_GEN("  mov rcx, rdi")
+      ASM_GEN("  shl ", ax, ", cl");
+      return;
+    case ND_SHR:
+      ASM_GEN("  mov rcx, rdi")
+      if(node->ty->Size() == 8){
+        ASM_GEN("  sar ", ax, ", cl");
+      }else{
+        ASM_GEN("  sar ", ax, ", cl");
+      }
+      return;
     default:
       node->name->ErrorTok("invalid expression.");
   }
