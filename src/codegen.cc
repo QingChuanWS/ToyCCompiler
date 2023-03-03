@@ -370,6 +370,18 @@ void CodeGenerator::ExprGen(NodePtr& node) {
       ExprGen(node->lhs);
       Cast(node->lhs->ty, node->ty);
       return;
+    case ND_COND: {
+      int c = Count();
+      ExprGen(node->cond);
+      ASM_GEN("  cmp rax, 0");
+      ASM_GEN("  je .L.else.", c);
+      ExprGen(node->then);
+      ASM_GEN("  jmp .L.end.", c);
+      ASM_GEN(".L.else.", c, ":");
+      ExprGen(node->els);
+      ASM_GEN(".L.end.", c, ":");
+      return;
+    }
     case ND_NOT:
       ExprGen(node->lhs);
       ASM_GEN("  cmp rax, 0");
@@ -500,9 +512,9 @@ void CodeGenerator::ExprGen(NodePtr& node) {
       return;
     case ND_SHR:
       ASM_GEN("  mov rcx, rdi")
-      if(node->ty->Size() == 8){
+      if (node->ty->Size() == 8) {
         ASM_GEN("  sar ", ax, ", cl");
-      }else{
+      } else {
         ASM_GEN("  sar ", ax, ", cl");
       }
       return;

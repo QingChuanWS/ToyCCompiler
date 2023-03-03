@@ -142,8 +142,8 @@ NodePtr Node::CreateBinaryNode(NodeKind kind, TokenPtr node_name, NodePtr op_lef
   return res;
 }
 
-NodePtr Node::CreateIfNode(TokenPtr node_name, NodePtr cond, NodePtr then, NodePtr els) {
-  auto res = std::make_shared<Node>(NodeKind::ND_IF, node_name);
+NodePtr Node::CreateIfNode(NodeKind kind, TokenPtr node_name, NodePtr cond, NodePtr then, NodePtr els) {
+  auto res = std::make_shared<Node>(kind, node_name);
   res->cond = cond;
   res->then = then;
   res->els = els;

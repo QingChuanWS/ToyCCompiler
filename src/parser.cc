@@ -534,7 +534,7 @@ NodePtr Parser::Stmt(TokenPtr* rest, TokenPtr tok) {
       els = Stmt(&tok, Token::GetNext<1>(tok));
     }
     *rest = tok;
-    return Node::CreateIfNode(node_name, cond, then, els);
+    return Node::CreateIfNode(ND_IF, node_name, cond, then, els);
   }
 
   if (tok->Equal("switch")) {
@@ -699,10 +699,10 @@ NodePtr Parser::Expr(TokenPtr* rest, TokenPtr tok) {
   return node;
 }
 
-// assign = bitor (assign-op assign)?
-// assign-op = "+=" | "-=" | "*=" | "/=" | "%=" | "&=" | "|=" | "^="
+// assign = conditional (assign-op assign)?
+// assign-op = "+=" | "-=" | "*=" | "/=" | "%=" | "&=" | "|=" | "^=" | "<<=" | ">>="
 NodePtr Parser::Assign(TokenPtr* rest, TokenPtr tok) {
-  NodePtr node = LogOr(&tok, tok);
+  NodePtr node = Conditional(&tok, tok);
   if (tok->Equal("=")) {
     return Node::CreateBinaryNode(ND_ASSIGN, tok, node, Assign(rest, Token::GetNext<1>(tok)));
   }
@@ -734,6 +734,19 @@ NodePtr Parser::Assign(TokenPtr* rest, TokenPtr tok) {
 
   *rest = tok;
   return node;
+}
+
+NodePtr Parser::Conditional(TokenPtr* rest, TokenPtr tok) {
+  NodePtr cond = LogOr(&tok, tok);
+  TokenPtr start = tok;
+  if (!tok->Equal("?")) {
+    *rest = tok;
+    return cond;
+  }
+  NodePtr then = Expr(&tok, Token::GetNext<1>(tok));
+  tok = tok->SkipToken(":");
+  NodePtr els = Conditional(rest, tok);
+  return Node::CreateIfNode(ND_COND, start, cond, then, els);
 }
 
 // logor = logand ( "||" logand)

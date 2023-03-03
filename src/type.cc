@@ -10,6 +10,7 @@
  */
 
 #include "type.h"
+
 #include <memory>
 
 #include "node.h"
@@ -223,6 +224,14 @@ void Type::TypeInfer(NodePtr node) {
       return;
     case ND_VAR:
       node->ty = node->var->GetType();
+      return;
+    case ND_COND:
+      if (node->then->ty->Is<TY_VOID>() || node->els->ty->Is<TY_VOID>()) {
+        node->ty = ty_void;
+      } else {
+        Type::UsualArithConvert(node->then, node->els);
+        node->ty = node->then->ty;
+      }
       return;
     case ND_COMMON:
       node->ty = node->rhs->ty;

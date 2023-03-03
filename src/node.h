@@ -39,6 +39,7 @@ enum NodeKind {
   ND_LE,         // <=
   ND_NUM,        // number
   ND_ASSIGN,     // =
+  ND_COND,       // ?:
   ND_COMMON,     // ,
   ND_MUMBER,     // .(struct member asscess)
   ND_ADDR,       // unary &
@@ -97,7 +98,8 @@ class Node {
   // create subtract expration(contain point arithmatic calculation) node.
   static NodePtr CreateSubNode(TokenPtr node_name, NodePtr op_left, NodePtr op_right);
   // create IF expration node.
-  static NodePtr CreateIfNode(TokenPtr node_name, NodePtr cond, NodePtr then, NodePtr els);
+  static NodePtr CreateIfNode(NodeKind kind, TokenPtr node_name, NodePtr cond, NodePtr then,
+                              NodePtr els);
   // create for expration node.
   static NodePtr CreateForNode(TokenPtr node_name, NodePtr init, NodePtr cond, NodePtr inc,
                                NodePtr then, String brk_label, String cnt_label);
