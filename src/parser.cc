@@ -16,7 +16,6 @@
 #include <memory>
 #include <vector>
 
-#include "context.h"
 #include "node.h"
 #include "object.h"
 #include "scope.h"

@@ -16,6 +16,16 @@
 
 #include "utils.h"
 
+class ASTree {
+ public:
+  // All local variable instance created during parsing are accumulated to this list.
+  // each function has self local variable.
+  ObjectList locals{};
+
+  // Likewise, global variable are accumulated to this list.
+  ObjectList globals{};
+};
+
 // parsing token list and generate AST.
 class Parser {
  public:

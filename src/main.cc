@@ -18,7 +18,6 @@
 #include <ostream>
 
 #include "codegen.h"
-#include "context.h"
 #include "node.h"
 #include "object.h"
 #include "parser.h"

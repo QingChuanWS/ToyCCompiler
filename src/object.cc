@@ -17,7 +17,6 @@
 #include <memory>
 #include <vector>
 
-#include "context.h"
 #include "node.h"
 #include "parser.h"
 #include "scope.h"

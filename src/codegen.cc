@@ -14,7 +14,6 @@
 #include <cstddef>
 #include <iostream>
 
-#include "context.h"
 #include "node.h"
 #include "object.h"
 #include "tools.h"
