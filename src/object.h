@@ -29,7 +29,7 @@ class Object {
   Object(Objectkind kind, const String& name, const TypePtr& ty)
       : kind(kind), obj_name(name), ty(ty) {}
   // calculate the function local variable offset.
-  void OffsetCal();
+  static void OffsetCal(ObjectList program);
   // whether the object is a <kind> object
   template <Objectkind kind>
   bool Is() {
@@ -41,13 +41,13 @@ class Object {
   // create variable.
   static ObjectPtr CreateVar(Objectkind kind, const String& name, const TypePtr& ty);
   // create global varibal
-  static ObjectPtr CreateGlobalVar(const String& name, const TypePtr& ty, ObjectPtr* next);
+  static ObjectPtr CreateGlobalVar(const String& name, const TypePtr& ty, ObjectList& globals);
   // create local varibal
-  static ObjectPtr CreateLocalVar(const String& name, const TypePtr& ty, ObjectPtr* next);
+  static ObjectPtr CreateLocalVar(const String& name, const TypePtr& ty, ObjectList& locals);
   // create a function based on token list.
-  static TokenPtr CreateFunction(TokenPtr tok, TypePtr basety, VarAttrPtr attr, ObjectPtr* next);
+  static TokenPtr CreateFunction(TokenPtr tok, TypePtr basety, VarAttrPtr attr, ASTree& ct);
   // create a string literal variable
-  static ObjectPtr CreateStringVar(const String& name);
+  static ObjectPtr CreateStringVar(const String& name, ObjectList& globals);
 
  private:
   friend class CodeGenerator;
@@ -69,11 +69,11 @@ class Object {
   bool is_string = false;
 
   // function parameter
-  ObjectPtr params = nullptr;
+  ObjectList params{};
   // function body
   NodePtr body = nullptr;
   // function variable list
-  ObjectPtr loc_list = nullptr;
+  ObjectList loc_list{};
   // function variable's stack size
   int stack_size = 0;
   // function only have defination.

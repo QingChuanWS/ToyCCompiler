@@ -142,7 +142,8 @@ NodePtr Node::CreateBinaryNode(NodeKind kind, TokenPtr node_name, NodePtr op_lef
   return res;
 }
 
-NodePtr Node::CreateIfNode(NodeKind kind, TokenPtr node_name, NodePtr cond, NodePtr then, NodePtr els) {
+NodePtr Node::CreateIfNode(NodeKind kind, TokenPtr node_name, NodePtr cond, NodePtr then,
+                           NodePtr els) {
   auto res = std::make_shared<Node>(kind, node_name);
   res->cond = cond;
   res->then = then;
@@ -191,13 +192,14 @@ NodePtr Node::CreateCastNode(TokenPtr node_name, NodePtr expr, TypePtr ty) {
 
 // Convert `A op= B` to `tmp = &A, *tmp = *tmp op B`
 // where tmp is a fresh pointer variable.
-NodePtr Node::CreateCombinedNode(NodePtr binary) {
+NodePtr Node::CreateCombinedNode(NodePtr binary, ObjectList& locals) {
   Type::TypeInfer(binary->lhs);
   Type::TypeInfer(binary->rhs);
 
   TokenPtr root_name = binary->name;
   // generate fresh pointer variable.
-  ObjectPtr var = Object::CreateLocalVar("", Type::CreatePointerType(binary->lhs->ty), &locals);
+  ObjectPtr var =
+      Object::CreateLocalVar("", Type::CreatePointerType(binary->lhs->ty), locals);
   // &A
   NodePtr lhs_addr = CreateUnaryNode(ND_ADDR, root_name, binary->lhs);
   // tmp = &A
@@ -216,12 +218,12 @@ NodePtr Node::CreateCombinedNode(NodePtr binary) {
 }
 
 // Convert A++ to `(typeof A)(A += 1) -1`
-NodePtr Node::CreateIncdecNode(TokenPtr name, NodePtr prefix, int addend) {
+NodePtr Node::CreateIncdecNode(TokenPtr name, NodePtr prefix, int addend, ObjectList& locals) {
   Type::TypeInfer(prefix);
   // A + 1
   NodePtr add = CreateAddNode(name, prefix, CreateConstNode(addend, name));
   // A += 1
-  NodePtr add_assgin = CreateCombinedNode(add);
+  NodePtr add_assgin = CreateCombinedNode(add, locals);
   // (A += 1) - 1
   NodePtr sub = CreateAddNode(name, add_assgin, CreateConstNode(-addend, name));
   // (typeof A)(A += 1) -1

@@ -17,6 +17,7 @@
 #include <memory>
 #include <vector>
 
+#include "context.h"
 #include "node.h"
 #include "parser.h"
 #include "scope.h"
@@ -25,52 +26,43 @@
 #include "type.h"
 #include "utils.h"
 
-// All local variable instance created during parsing are accumulated to this list.
-// each function has self local variable.
-ObjectPtr locals = nullptr;
-// Likewise, global variable are accumulated to this list.
-ObjectPtr globals = nullptr;
-// current parsering function.
-ObjectPtr cur_fn = nullptr;
-
 ObjectPtr Object::CreateVar(Objectkind kind, const String& name, const TypePtr& ty) {
   auto obj = std::make_shared<Object>(kind, name, ty);
   Scope::PushVarScope(name)->var = obj;
   return obj;
 }
 
-ObjectPtr Object::CreateLocalVar(const String& name, const TypePtr& ty, ObjectPtr* next) {
+ObjectPtr Object::CreateLocalVar(const String& name, const TypePtr& ty, ObjectList& locals) {
   ObjectPtr obj = CreateVar(Objectkind::OB_LOCAL, name, ty);
   // if (Find(name.c_str()) != nullptr) {
   //   ty->name->ErrorTok("redefined variable.");
   // }
-  obj->next = *next;
-  *next = obj;
+  locals.push_back(obj);
   return obj;
 }
 
-ObjectPtr Object::CreateGlobalVar(const String& name, const TypePtr& ty, ObjectPtr* next) {
+ObjectPtr Object::CreateGlobalVar(const String& name, const TypePtr& ty, ObjectList& globals) {
   ObjectPtr obj = CreateVar(Objectkind::OB_GLOBAL, name, ty);
   // if (ty->HasName() && ty->name->FindVar() != nullptr) {
   //   ty->name->ErrorTok("redefined variable.");
   // }
-  obj->next = *next;
-  *next = obj;
+  globals.push_back(obj);
   return obj;
 }
 
-ObjectPtr Object::CreateStringVar(const String& name) {
+ObjectPtr Object::CreateStringVar(const String& name, ObjectList& globals) {
   TypePtr ty = Type::CreateArrayType(ty_char, name.size());
-  ObjectPtr obj = CreateGlobalVar(CreateUniqueName(), ty, &globals);
+  ObjectPtr obj = CreateGlobalVar(CreateUniqueName(), ty, globals);
   obj->init_data = name;
   obj->is_string = true;
   return obj;
 }
 
-TokenPtr Object::CreateFunction(TokenPtr tok, TypePtr basety, VarAttrPtr attr, ObjectPtr* next) {
-  TypePtr ty = Parser::Declarator(&tok, tok, basety);
+TokenPtr Object::CreateFunction(TokenPtr tok, TypePtr basety, VarAttrPtr attr, ASTree& ct) {
+  TypePtr ty = Parser::Declarator(&tok, tok, basety, ct);
   ObjectPtr fn = CreateVar(Objectkind::OB_FUNCTION, ty->name->GetIdent(), ty);
 
+  ct.locals.clear();
   // function declaration
   if (tok->Equal(";")) {
     fn->is_defination = true;
@@ -79,20 +71,19 @@ TokenPtr Object::CreateFunction(TokenPtr tok, TypePtr basety, VarAttrPtr attr, O
   }
   fn->is_static = attr->is_static;
   cur_fn = fn;
-  locals = nullptr;
   // create scope.
   Scope::EnterScope(scope);
 
   // funtion defination.
   for (auto i = ty->params.rbegin(); i != ty->params.rend(); ++i) {
-    ObjectPtr v = CreateLocalVar((*i)->name->GetIdent(), *i, &locals);
+    ObjectPtr v = CreateLocalVar((*i)->name->GetIdent(), *i, ct.locals);
   }
 
-  fn->params = locals;
-  fn->body = Parser::Program(&tok, tok);
-  fn->loc_list = locals;
-  fn->next = *next;
-  *next = fn;
+  fn->params = ct.locals;
+  fn->body = Parser::Program(&tok, tok, ct);
+  fn->loc_list = ct.locals;
+  ct.globals.push_back(fn);
+
   // leave scope.
   Scope::LevarScope(scope);
 
@@ -100,17 +91,17 @@ TokenPtr Object::CreateFunction(TokenPtr tok, TypePtr basety, VarAttrPtr attr, O
   return tok;
 }
 
-void Object::OffsetCal() {
-  for (Object* fn = this; fn != nullptr; fn = fn->next.get()) {
+void Object::OffsetCal(ObjectList program) {
+  for (auto fn : program) {
     if (!fn->Is<OB_FUNCTION>()) {
       continue;
     }
 
     int ofs = 0;
-    for (ObjectPtr v = fn->loc_list; v != nullptr; v = v->next) {
-      ofs += v->ty->size;
-      ofs = AlignTo(ofs, v->ty->align);
-      v->offset = ofs;
+    for (auto v = fn->loc_list.rbegin(); v != fn->loc_list.rend(); v++) {
+      ofs += (*v)->ty->size;
+      ofs = AlignTo(ofs, (*v)->ty->align);
+      (*v)->offset = ofs;
     }
     fn->stack_size = AlignTo(ofs, 16);
   }

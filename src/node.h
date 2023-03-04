@@ -110,9 +110,9 @@ class Node {
   // create cast node.
   static NodePtr CreateCastNode(TokenPtr node_name, NodePtr expr, TypePtr ty);
   // create a combined arithmatic node, such as "+=", "-="...
-  static NodePtr CreateCombinedNode(NodePtr binary);
+  static NodePtr CreateCombinedNode(NodePtr binary, ObjectList& locals);
   // create a post inc and dec node.
-  static NodePtr CreateIncdecNode(TokenPtr node_name, NodePtr prefix, int addend);
+  static NodePtr CreateIncdecNode(TokenPtr node_name, NodePtr prefix, int addend, ObjectList& locals);
   // create a goto node.
   static NodePtr CreateGotoNode(TokenPtr label, String label_name, bool need_update = true);
   // create a goto label node.

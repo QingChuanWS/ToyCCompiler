@@ -14,6 +14,7 @@
 #include <cstddef>
 #include <iostream>
 
+#include "context.h"
 #include "node.h"
 #include "object.h"
 #include "tools.h"
@@ -162,14 +163,14 @@ void CodeGenerator::Cast(TypePtr from, TypePtr to) {
   }
 }
 
-void CodeGenerator::CodeGen(ObjectPtr program) {
-  program->OffsetCal();
-  EmitData(program);
-  EmitText(program);
+void CodeGenerator::CodeGen(const ASTree& ast) {
+  Object::OffsetCal(ast.globals);
+  EmitData(ast.globals);
+  EmitText(ast.globals);
 }
 
-void CodeGenerator::EmitData(ObjectPtr prog) {
-  for (ObjectPtr var = prog; var != nullptr; var = var->next) {
+void CodeGenerator::EmitData(ObjectList prog) {
+  for (auto var : prog) {
     if (var->Is<OB_FUNCTION>()) {
       continue;
     }
@@ -205,11 +206,11 @@ void CodeGenerator::StoreFunctionParameter(int reg, int offset, int sz) {
   }
 }
 
-void CodeGenerator::EmitText(ObjectPtr prog) {
+void CodeGenerator::EmitText(ObjectList prog) {
   // using intel syntax
   // e.g. op dst, src
   ASM_GEN("  .intel_syntax noprefix");
-  for (ObjectPtr fn = prog; fn != nullptr; fn = fn->next) {
+  for (ObjectPtr fn : prog) {
     if (fn->Is<OB_GLOBAL>()) {
       continue;
     }
@@ -229,8 +230,8 @@ void CodeGenerator::EmitText(ObjectPtr prog) {
     ASM_GEN("  sub rsp, ", fn->stack_size);
 
     int i = 0;
-    for (ObjectPtr var = fn->params; var != nullptr; var = var->next) {
-      StoreFunctionParameter(i++, var->offset, var->ty->Size());
+    for (auto var = fn->params.rbegin(); var != fn->params.rend(); var++) {
+      StoreFunctionParameter(i++, (*var)->offset, (*var)->ty->Size());
     }
 
     // Emit code

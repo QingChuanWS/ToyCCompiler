@@ -31,6 +31,7 @@ class VarScope;
 class Scope;
 class Member;
 struct VarAttr;
+class ASTree;
 
 using TokenPtr = std::shared_ptr<Token>;
 using TypePtr = std::shared_ptr<Type>;
@@ -69,9 +70,6 @@ struct Config {
   String output_path = "-";
   String input_path = "-";
 };
-
-extern ObjectPtr locals;
-extern ObjectPtr globals;
 
 extern ObjectPtr cur_fn;
 extern NodePtrVec goto_list;

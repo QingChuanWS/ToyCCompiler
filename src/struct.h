@@ -27,7 +27,7 @@ class Member {
   // init struct member list offset, return the sum of offset.
   static int CalcuStructOffset(const MemPtrVector& mem);
   // struct-decl = "{" struct-member
-  static MemPtrVector MemberDecl(TokenPtr* rest, TokenPtr tok);
+  static MemPtrVector MemberDecl(TokenPtr* rest, TokenPtr tok, ASTree& ct);
 
  private:
   friend Node;

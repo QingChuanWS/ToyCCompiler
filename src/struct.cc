@@ -37,13 +37,13 @@ int Member::CalcuStructOffset(const MemPtrVector& mem) {
 }
 
 // struct-decl = "{" struct or union member
-MemPtrVector Member::MemberDecl(TokenPtr* rest, TokenPtr tok) {
+MemPtrVector Member::MemberDecl(TokenPtr* rest, TokenPtr tok, ASTree& ct) {
   tok = tok->SkipToken("{");
   auto head = std::make_shared<Member>();
   MemPtrVector mem_vec;
 
   while (!tok->Equal("}")) {
-    TypePtr basety = Parser::Declspec(&tok, tok, nullptr);
+    TypePtr basety = Parser::Declspec(&tok, tok, nullptr, ct);
 
     bool first = true;
     while (!tok->Equal(";")) {
@@ -51,7 +51,7 @@ MemPtrVector Member::MemberDecl(TokenPtr* rest, TokenPtr tok) {
         tok = tok->SkipToken(",");
       }
       first = false;
-      TypePtr ty = Parser::Declarator(&tok, tok, basety);
+      TypePtr ty = Parser::Declarator(&tok, tok, basety, ct);
       mem_vec.push_back(std::make_shared<Member>(ty, ty->GetName()));
     }
     tok = tok->SkipToken(";");

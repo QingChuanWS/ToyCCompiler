@@ -16,6 +16,7 @@
 #include <memory>
 #include <vector>
 
+#include "context.h"
 #include "node.h"
 #include "object.h"
 #include "scope.h"
@@ -23,6 +24,8 @@
 #include "tools.h"
 #include "type.h"
 #include "utils.h"
+
+ObjectPtr cur_fn = nullptr;
 
 // Lookahead tokens and returns true if a given token is a start
 // of a function definition or declaration.
@@ -43,16 +46,16 @@ static bool IsFuncToks(TokenPtr tok) {
   return false;
 }
 
-ObjectPtr Parser::Parse(TokenPtr tok) {
-  globals = nullptr;
+ASTree Parser::Run(TokenPtr tok) {
+  ASTree ast;
   // enter scope
   Scope::EnterScope(scope);
   while (!tok->Is<TK_EOF>()) {
     auto attr = std::make_shared<VarAttr>();
-    TypePtr basety = Parser::Declspec(&tok, tok, attr);
+    TypePtr basety = Parser::Declspec(&tok, tok, attr, ast);
     // parse typedef statement.
     if (attr->is_typedef) {
-      TypePtrVector ty_list = Parser::TypedefDecl(&tok, tok, basety);
+      TypePtrVector ty_list = Parser::TypedefDecl(&tok, tok, basety, ast);
       for (auto t : ty_list) {
         Scope::PushVarScope(t->name->GetIdent())->tydef = t;
       }
@@ -60,21 +63,21 @@ ObjectPtr Parser::Parse(TokenPtr tok) {
     }
     // parse function.
     if (IsFuncToks(tok)) {
-      tok = Object::CreateFunction(tok, basety, attr, &globals);
+      tok = Object::CreateFunction(tok, basety, attr, ast);
       continue;
     }
     // parse global variable.
-    TypePtrVector gtype_vec = ParseGlobalVar(&tok, tok, basety);
+    TypePtrVector gtype_vec = ParseGlobalVar(&tok, tok, basety, ast);
     for (auto gty : gtype_vec) {
-      Object::CreateGlobalVar(gty->name->GetIdent(), gty, &globals);
+      Object::CreateGlobalVar(gty->name->GetIdent(), gty, ast.globals);
     }
   }
   // leave scope.
   Scope::LevarScope(scope);
-  return globals;
+  return ast;
 }
 
-TypePtrVector Parser::ParseGlobalVar(TokenPtr* rest, TokenPtr tok, TypePtr basety) {
+TypePtrVector Parser::ParseGlobalVar(TokenPtr* rest, TokenPtr tok, TypePtr basety, ASTree& ct) {
   bool first = true;
 
   TypePtrVector res;
@@ -83,20 +86,20 @@ TypePtrVector Parser::ParseGlobalVar(TokenPtr* rest, TokenPtr tok, TypePtr baset
       tok = tok->SkipToken(",");
     }
     first = false;
-    TypePtr ty = Declarator(&tok, tok, basety);
+    TypePtr ty = Declarator(&tok, tok, basety, ct);
     res.push_back(ty);
   }
   *rest = tok->SkipToken(";");
   return res;
 }
 
-NodePtr Parser::Program(TokenPtr* rest, TokenPtr tok) {
+NodePtr Parser::Program(TokenPtr* rest, TokenPtr tok, ASTree& ct) {
   tok = tok->SkipToken("{");
-  return CompoundStmt(rest, tok);
+  return CompoundStmt(rest, tok, ct);
 }
 
 // compound-stmt  = (typedef | declaration | stmt)* "}"
-NodePtr Parser::CompoundStmt(TokenPtr* rest, TokenPtr tok) {
+NodePtr Parser::CompoundStmt(TokenPtr* rest, TokenPtr tok, ASTree& ct) {
   auto sub_expr = std::make_shared<Node>(ND_END, tok);
   NodePtr cur = sub_expr;
 
@@ -107,20 +110,20 @@ NodePtr Parser::CompoundStmt(TokenPtr* rest, TokenPtr tok) {
     // handle conflict between label and typedef.
     if (tok->IsTypename() && !Token::GetNext<1>(tok)->Equal(":")) {
       auto attr = std::make_shared<VarAttr>();
-      TypePtr basety = Declspec(&tok, tok, attr);
+      TypePtr basety = Declspec(&tok, tok, attr, ct);
 
       if (attr->is_typedef) {
-        TypePtrVector ty_list = TypedefDecl(&tok, tok, basety);
+        TypePtrVector ty_list = TypedefDecl(&tok, tok, basety, ct);
         for (auto t : ty_list) {
           Scope::PushVarScope(t->name->GetIdent())->tydef = t;
         }
         continue;
       }
-      cur = cur->next = Declaration(&tok, tok, basety);
+      cur = cur->next = Declaration(&tok, tok, basety, ct);
     }
     // parser statement.
     else {
-      cur = cur->next = Stmt(&tok, tok);
+      cur = cur->next = Stmt(&tok, tok, ct);
     }
     Type::TypeInfer(cur);
   }
@@ -134,7 +137,7 @@ NodePtr Parser::CompoundStmt(TokenPtr* rest, TokenPtr tok) {
 // declaration = declspec (
 //                 declarator ( "=" expr)?
 //                 ("," declarator ("=" expr)? ) * )? ";"
-NodePtr Parser::Declaration(TokenPtr* rest, TokenPtr tok, TypePtr basety) {
+NodePtr Parser::Declaration(TokenPtr* rest, TokenPtr tok, TypePtr basety, ASTree& ct) {
   auto decl_expr = std::make_shared<Node>(ND_END, tok);
   NodePtr cur = decl_expr;
   int i = 0;
@@ -143,19 +146,19 @@ NodePtr Parser::Declaration(TokenPtr* rest, TokenPtr tok, TypePtr basety) {
     if (i++ > 0) {
       tok = tok->SkipToken(",");
     }
-    TypePtr ty = Declarator(&tok, tok, basety);
+    TypePtr ty = Declarator(&tok, tok, basety, ct);
     if (ty->Size() < 0) {
       tok->ErrorTok("variable has incomplete type.");
     }
     if (ty->Is<TY_VOID>()) {
       ty->name->ErrorTok("variable declared void.");
     }
-    ObjectPtr var = Object::CreateLocalVar(ty->name->GetIdent(), ty, &locals);
+    ObjectPtr var = Object::CreateLocalVar(ty->name->GetIdent(), ty, ct.locals);
     if (!tok->Equal("=")) {
       continue;
     }
     NodePtr lhs = Node::CreateVarNode(var, tok);
-    NodePtr rhs = Assign(&tok, Token::GetNext<1>(tok));
+    NodePtr rhs = Assign(&tok, Token::GetNext<1>(tok), ct);
     NodePtr assgin_node = Node::CreateBinaryNode(ND_ASSIGN, tok, lhs, rhs);
     cur = cur->next = Node::CreateUnaryNode(ND_EXPR_STMT, tok, assgin_node);
   }
@@ -178,7 +181,7 @@ NodePtr Parser::Declaration(TokenPtr* rest, TokenPtr tok, TypePtr basety) {
 // while keeping the "current" type object that the typenames up
 // until that point represent. When we reach a non-typename token,
 // we returns the current type object.
-TypePtr Parser::Declspec(TokenPtr* rest, TokenPtr tok, VarAttrPtr attr) {
+TypePtr Parser::Declspec(TokenPtr* rest, TokenPtr tok, VarAttrPtr attr, ASTree& ct) {
   // We use a single integer as counters for all typenames.
   // For example, bits 0 and 1 represents how many times we saw the
   // keyword "void" so far. With this, we can use a switch statement
@@ -223,11 +226,11 @@ TypePtr Parser::Declspec(TokenPtr* rest, TokenPtr tok, VarAttrPtr attr) {
       }
 
       if (tok->Equal("struct")) {
-        ty = StructDecl(&tok, Token::GetNext<1>(tok));
+        ty = StructDecl(&tok, Token::GetNext<1>(tok), ct);
       } else if (tok->Equal("union")) {
-        ty = UnionDecl(&tok, Token::GetNext<1>(tok));
+        ty = UnionDecl(&tok, Token::GetNext<1>(tok), ct);
       } else if (tok->Equal("enum")) {
-        ty = EnumDecl(&tok, Token::GetNext<1>(tok));
+        ty = EnumDecl(&tok, Token::GetNext<1>(tok), ct);
       } else {
         ty = tydef;
         tok = Token::GetNext<1>(tok);
@@ -285,7 +288,7 @@ TypePtr Parser::Declspec(TokenPtr* rest, TokenPtr tok, VarAttrPtr attr) {
 }
 
 // declarator = "*"* ( "(" ident ")" | "(" declarator ")" | ident)
-TypePtr Parser::Declarator(TokenPtr* rest, TokenPtr tok, TypePtr ty) {
+TypePtr Parser::Declarator(TokenPtr* rest, TokenPtr tok, TypePtr ty, ASTree& ct) {
   while (tok->Equal("*")) {
     ty = Type::CreatePointerType(ty);
     tok = Token::GetNext<1>(tok);
@@ -294,46 +297,46 @@ TypePtr Parser::Declarator(TokenPtr* rest, TokenPtr tok, TypePtr ty) {
   if (tok->Equal("(")) {
     TokenPtr start = tok;
     auto head = std::make_shared<Type>(TY_END, 0, 0);
-    Declarator(&tok, Token::GetNext<1>(start), head);
+    Declarator(&tok, Token::GetNext<1>(start), head, ct);
     tok = tok->SkipToken(")");
-    ty = TypeSuffix(rest, tok, ty);
-    return Declarator(&tok, Token::GetNext<1>(start), ty);
+    ty = TypeSuffix(rest, tok, ty, ct);
+    return Declarator(&tok, Token::GetNext<1>(start), ty, ct);
   }
 
   if (!tok->Is<TK_IDENT>()) {
     tok->ErrorTok("expected a variable name.");
   }
-  ty = TypeSuffix(rest, Token::GetNext<1>(tok), ty);
+  ty = TypeSuffix(rest, Token::GetNext<1>(tok), ty, ct);
   ty->name = tok;
   return ty;
 }
 
 // array-dimenstion = num? "]" type-suffix;
-TypePtr Parser::ArrayDimention(TokenPtr* rest, TokenPtr tok, TypePtr ty) {
+TypePtr Parser::ArrayDimention(TokenPtr* rest, TokenPtr tok, TypePtr ty, ASTree& ct) {
   if (tok->Equal("]")) {
-    ty = TypeSuffix(rest, Token::GetNext<1>(tok), ty);
+    ty = TypeSuffix(rest, Token::GetNext<1>(tok), ty, ct);
     return Type::CreateArrayType(ty, -1);
   }
   int sz = tok->GetNumber();
   tok = Token::GetNext<1>(tok)->SkipToken("]");
-  ty = TypeSuffix(rest, tok, ty);
+  ty = TypeSuffix(rest, tok, ty, ct);
   return Type::CreateArrayType(ty, sz);
 }
 
 // type-suffix = "(" func-params ")" |
 //               "[" array-dimention | ɛ
-TypePtr Parser::TypeSuffix(TokenPtr* rest, TokenPtr tok, TypePtr ty) {
+TypePtr Parser::TypeSuffix(TokenPtr* rest, TokenPtr tok, TypePtr ty, ASTree& ct) {
   if (tok->Equal("(")) {
-    return FunctionParam(rest, Token::GetNext<1>(tok), ty);
+    return FunctionParam(rest, Token::GetNext<1>(tok), ty, ct);
   }
   if (tok->Equal("[")) {
-    return ArrayDimention(rest, Token::GetNext<1>(tok), ty);
+    return ArrayDimention(rest, Token::GetNext<1>(tok), ty, ct);
   }
   *rest = tok;
   return ty;
 }
 
-TypePtrVector Parser::TypedefDecl(TokenPtr* rest, TokenPtr tok, TypePtr basety) {
+TypePtrVector Parser::TypedefDecl(TokenPtr* rest, TokenPtr tok, TypePtr basety, ASTree& ct) {
   auto head = std::make_shared<Type>(TY_END, 1, 1);
   TypePtr cur = head;
   bool first = true;
@@ -343,14 +346,14 @@ TypePtrVector Parser::TypedefDecl(TokenPtr* rest, TokenPtr tok, TypePtr basety) 
       tok = tok->SkipToken(",");
     }
     first = false;
-    res.push_back(Declarator(&tok, tok, basety));
+    res.push_back(Declarator(&tok, tok, basety, ct));
   }
   *rest = tok->SkipToken(";");
   return res;
 }
 
 // abstract-declarator = "*"* ("(" abstract-declarator ")")? type-suffix
-static TypePtr AbstractDeclarator(TokenPtr* rest, TokenPtr tok, TypePtr ty) {
+static TypePtr AbstractDeclarator(TokenPtr* rest, TokenPtr tok, TypePtr ty, ASTree& ct) {
   while (tok->Equal("*")) {
     ty = Type::CreatePointerType(ty);
     tok = Token::GetNext<1>(tok);
@@ -359,24 +362,24 @@ static TypePtr AbstractDeclarator(TokenPtr* rest, TokenPtr tok, TypePtr ty) {
   if (tok->Equal("(")) {
     TokenPtr start = tok;
     auto head = std::make_shared<Type>(TY_END, 0, 0);
-    AbstractDeclarator(&tok, Token::GetNext<1>(start), head);
+    AbstractDeclarator(&tok, Token::GetNext<1>(start), head, ct);
     tok = tok->SkipToken(")");
-    ty = Parser::TypeSuffix(rest, tok, ty);
-    return AbstractDeclarator(&tok, Token::GetNext<1>(start), ty);
+    ty = Parser::TypeSuffix(rest, tok, ty, ct);
+    return AbstractDeclarator(&tok, Token::GetNext<1>(start), ty, ct);
   }
 
-  return Parser::TypeSuffix(rest, tok, ty);
+  return Parser::TypeSuffix(rest, tok, ty, ct);
 }
 
 // typename = declspec abstract-declarator
-TypePtr Parser::Typename(TokenPtr* rest, TokenPtr tok) {
-  TypePtr ty = Declspec(&tok, tok, nullptr);
-  return AbstractDeclarator(rest, tok, ty);
+TypePtr Parser::Typename(TokenPtr* rest, TokenPtr tok, ASTree& ct) {
+  TypePtr ty = Declspec(&tok, tok, nullptr, ct);
+  return AbstractDeclarator(rest, tok, ty, ct);
 }
 
 // func-param = param ("," param) *
 // param = declspec declarator
-TypePtr Parser::FunctionParam(TokenPtr* rest, TokenPtr tok, TypePtr ty) {
+TypePtr Parser::FunctionParam(TokenPtr* rest, TokenPtr tok, TypePtr ty, ASTree& ct) {
   auto params = std::make_shared<Type>(TY_END, 0, 0);
   TypePtrVector param;
   bool first = true;
@@ -386,8 +389,8 @@ TypePtr Parser::FunctionParam(TokenPtr* rest, TokenPtr tok, TypePtr ty) {
       tok = tok->SkipToken(",");
     }
     first = false;
-    TypePtr param_ty = Declspec(&tok, tok, nullptr);
-    param_ty = Declarator(&tok, tok, param_ty);
+    TypePtr param_ty = Declspec(&tok, tok, nullptr, ct);
+    param_ty = Declarator(&tok, tok, param_ty, ct);
 
     // "array of T" is converted to pointer of T only in the parameter context.
     if (param_ty->Is<TY_ARRAY>()) {
@@ -403,7 +406,7 @@ TypePtr Parser::FunctionParam(TokenPtr* rest, TokenPtr tok, TypePtr ty) {
   return ty;
 }
 
-static TypePtr StructOrUnionDecl(TypeKind kind, TokenPtr* rest, TokenPtr tok) {
+static TypePtr StructOrUnionDecl(TypeKind kind, TokenPtr* rest, TokenPtr tok, ASTree& ct) {
   DEBUG(kind == TY_STRUCT || kind == TY_UNION);
   // read struct or union tag.
   TypePtr ty = nullptr;
@@ -426,7 +429,7 @@ static TypePtr StructOrUnionDecl(TypeKind kind, TokenPtr* rest, TokenPtr tok) {
     }
   }
 
-  MemPtrVector mem = Member::MemberDecl(rest, tok);
+  MemPtrVector mem = Member::MemberDecl(rest, tok, ct);
   if (kind == TY_STRUCT) {
     ty = Type::CreateStructType(mem, tag);
   } else {
@@ -448,15 +451,15 @@ static TypePtr StructOrUnionDecl(TypeKind kind, TokenPtr* rest, TokenPtr tok) {
   return ty;
 }
 
-TypePtr Parser::StructDecl(TokenPtr* rest, TokenPtr tok) {
-  return StructOrUnionDecl(TY_STRUCT, rest, tok);
+TypePtr Parser::StructDecl(TokenPtr* rest, TokenPtr tok, ASTree& ct) {
+  return StructOrUnionDecl(TY_STRUCT, rest, tok, ct);
 }
 
-TypePtr Parser::UnionDecl(TokenPtr* rest, TokenPtr tok) {
-  return StructOrUnionDecl(TY_UNION, rest, tok);
+TypePtr Parser::UnionDecl(TokenPtr* rest, TokenPtr tok, ASTree& ct) {
+  return StructOrUnionDecl(TY_UNION, rest, tok, ct);
 }
 
-TypePtr Parser::EnumDecl(TokenPtr* rest, TokenPtr tok) {
+TypePtr Parser::EnumDecl(TokenPtr* rest, TokenPtr tok, ASTree& ct) {
   TypePtr ty = Type::CreateEnumType();
 
   TokenPtr tag = nullptr;
@@ -514,9 +517,9 @@ TypePtr Parser::EnumDecl(TokenPtr* rest, TokenPtr tok) {
 //        "ident" ":" stmt |
 //        "{" compuound-stmt |
 //        expr-stmt
-NodePtr Parser::Stmt(TokenPtr* rest, TokenPtr tok) {
+NodePtr Parser::Stmt(TokenPtr* rest, TokenPtr tok, ASTree& ct) {
   if (tok->Equal("return")) {
-    NodePtr expr = Expr(&tok, Token::GetNext<1>(tok));
+    NodePtr expr = Expr(&tok, Token::GetNext<1>(tok), ct);
     *rest = tok->SkipToken(";");
     Type::TypeInfer(expr);
     NodePtr cast = Node::CreateCastNode(expr->name, expr, cur_fn->GetType()->return_ty);
@@ -527,11 +530,11 @@ NodePtr Parser::Stmt(TokenPtr* rest, TokenPtr tok) {
   if (tok->Equal("if")) {
     TokenPtr node_name = tok;
     tok = Token::GetNext<1>(tok);
-    NodePtr cond = Expr(&tok, tok->SkipToken("("));
-    NodePtr then = Stmt(&tok, tok->SkipToken(")"));
+    NodePtr cond = Expr(&tok, tok->SkipToken("("), ct);
+    NodePtr then = Stmt(&tok, tok->SkipToken(")"), ct);
     NodePtr els = nullptr;
     if (tok->Equal("else")) {
-      els = Stmt(&tok, Token::GetNext<1>(tok));
+      els = Stmt(&tok, Token::GetNext<1>(tok), ct);
     }
     *rest = tok;
     return Node::CreateIfNode(ND_IF, node_name, cond, then, els);
@@ -540,7 +543,7 @@ NodePtr Parser::Stmt(TokenPtr* rest, TokenPtr tok) {
   if (tok->Equal("switch")) {
     TokenPtr start = tok;
     tok = Token::GetNext<1>(tok)->SkipToken("(");
-    NodePtr body = Expr(&tok, tok);
+    NodePtr body = Expr(&tok, tok, ct);
     tok = tok->SkipToken(")");
     // buffer current switch
     NodePtr swt = cur_swt;
@@ -549,7 +552,7 @@ NodePtr Parser::Stmt(TokenPtr* rest, TokenPtr tok) {
     String brk = cur_brk;
     cur_brk = cur_swt->break_label = CreateUniqueName();
     // parse switch body
-    cur_swt->then = Stmt(rest, tok);
+    cur_swt->then = Stmt(rest, tok, ct);
 
     cur_brk = brk;
     NodePtr res = cur_swt;
@@ -565,7 +568,7 @@ NodePtr Parser::Stmt(TokenPtr* rest, TokenPtr tok) {
     int64_t v = Token::GetNext<1>(tok)->GetNumber();
     tok = Token::GetNext<2>(tok)->SkipToken(":");
 
-    NodePtr res = Node::CreateCaseNode(start, v, Stmt(rest, tok));
+    NodePtr res = Node::CreateCaseNode(start, v, Stmt(rest, tok, ct));
     cur_swt->case_nodes.push_back(res);
     return res;
   }
@@ -577,7 +580,7 @@ NodePtr Parser::Stmt(TokenPtr* rest, TokenPtr tok) {
     TokenPtr start = tok;
     tok = Token::GetNext<1>(tok)->SkipToken(":");
 
-    NodePtr res = Node::CreateDefaultNode(start, Stmt(rest, tok));
+    NodePtr res = Node::CreateDefaultNode(start, Stmt(rest, tok, ct));
     cur_swt->default_node = res;
     return res;
   }
@@ -598,22 +601,22 @@ NodePtr Parser::Stmt(TokenPtr* rest, TokenPtr tok) {
     cur_cnt = CreateUniqueName();
 
     if (tok->IsTypename()) {
-      TypePtr basety = Declspec(&tok, tok, nullptr);
-      init = Declaration(&tok, tok, basety);
+      TypePtr basety = Declspec(&tok, tok, nullptr, ct);
+      init = Declaration(&tok, tok, basety, ct);
     } else {
-      init = ExprStmt(&tok, tok);
+      init = ExprStmt(&tok, tok, ct);
     }
 
     if (!tok->Equal(";")) {
-      cond = Expr(&tok, tok);
+      cond = Expr(&tok, tok, ct);
     }
     tok = tok->SkipToken(";");
     if (!tok->Equal(")")) {
-      inc = Expr(&tok, tok);
+      inc = Expr(&tok, tok, ct);
     }
     tok = tok->SkipToken(")");
 
-    NodePtr body = Stmt(rest, tok);
+    NodePtr body = Stmt(rest, tok, ct);
 
     Scope::LevarScope(scope);
     NodePtr res = Node::CreateForNode(node_name, init, cond, inc, body, cur_brk, cur_cnt);
@@ -626,7 +629,7 @@ NodePtr Parser::Stmt(TokenPtr* rest, TokenPtr tok) {
     TokenPtr node_name = tok;
     tok = Token::GetNext<1>(tok)->SkipToken("(");
 
-    NodePtr cond = Expr(&tok, tok);
+    NodePtr cond = Expr(&tok, tok, ct);
     tok = tok->SkipToken(")");
 
     String brk = cur_brk;
@@ -634,7 +637,7 @@ NodePtr Parser::Stmt(TokenPtr* rest, TokenPtr tok) {
     cur_brk = CreateUniqueName();
     cur_cnt = CreateUniqueName();
 
-    NodePtr then = Stmt(rest, tok);
+    NodePtr then = Stmt(rest, tok, ct);
     NodePtr res = Node::CreateForNode(node_name, nullptr, cond, nullptr, then, cur_brk, cur_cnt);
 
     cur_brk = brk;
@@ -667,33 +670,33 @@ NodePtr Parser::Stmt(TokenPtr* rest, TokenPtr tok) {
   }
 
   if (tok->Is<TK_IDENT>() && Token::GetNext<1>(tok)->Equal(":")) {
-    return Node::CreateGotoLableNode(tok, Stmt(rest, Token::GetNext<2>(tok)));
+    return Node::CreateGotoLableNode(tok, Stmt(rest, Token::GetNext<2>(tok), ct));
   }
 
   if (tok->Equal("{")) {
-    return CompoundStmt(rest, Token::GetNext<1>(tok));
+    return CompoundStmt(rest, Token::GetNext<1>(tok), ct);
   }
 
-  return ExprStmt(rest, tok);
+  return ExprStmt(rest, tok, ct);
 }
 
 // expr-stmt = expr ";"
-NodePtr Parser::ExprStmt(TokenPtr* rest, TokenPtr tok) {
+NodePtr Parser::ExprStmt(TokenPtr* rest, TokenPtr tok, ASTree& ct) {
   if (tok->Equal(";")) {
     *rest = Token::GetNext<1>(tok);
     return Node::CreateBlockNode(ND_BLOCK, tok, nullptr);
   }
-  NodePtr node = Node::CreateUnaryNode(ND_EXPR_STMT, tok, Expr(&tok, tok));
+  NodePtr node = Node::CreateUnaryNode(ND_EXPR_STMT, tok, Expr(&tok, tok, ct));
   *rest = tok->SkipToken(";");
   return node;
 }
 
 // expr = assign
-NodePtr Parser::Expr(TokenPtr* rest, TokenPtr tok) {
-  NodePtr node = Assign(&tok, tok);
+NodePtr Parser::Expr(TokenPtr* rest, TokenPtr tok, ASTree& ct) {
+  NodePtr node = Assign(&tok, tok, ct);
 
   if (tok->Equal(",")) {
-    return Node::CreateBinaryNode(ND_COMMON, tok, node, Expr(rest, Token::GetNext<1>(tok)));
+    return Node::CreateBinaryNode(ND_COMMON, tok, node, Expr(rest, Token::GetNext<1>(tok), ct));
   }
   *rest = tok;
   return node;
@@ -701,24 +704,25 @@ NodePtr Parser::Expr(TokenPtr* rest, TokenPtr tok) {
 
 // assign = conditional (assign-op assign)?
 // assign-op = "+=" | "-=" | "*=" | "/=" | "%=" | "&=" | "|=" | "^=" | "<<=" | ">>="
-NodePtr Parser::Assign(TokenPtr* rest, TokenPtr tok) {
-  NodePtr node = Conditional(&tok, tok);
+NodePtr Parser::Assign(TokenPtr* rest, TokenPtr tok, ASTree& ct) {
+  NodePtr node = Conditional(&tok, tok, ct);
   if (tok->Equal("=")) {
-    return Node::CreateBinaryNode(ND_ASSIGN, tok, node, Assign(rest, Token::GetNext<1>(tok)));
+    return Node::CreateBinaryNode(ND_ASSIGN, tok, node, Assign(rest, Token::GetNext<1>(tok), ct));
   }
   if (tok->Equal("+=")) {
     return Node::CreateCombinedNode(
-        Node::CreateAddNode(tok, node, Assign(rest, Token::GetNext<1>(tok))));
+        Node::CreateAddNode(tok, node, Assign(rest, Token::GetNext<1>(tok), ct)), ct.locals);
   }
   if (tok->Equal("-=")) {
     return Node::CreateCombinedNode(
-        Node::CreateSubNode(tok, node, Assign(rest, Token::GetNext<1>(tok))));
+        Node::CreateSubNode(tok, node, Assign(rest, Token::GetNext<1>(tok), ct)), ct.locals);
   }
 
-#define CREATE_COMBINE_NODE(op, ND_label)                                                   \
-  if (tok->Equal(op)) {                                                                     \
-    return Node::CreateCombinedNode(                                                        \
-        Node::CreateBinaryNode(ND_label, tok, node, Assign(rest, Token::GetNext<1>(tok)))); \
+#define CREATE_COMBINE_NODE(op, ND_label)                                                      \
+  if (tok->Equal(op)) {                                                                        \
+    return Node::CreateCombinedNode(                                                           \
+        Node::CreateBinaryNode(ND_label, tok, node, Assign(rest, Token::GetNext<1>(tok), ct)), \
+        ct.locals);                                                                            \
   }
 
   CREATE_COMBINE_NODE("*=", ND_MUL)
@@ -736,88 +740,89 @@ NodePtr Parser::Assign(TokenPtr* rest, TokenPtr tok) {
   return node;
 }
 
-NodePtr Parser::Conditional(TokenPtr* rest, TokenPtr tok) {
-  NodePtr cond = LogOr(&tok, tok);
+NodePtr Parser::Conditional(TokenPtr* rest, TokenPtr tok, ASTree& ct) {
+  NodePtr cond = LogOr(&tok, tok, ct);
   TokenPtr start = tok;
   if (!tok->Equal("?")) {
     *rest = tok;
     return cond;
   }
-  NodePtr then = Expr(&tok, Token::GetNext<1>(tok));
+  NodePtr then = Expr(&tok, Token::GetNext<1>(tok), ct);
   tok = tok->SkipToken(":");
-  NodePtr els = Conditional(rest, tok);
+  NodePtr els = Conditional(rest, tok, ct);
   return Node::CreateIfNode(ND_COND, start, cond, then, els);
 }
 
 // logor = logand ( "||" logand)
-NodePtr Parser::LogOr(TokenPtr* rest, TokenPtr tok) {
-  NodePtr node = LogAnd(&tok, tok);
+NodePtr Parser::LogOr(TokenPtr* rest, TokenPtr tok, ASTree& ct) {
+  NodePtr node = LogAnd(&tok, tok, ct);
   while (tok->Equal("||")) {
     TokenPtr start = tok;
-    node = Node::CreateBinaryNode(ND_LOGOR, start, node, LogAnd(&tok, Token::GetNext<1>(tok)));
+    node = Node::CreateBinaryNode(ND_LOGOR, start, node, LogAnd(&tok, Token::GetNext<1>(tok), ct));
   }
   *rest = tok;
   return node;
 }
 
 // logand = bitor ( "&&" bitor)
-NodePtr Parser::LogAnd(TokenPtr* rest, TokenPtr tok) {
-  NodePtr node = BitOr(&tok, tok);
+NodePtr Parser::LogAnd(TokenPtr* rest, TokenPtr tok, ASTree& ct) {
+  NodePtr node = BitOr(&tok, tok, ct);
   while (tok->Equal("&&")) {
     TokenPtr start = tok;
-    node = Node::CreateBinaryNode(ND_LOGAND, start, node, BitOr(&tok, Token::GetNext<1>(tok)));
+    node = Node::CreateBinaryNode(ND_LOGAND, start, node, BitOr(&tok, Token::GetNext<1>(tok), ct));
   }
   *rest = tok;
   return node;
 }
 
 // bitor = bitxor ( "|" bitxor)
-NodePtr Parser::BitOr(TokenPtr* rest, TokenPtr tok) {
-  NodePtr node = BitXor(&tok, tok);
+NodePtr Parser::BitOr(TokenPtr* rest, TokenPtr tok, ASTree& ct) {
+  NodePtr node = BitXor(&tok, tok, ct);
   while (tok->Equal("|")) {
     TokenPtr start = tok;
-    node = Node::CreateBinaryNode(ND_BITOR, start, node, BitXor(&tok, Token::GetNext<1>(tok)));
+    node = Node::CreateBinaryNode(ND_BITOR, start, node, BitXor(&tok, Token::GetNext<1>(tok), ct));
   }
   *rest = tok;
   return node;
 }
 
 // bitxor = bitand ( "^" bitand)
-NodePtr Parser::BitXor(TokenPtr* rest, TokenPtr tok) {
-  NodePtr node = BitAnd(&tok, tok);
+NodePtr Parser::BitXor(TokenPtr* rest, TokenPtr tok, ASTree& ct) {
+  NodePtr node = BitAnd(&tok, tok, ct);
   while (tok->Equal("^")) {
     TokenPtr start = tok;
-    node = Node::CreateBinaryNode(ND_BITXOR, start, node, BitAnd(&tok, Token::GetNext<1>(tok)));
+    node = Node::CreateBinaryNode(ND_BITXOR, start, node, BitAnd(&tok, Token::GetNext<1>(tok), ct));
   }
   *rest = tok;
   return node;
 }
 
 // bitand = equality ( "&" euquality)
-NodePtr Parser::BitAnd(TokenPtr* rest, TokenPtr tok) {
-  NodePtr node = Equality(&tok, tok);
+NodePtr Parser::BitAnd(TokenPtr* rest, TokenPtr tok, ASTree& ct) {
+  NodePtr node = Equality(&tok, tok, ct);
   while (tok->Equal("&")) {
     TokenPtr start = tok;
-    node = Node::CreateBinaryNode(ND_BITAND, start, node, Equality(&tok, Token::GetNext<1>(tok)));
+    node =
+        Node::CreateBinaryNode(ND_BITAND, start, node, Equality(&tok, Token::GetNext<1>(tok), ct));
   }
   *rest = tok;
   return node;
 }
 
 // equality = relational ("==" relational | "!=" relational)
-NodePtr Parser::Equality(TokenPtr* rest, TokenPtr tok) {
-  NodePtr node = Relational(&tok, tok);
+NodePtr Parser::Equality(TokenPtr* rest, TokenPtr tok, ASTree& ct) {
+  NodePtr node = Relational(&tok, tok, ct);
 
   for (;;) {
     TokenPtr node_name = tok;
     if (tok->Equal("==")) {
-      node =
-          Node::CreateBinaryNode(ND_EQ, node_name, node, Relational(&tok, Token::GetNext<1>(tok)));
+      node = Node::CreateBinaryNode(ND_EQ, node_name, node,
+                                    Relational(&tok, Token::GetNext<1>(tok), ct));
       continue;
     }
     if (tok->Equal("!=")) {
-      node =
-          Node::CreateBinaryNode(ND_NE, node_name, node, Relational(&tok, Token::GetNext<1>(tok)));
+      node = Node::CreateBinaryNode(ND_NE, node_name, node,
+                                    Relational(&tok, Token::GetNext<1>(tok), ct));
       continue;
     }
 
@@ -827,8 +832,8 @@ NodePtr Parser::Equality(TokenPtr* rest, TokenPtr tok) {
 }
 
 // relational = shirt ("<" shirt | "<=" shirt | ">" shirt | ">=" shirt)
-NodePtr Parser::Relational(TokenPtr* rest, TokenPtr tok) {
-  NodePtr node = Shift(&tok, tok);
+NodePtr Parser::Relational(TokenPtr* rest, TokenPtr tok, ASTree& ct) {
+  NodePtr node = Shift(&tok, tok, ct);
 
   for (;;) {
     TokenPtr node_name = tok;
@@ -839,10 +844,10 @@ NodePtr Parser::Relational(TokenPtr* rest, TokenPtr tok) {
     continue;                                                               \
   }
 
-    CREATE_REATIONAL_NODE("<", ND_LT, node, Shift(&tok, Token::GetNext<1>(tok)))
-    CREATE_REATIONAL_NODE("<=", ND_LE, node, Shift(&tok, Token::GetNext<1>(tok)))
-    CREATE_REATIONAL_NODE(">", ND_LT, Shift(&tok, Token::GetNext<1>(tok)), node)
-    CREATE_REATIONAL_NODE(">=", ND_LE, Shift(&tok, Token::GetNext<1>(tok)), node)
+    CREATE_REATIONAL_NODE("<", ND_LT, node, Shift(&tok, Token::GetNext<1>(tok), ct))
+    CREATE_REATIONAL_NODE("<=", ND_LE, node, Shift(&tok, Token::GetNext<1>(tok), ct))
+    CREATE_REATIONAL_NODE(">", ND_LT, Shift(&tok, Token::GetNext<1>(tok), ct), node)
+    CREATE_REATIONAL_NODE(">=", ND_LE, Shift(&tok, Token::GetNext<1>(tok), ct), node)
 
 #undef CREATE_REATIONAL_NODE
 
@@ -852,8 +857,8 @@ NodePtr Parser::Relational(TokenPtr* rest, TokenPtr tok) {
 }
 
 // shift = add ("<<" add | add ">>" add)*
-NodePtr Parser::Shift(TokenPtr* rest, TokenPtr tok) {
-  NodePtr node = Add(&tok, tok);
+NodePtr Parser::Shift(TokenPtr* rest, TokenPtr tok, ASTree& ct) {
+  NodePtr node = Add(&tok, tok, ct);
 
   for (;;) {
     TokenPtr start = tok;
@@ -865,11 +870,11 @@ NodePtr Parser::Shift(TokenPtr* rest, TokenPtr tok) {
   }
 
     if (tok->Equal("<<")) {
-      node = Node::CreateBinaryNode(ND_SHL, start, node, Add(&tok, Token::GetNext<1>(tok)));
+      node = Node::CreateBinaryNode(ND_SHL, start, node, Add(&tok, Token::GetNext<1>(tok), ct));
       continue;
     }
     if (tok->Equal(">>")) {
-      node = Node::CreateBinaryNode(ND_SHR, start, node, Add(&tok, Token::GetNext<1>(tok)));
+      node = Node::CreateBinaryNode(ND_SHR, start, node, Add(&tok, Token::GetNext<1>(tok), ct));
       continue;
     }
 
@@ -879,17 +884,17 @@ NodePtr Parser::Shift(TokenPtr* rest, TokenPtr tok) {
 }
 
 // add = mul ("+"mul | "-" mul)
-NodePtr Parser::Add(TokenPtr* rest, TokenPtr tok) {
-  NodePtr node = Mul(&tok, tok);
+NodePtr Parser::Add(TokenPtr* rest, TokenPtr tok, ASTree& ct) {
+  NodePtr node = Mul(&tok, tok, ct);
 
   for (;;) {
     TokenPtr node_name = tok;
     if (tok->Equal("+")) {
-      node = Node::CreateAddNode(node_name, node, Mul(&tok, Token::GetNext<1>(tok)));
+      node = Node::CreateAddNode(node_name, node, Mul(&tok, Token::GetNext<1>(tok), ct));
       continue;
     }
     if (tok->Equal("-")) {
-      node = Node::CreateSubNode(node_name, node, Mul(&tok, Token::GetNext<1>(tok)));
+      node = Node::CreateSubNode(node_name, node, Mul(&tok, Token::GetNext<1>(tok), ct));
       continue;
     }
     *rest = tok;
@@ -898,8 +903,8 @@ NodePtr Parser::Add(TokenPtr* rest, TokenPtr tok) {
 }
 
 // mul = cast ("*" cast | "/" cast)
-NodePtr Parser::Mul(TokenPtr* rest, TokenPtr tok) {
-  NodePtr node = Cast(&tok, tok);
+NodePtr Parser::Mul(TokenPtr* rest, TokenPtr tok, ASTree& ct) {
+  NodePtr node = Cast(&tok, tok, ct);
 
   for (;;) {
     TokenPtr node_name = tok;
@@ -910,9 +915,9 @@ NodePtr Parser::Mul(TokenPtr* rest, TokenPtr tok) {
     continue;                                                               \
   }
 
-    CREATE_MUL_NODE("*", ND_MUL, node, Cast(&tok, Token::GetNext<1>(tok)))
-    CREATE_MUL_NODE("/", ND_DIV, node, Cast(&tok, Token::GetNext<1>(tok)))
-    CREATE_MUL_NODE("%", ND_MOD, node, Cast(&tok, Token::GetNext<1>(tok)))
+    CREATE_MUL_NODE("*", ND_MUL, node, Cast(&tok, Token::GetNext<1>(tok), ct))
+    CREATE_MUL_NODE("/", ND_DIV, node, Cast(&tok, Token::GetNext<1>(tok), ct))
+    CREATE_MUL_NODE("%", ND_MOD, node, Cast(&tok, Token::GetNext<1>(tok), ct))
 
 #undef CREATE_MUL_NODE
 
@@ -922,25 +927,25 @@ NodePtr Parser::Mul(TokenPtr* rest, TokenPtr tok) {
 }
 
 // cast = "(" type-name ")" cast | unary
-NodePtr Parser::Cast(TokenPtr* rest, TokenPtr tok) {
+NodePtr Parser::Cast(TokenPtr* rest, TokenPtr tok, ASTree& ct) {
   if (tok->Equal("(") && Token::GetNext<1>(tok)->IsTypename()) {
     TokenPtr start = tok;
-    TypePtr ty = Typename(&tok, Token::GetNext<1>(tok));
+    TypePtr ty = Typename(&tok, Token::GetNext<1>(tok), ct);
     tok = tok->SkipToken(")");
-    return Node::CreateCastNode(start, Cast(rest, tok), ty);
+    return Node::CreateCastNode(start, Cast(rest, tok, ct), ty);
   }
 
-  return Unary(rest, tok);
+  return Unary(rest, tok, ct);
 }
 
 // unary = ("+" | "-" | "*" | "&") ? cast | postfix
-NodePtr Parser::Unary(TokenPtr* rest, TokenPtr tok) {
+NodePtr Parser::Unary(TokenPtr* rest, TokenPtr tok, ASTree& ct) {
   if (tok->Equal("+")) {
-    return Cast(rest, Token::GetNext<1>(tok));
+    return Cast(rest, Token::GetNext<1>(tok), ct);
   }
-#define CREATE_UNARY_NODE(op, label)                                              \
-  if (tok->Equal(op)) {                                                           \
-    return Node::CreateUnaryNode(label, tok, Cast(rest, Token::GetNext<1>(tok))); \
+#define CREATE_UNARY_NODE(op, label)                                                  \
+  if (tok->Equal(op)) {                                                               \
+    return Node::CreateUnaryNode(label, tok, Cast(rest, Token::GetNext<1>(tok), ct)); \
   }
 
   CREATE_UNARY_NODE("-", ND_NEG)
@@ -953,28 +958,28 @@ NodePtr Parser::Unary(TokenPtr* rest, TokenPtr tok) {
 
   // read ++i ==> i+1
   if (tok->Equal("++")) {
-    NodePtr binary = Node::CreateAddNode(tok, Unary(rest, Token::GetNext<1>(tok)),
+    NodePtr binary = Node::CreateAddNode(tok, Unary(rest, Token::GetNext<1>(tok), ct),
                                          Node::CreateConstNode(1, tok));
-    return Node::CreateCombinedNode(binary);
+    return Node::CreateCombinedNode(binary, ct.locals);
   }
   // read --i ==> i-1
   if (tok->Equal("--")) {
-    NodePtr binary = Node::CreateSubNode(tok, Unary(rest, Token::GetNext<1>(tok)),
+    NodePtr binary = Node::CreateSubNode(tok, Unary(rest, Token::GetNext<1>(tok), ct),
                                          Node::CreateConstNode(1, tok));
-    return Node::CreateCombinedNode(binary);
+    return Node::CreateCombinedNode(binary, ct.locals);
   }
-  return Postfix(rest, tok);
+  return Postfix(rest, tok, ct);
 }
 
 // postfix = primary ("[" Expr "]" | "." ident | "->" ident )*
-NodePtr Parser::Postfix(TokenPtr* rest, TokenPtr tok) {
-  NodePtr node = Primary(&tok, tok);
+NodePtr Parser::Postfix(TokenPtr* rest, TokenPtr tok, ASTree& ct) {
+  NodePtr node = Primary(&tok, tok, ct);
 
   for (;;) {
     if (tok->Equal("[")) {
       // x[y] is short for *(x + y)
       TokenPtr node_name = tok;
-      NodePtr idx = Expr(&tok, Token::GetNext<1>(tok));
+      NodePtr idx = Expr(&tok, Token::GetNext<1>(tok), ct);
       tok = tok->SkipToken("]");
       NodePtr op = Node::CreateAddNode(node_name, node, idx);
       node = Node::CreateUnaryNode(ND_DEREF, node_name, op);
@@ -996,13 +1001,13 @@ NodePtr Parser::Postfix(TokenPtr* rest, TokenPtr tok) {
     }
 
     if (tok->Equal("++")) {
-      node = Node::CreateIncdecNode(tok, node, 1);
+      node = Node::CreateIncdecNode(tok, node, 1, ct.locals);
       tok = Token::GetNext<1>(tok);
       continue;
     }
 
     if (tok->Equal("--")) {
-      node = Node::CreateIncdecNode(tok, node, -1);
+      node = Node::CreateIncdecNode(tok, node, -1, ct.locals);
       tok = Token::GetNext<1>(tok);
       continue;
     }
@@ -1017,45 +1022,45 @@ NodePtr Parser::Postfix(TokenPtr* rest, TokenPtr tok) {
 //          | "sizeof" "(" type-name ")"
 //          | "sizeof" unary
 //          | ident "(" func-args? ")" | str | num
-NodePtr Parser::Primary(TokenPtr* rest, TokenPtr tok) {
+NodePtr Parser::Primary(TokenPtr* rest, TokenPtr tok, ASTree& ct) {
   TokenPtr start = tok;
 
   // This is a GNU statement expression.
   if (tok->Equal("(") && Token::GetNext<1>(tok)->Equal("{")) {
     TokenPtr start = tok;
-    NodePtr stmt = CompoundStmt(&tok, Token::GetNext<2>(tok));
+    NodePtr stmt = CompoundStmt(&tok, Token::GetNext<2>(tok), ct);
     *rest = tok->SkipToken(")");
     return Node::CreateBlockNode(ND_STMT_EXPR, start, stmt->body);
   }
   if (tok->Equal("(")) {
-    NodePtr node = Expr(&tok, Token::GetNext<1>(tok));
+    NodePtr node = Expr(&tok, Token::GetNext<1>(tok), ct);
     *rest = tok->SkipToken(")");
     return node;
   }
 
   if (tok->Equal("sizeof") && Token::GetNext<1>(tok)->Equal("(") &&
       Token::GetNext<2>(tok)->IsTypename()) {
-    TypePtr ty = Typename(&tok, Token::GetNext<2>(tok));
+    TypePtr ty = Typename(&tok, Token::GetNext<2>(tok), ct);
     *rest = tok->SkipToken(")");
     return Node::CreateLongConstNode(ty->Size(), start);
   }
 
   if (tok->Equal("sizeof")) {
-    NodePtr node = Unary(rest, Token::GetNext<1>(tok));
+    NodePtr node = Unary(rest, Token::GetNext<1>(tok), ct);
     Type::TypeInfer(node);
     return Node::CreateConstNode(node->ty->size, tok);
   }
 
   if (tok->Is<TK_IDENT>()) {
     if (Token::GetNext<1>(tok)->Equal("(")) {
-      return Call(rest, tok);
+      return Call(rest, tok, ct);
     }
     *rest = Token::GetNext<1>(tok);
     return Node::CreateIdentNode(tok);
   }
 
   if (tok->Is<TK_STR>()) {
-    ObjectPtr var = Object::CreateStringVar(String(tok->GetStringLiteral()));
+    ObjectPtr var = Object::CreateStringVar(String(tok->GetStringLiteral()), ct.globals);
     *rest = Token::GetNext<1>(tok);
     return Node::CreateVarNode(var, tok);
   }
@@ -1071,7 +1076,7 @@ NodePtr Parser::Primary(TokenPtr* rest, TokenPtr tok) {
 }
 
 // function = ident "(" (assign ("," assign)*)? ")"
-NodePtr Parser::Call(TokenPtr* rest, TokenPtr tok) {
+NodePtr Parser::Call(TokenPtr* rest, TokenPtr tok, ASTree& ct) {
   TokenPtr start = tok;
   // can't optimaze, need start tok.
   tok = Token::GetNext<2>(tok);
@@ -1095,7 +1100,7 @@ NodePtr Parser::Call(TokenPtr* rest, TokenPtr tok) {
     if (cur != head) {
       tok = tok->SkipToken(",");
     }
-    NodePtr arg = Assign(&tok, tok);
+    NodePtr arg = Assign(&tok, tok, ct);
     Type::TypeInfer(arg);
 
     if (pt_idx < params_ty.size() && params_ty[pt_idx]) {

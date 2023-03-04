@@ -68,13 +68,13 @@ class CodeGenerator {
   // don't allow assign constructor.
   CodeGenerator& operator=(const CodeGenerator&) = delete;
   // generator x86 assemly code.
-  void CodeGen(ObjectPtr program);
+  void CodeGen(const ASTree& program);
 
  private:
   // emit data segment in assemly.
-  void EmitData(ObjectPtr prog);
+  void EmitData(ObjectList prog);
   // emit text segment in assemly.
-  void EmitText(ObjectPtr prog);
+  void EmitText(ObjectList prog);
   // get var node's address.
   void GetVarAddr(NodePtr& node);
   // push rax data to stask.
