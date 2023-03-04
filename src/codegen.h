@@ -72,9 +72,9 @@ class CodeGenerator {
 
  private:
   // emit data segment in assemly.
-  void EmitData(ObjectList prog);
+  void EmitData(const ASTree& ast);
   // emit text segment in assemly.
-  void EmitText(ObjectList prog);
+  void EmitText(const ASTree& ast);
   // get var node's address.
   void GetVarAddr(NodePtr& node);
   // push rax data to stask.
@@ -93,6 +93,9 @@ class CodeGenerator {
   void StoreFunctionParameter(int reg, int offset, int sz);
   // cast type
   void Cast(TypePtr from, TypePtr to);
+
+ private:
+  ObjectPtr cur_func = nullptr;
 };
 
 #endif  // !CODEGEN_GRUAD

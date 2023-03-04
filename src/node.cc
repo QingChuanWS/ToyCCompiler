@@ -26,9 +26,6 @@
 NodePtrVec goto_list{};
 NodePtrVec label_list{};
 
-String cur_brk = "";
-String cur_cnt = "";
-
 NodePtr cur_swt = nullptr;
 
 void Node::Error(const char* fmt, ...) const {

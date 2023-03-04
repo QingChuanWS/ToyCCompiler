@@ -11,6 +11,7 @@
 
 #include "parser.h"
 
+#include <algorithm>
 #include <cstddef>
 #include <cstdint>
 #include <memory>
@@ -23,8 +24,6 @@
 #include "tools.h"
 #include "type.h"
 #include "utils.h"
-
-ObjectPtr cur_fn = nullptr;
 
 // Lookahead tokens and returns true if a given token is a start
 // of a function definition or declaration.
@@ -62,11 +61,11 @@ ASTree Parser::Run(TokenPtr tok) {
     }
     // parse function.
     if (IsFuncToks(tok)) {
-      tok = Object::CreateFunction(tok, basety, attr, ast);
+      tok = Parser::GlobalFunction(tok, basety, attr, ast);
       continue;
     }
     // parse global variable.
-    TypePtrVector gtype_vec = ParseGlobalVar(&tok, tok, basety, ast);
+    TypePtrVector gtype_vec = GlobalVar(&tok, tok, basety, ast);
     for (auto gty : gtype_vec) {
       Object::CreateGlobalVar(gty->name->GetIdent(), gty, ast.globals);
     }
@@ -76,7 +75,44 @@ ASTree Parser::Run(TokenPtr tok) {
   return ast;
 }
 
-TypePtrVector Parser::ParseGlobalVar(TokenPtr* rest, TokenPtr tok, TypePtr basety, ASTree& ct) {
+TokenPtr Parser::GlobalFunction(TokenPtr tok, TypePtr basety, VarAttrPtr attr, ASTree& ct) {
+  TypePtr ty = Parser::Declarator(&tok, tok, basety, ct);
+  const String& name = ty->name->GetIdent();
+  ct.cur_fn = Object::CreateVar(Objectkind::OB_FUNCTION, name, ty);
+
+  ct.locals.clear();
+  FuncAttr func_attr = {0, false, false};
+  // function declaration
+  if (tok->Equal(";")) {
+    func_attr.is_defination = true;
+    tok = tok->SkipToken(";");
+    return tok;
+  }
+  func_attr.is_static = attr->is_static;
+
+  // create scope.
+  Scope::EnterScope(scope);
+
+  // funtion defination.
+  for (auto i = ty->params.rbegin(); i != ty->params.rend(); ++i) {
+    ObjectPtr v = Object::CreateLocalVar((*i)->name->GetIdent(), *i, ct.locals);
+  }
+
+  ObjectList params = ct.locals;
+  NodePtr body = Parser::Program(&tok, tok, ct);
+  ObjectList loc_list = ct.locals;
+
+  // leave scope.
+  Scope::LevarScope(scope);
+
+  ct.globals.push_back(
+      Object::CreateFunction(name, ty, std::move(params), std::move(loc_list), body, func_attr));
+
+  Node::UpdateGotoLabel();
+  return tok;
+}
+
+TypePtrVector Parser::GlobalVar(TokenPtr* rest, TokenPtr tok, TypePtr basety, ASTree& ct) {
   bool first = true;
 
   TypePtrVector res;
@@ -521,7 +557,7 @@ NodePtr Parser::Stmt(TokenPtr* rest, TokenPtr tok, ASTree& ct) {
     NodePtr expr = Expr(&tok, Token::GetNext<1>(tok), ct);
     *rest = tok->SkipToken(";");
     Type::TypeInfer(expr);
-    NodePtr cast = Node::CreateCastNode(expr->name, expr, cur_fn->GetType()->return_ty);
+    NodePtr cast = Node::CreateCastNode(expr->name, expr, ct.cur_fn->GetType()->return_ty);
     NodePtr node = Node::CreateUnaryNode(ND_RETURN, tok, cast);
     return node;
   }
@@ -548,12 +584,12 @@ NodePtr Parser::Stmt(TokenPtr* rest, TokenPtr tok, ASTree& ct) {
     NodePtr swt = cur_swt;
     cur_swt = Node::CreateSwitchNode(start, body);
     // buffer break;
-    String brk = cur_brk;
-    cur_brk = cur_swt->break_label = CreateUniqueName();
+    String brk = ct.cur_brk;
+    ct.cur_brk = cur_swt->break_label = CreateUniqueName();
     // parse switch body
     cur_swt->then = Stmt(rest, tok, ct);
 
-    cur_brk = brk;
+    ct.cur_brk = brk;
     NodePtr res = cur_swt;
     cur_swt = swt;
     return res;
@@ -594,10 +630,10 @@ NodePtr Parser::Stmt(TokenPtr* rest, TokenPtr tok, ASTree& ct) {
 
     Scope::EnterScope(scope);
 
-    String brk = cur_brk;
-    String cnt = cur_cnt;
-    cur_brk = CreateUniqueName();
-    cur_cnt = CreateUniqueName();
+    String brk = ct.cur_brk;
+    String cnt = ct.cur_cnt;
+    ct.cur_brk = CreateUniqueName();
+    ct.cur_cnt = CreateUniqueName();
 
     if (tok->IsTypename()) {
       TypePtr basety = Declspec(&tok, tok, nullptr, ct);
@@ -618,9 +654,9 @@ NodePtr Parser::Stmt(TokenPtr* rest, TokenPtr tok, ASTree& ct) {
     NodePtr body = Stmt(rest, tok, ct);
 
     Scope::LevarScope(scope);
-    NodePtr res = Node::CreateForNode(node_name, init, cond, inc, body, cur_brk, cur_cnt);
-    cur_brk = brk;
-    cur_cnt = cnt;
+    NodePtr res = Node::CreateForNode(node_name, init, cond, inc, body, ct.cur_brk, ct.cur_cnt);
+    ct.cur_brk = brk;
+    ct.cur_cnt = cnt;
     return res;
   }
 
@@ -631,16 +667,17 @@ NodePtr Parser::Stmt(TokenPtr* rest, TokenPtr tok, ASTree& ct) {
     NodePtr cond = Expr(&tok, tok, ct);
     tok = tok->SkipToken(")");
 
-    String brk = cur_brk;
-    String cnt = cur_cnt;
-    cur_brk = CreateUniqueName();
-    cur_cnt = CreateUniqueName();
+    String brk = ct.cur_brk;
+    String cnt = ct.cur_cnt;
+    ct.cur_brk = CreateUniqueName();
+    ct.cur_cnt = CreateUniqueName();
 
     NodePtr then = Stmt(rest, tok, ct);
-    NodePtr res = Node::CreateForNode(node_name, nullptr, cond, nullptr, then, cur_brk, cur_cnt);
+    NodePtr res =
+        Node::CreateForNode(node_name, nullptr, cond, nullptr, then, ct.cur_brk, ct.cur_cnt);
 
-    cur_brk = brk;
-    cur_cnt = cnt;
+    ct.cur_brk = brk;
+    ct.cur_cnt = cnt;
     return res;
   }
 
@@ -651,19 +688,19 @@ NodePtr Parser::Stmt(TokenPtr* rest, TokenPtr tok, ASTree& ct) {
   }
 
   if (tok->Equal("break")) {
-    if (cur_brk.empty()) {
+    if (ct.cur_brk.empty()) {
       tok->ErrorTok("stray break");
     }
-    NodePtr res = Node::CreateGotoNode(tok, cur_brk, false);
+    NodePtr res = Node::CreateGotoNode(tok, ct.cur_brk, false);
     *rest = Token::GetNext<1>(tok)->SkipToken(";");
     return res;
   }
 
   if (tok->Equal("continue")) {
-    if (cur_cnt.empty()) {
+    if (ct.cur_cnt.empty()) {
       tok->ErrorTok("stray continue");
     }
-    NodePtr res = Node::CreateGotoNode(tok, cur_cnt, false);
+    NodePtr res = Node::CreateGotoNode(tok, ct.cur_cnt, false);
     *rest = Token::GetNext<1>(tok)->SkipToken(";");
     return res;
   }

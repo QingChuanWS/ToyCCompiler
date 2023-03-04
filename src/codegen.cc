@@ -164,12 +164,12 @@ void CodeGenerator::Cast(TypePtr from, TypePtr to) {
 
 void CodeGenerator::CodeGen(const ASTree& ast) {
   Object::OffsetCal(ast.globals);
-  EmitData(ast.globals);
-  EmitText(ast.globals);
+  EmitData(ast);
+  EmitText(ast);
 }
 
-void CodeGenerator::EmitData(ObjectList prog) {
-  for (auto var : prog) {
+void CodeGenerator::EmitData(const ASTree& ast) {
+  for (auto var : ast.globals) {
     if (var->Is<OB_FUNCTION>()) {
       continue;
     }
@@ -205,28 +205,28 @@ void CodeGenerator::StoreFunctionParameter(int reg, int offset, int sz) {
   }
 }
 
-void CodeGenerator::EmitText(ObjectList prog) {
+void CodeGenerator::EmitText(const ASTree& ast) {
   // using intel syntax
   // e.g. op dst, src
   ASM_GEN("  .intel_syntax noprefix");
-  for (ObjectPtr fn : prog) {
+  for (ObjectPtr fn : ast.globals) {
     if (fn->Is<OB_GLOBAL>()) {
       continue;
     }
 
-    if (fn->is_static) {
+    if (fn->func_attr.is_static) {
       ASM_GEN("  .local ", fn->obj_name);
     } else {
       ASM_GEN("  .global ", fn->obj_name);
     }
     ASM_GEN(" .text");
     ASM_GEN(fn->obj_name, ":");
-    cur_fn = fn;
+    cur_func = fn;
 
     // prologue; equally instruction "enter 0xD0,0".
     ASM_GEN("  push rbp");
     ASM_GEN("  mov rbp, rsp");
-    ASM_GEN("  sub rsp, ", fn->stack_size);
+    ASM_GEN("  sub rsp, ", fn->func_attr.stack_size);
 
     int i = 0;
     for (auto var = fn->params.rbegin(); var != fn->params.rend(); var++) {
@@ -266,7 +266,7 @@ void CodeGenerator::StmtGen(NodePtr& node) {
       return;
     case ND_RETURN:
       ExprGen(node->lhs);
-      ASM_GEN("  jmp .L.return.", cur_fn->obj_name);
+      ASM_GEN("  jmp .L.return.", cur_func->obj_name);
       return;
     case ND_IF: {
       int seq = Count();

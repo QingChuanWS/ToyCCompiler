@@ -45,7 +45,8 @@ class Object {
   // create local varibal
   static ObjectPtr CreateLocalVar(const String& name, const TypePtr& ty, ObjectList& locals);
   // create a function based on token list.
-  static TokenPtr CreateFunction(TokenPtr tok, TypePtr basety, VarAttrPtr attr, ASTree& ct);
+  static ObjectPtr CreateFunction(String func_name, TypePtr func_type, ObjectList&& params,
+                                  ObjectList&& locals, NodePtr func_body, FuncAttr f_attr);
   // create a string literal variable
   static ObjectPtr CreateStringVar(const String& name, ObjectList& globals);
 
@@ -74,12 +75,8 @@ class Object {
   NodePtr body = nullptr;
   // function variable list
   ObjectList loc_list{};
-  // function variable's stack size
-  int stack_size = 0;
-  // function only have defination.
-  bool is_defination = false;
-  // function is a static function
-  bool is_static = false;
+  // func attribution
+  FuncAttr func_attr{0, false, false};
 };
 
 template <>

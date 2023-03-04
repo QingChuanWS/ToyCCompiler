@@ -57,37 +57,16 @@ ObjectPtr Object::CreateStringVar(const String& name, ObjectList& globals) {
   return obj;
 }
 
-TokenPtr Object::CreateFunction(TokenPtr tok, TypePtr basety, VarAttrPtr attr, ASTree& ct) {
-  TypePtr ty = Parser::Declarator(&tok, tok, basety, ct);
-  ObjectPtr fn = CreateVar(Objectkind::OB_FUNCTION, ty->name->GetIdent(), ty);
+ObjectPtr Object::CreateFunction(String func_name, TypePtr func_type, ObjectList&& params,
+                                 ObjectList&& locals, NodePtr func_body, FuncAttr f_attr) {
+  ObjectPtr fn = CreateVar(Objectkind::OB_FUNCTION, func_name, func_type);
 
-  ct.locals.clear();
-  // function declaration
-  if (tok->Equal(";")) {
-    fn->is_defination = true;
-    tok = tok->SkipToken(";");
-    return tok;
-  }
-  fn->is_static = attr->is_static;
-  cur_fn = fn;
-  // create scope.
-  Scope::EnterScope(scope);
+  fn->func_attr = f_attr;
+  fn->params = std::forward<ObjectList>(params);
+  fn->body = func_body;
+  fn->loc_list = std::forward<ObjectList>(locals);
 
-  // funtion defination.
-  for (auto i = ty->params.rbegin(); i != ty->params.rend(); ++i) {
-    ObjectPtr v = CreateLocalVar((*i)->name->GetIdent(), *i, ct.locals);
-  }
-
-  fn->params = ct.locals;
-  fn->body = Parser::Program(&tok, tok, ct);
-  fn->loc_list = ct.locals;
-  ct.globals.push_back(fn);
-
-  // leave scope.
-  Scope::LevarScope(scope);
-
-  Node::UpdateGotoLabel();
-  return tok;
+  return fn;
 }
 
 void Object::OffsetCal(ObjectList program) {
@@ -102,11 +81,11 @@ void Object::OffsetCal(ObjectList program) {
       ofs = AlignTo(ofs, (*v)->ty->align);
       (*v)->offset = ofs;
     }
-    fn->stack_size = AlignTo(ofs, 16);
+    fn->func_attr.stack_size = AlignTo(ofs, 16);
   }
 }
 
 template <>
 bool Object::Is<OB_FUNCTION>() {
-  return this->kind == Objectkind::OB_FUNCTION || this->is_defination == true;
+  return this->kind == Objectkind::OB_FUNCTION || this->func_attr.is_defination == true;
 }

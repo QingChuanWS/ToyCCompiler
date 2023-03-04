@@ -71,11 +71,17 @@ struct Config {
   String input_path = "-";
 };
 
-extern ObjectPtr cur_fn;
+struct FuncAttr {
+  // function variable's stack size
+  int stack_size;
+  // function only have defination.
+  bool is_defination;
+  // function is a static function
+  bool is_static;
+};
+
 extern NodePtrVec goto_list;
 extern NodePtrVec label_list;
-extern String cur_brk;
-extern String cur_cnt;
 extern NodePtr cur_swt;
 
 extern ScopePtr scope;
