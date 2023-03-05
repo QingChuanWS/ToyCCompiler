@@ -13,7 +13,12 @@
 
 #include "object.h"
 #include "tools.h"
-#include "utils.h"
+
+struct VarAttr {
+  VarAttr() = default;
+  bool is_typedef = false;
+  bool is_static = false;
+};
 
 struct VarScope {
  public:

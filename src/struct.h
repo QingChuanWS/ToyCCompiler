@@ -13,7 +13,6 @@
 #define STRUCT_GRUAD
 
 #include "parser.h"
-#include "utils.h"
 
 class Member {
  public:

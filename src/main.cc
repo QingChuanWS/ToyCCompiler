@@ -22,7 +22,6 @@
 #include "object.h"
 #include "parser.h"
 #include "token.h"
-#include "tools.h"
 #include "utils.h"
 
 int main(int argc, char** argv) {

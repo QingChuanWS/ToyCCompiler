@@ -31,7 +31,6 @@ class VarScope;
 class Scope;
 class Member;
 struct VarAttr;
-class ASTree;
 
 using TokenPtr = std::shared_ptr<Token>;
 using TypePtr = std::shared_ptr<Type>;
@@ -59,25 +58,10 @@ using ObjectList = std::vector<ObjectPtr>;
 template <typename T>
 using Matrix = std::vector<std::vector<T>>;
 
-struct VarAttr {
-  VarAttr() = default;
-  bool is_typedef = false;
-  bool is_static = false;
-};
-
 struct Config {
   Config() = default;
   String output_path = "-";
   String input_path = "-";
-};
-
-struct FuncAttr {
-  // function variable's stack size
-  int stack_size;
-  // function only have defination.
-  bool is_defination;
-  // function is a static function
-  bool is_static;
 };
 
 extern NodePtrVec goto_list;

@@ -20,9 +20,7 @@
 #include "object.h"
 #include "struct.h"
 #include "token.h"
-#include "tools.h"
 #include "type.h"
-#include "utils.h"
 
 enum NodeKind {
   ND_ADD,        // +

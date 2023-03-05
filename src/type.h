@@ -16,7 +16,6 @@
 
 #include "struct.h"
 #include "token.h"
-#include "utils.h"
 
 enum TypeKind {
   TY_VOID,

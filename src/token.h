@@ -18,7 +18,6 @@
 #include <memory>
 
 #include "tools.h"
-#include "utils.h"
 
 enum Tokenkind {
   TK_PUNCT,    // Punctuators,

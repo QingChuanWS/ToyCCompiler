@@ -18,7 +18,6 @@
 #include <ostream>
 
 #include "node.h"
-#include "utils.h"
 
 // Code generator pinter.
 class CodeGenPrinter {

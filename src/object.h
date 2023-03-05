@@ -15,7 +15,6 @@
 #include "parser.h"
 #include "tools.h"
 #include "type.h"
-#include "utils.h"
 
 enum Objectkind {
   OB_LOCAL,
@@ -23,6 +22,16 @@ enum Objectkind {
   OB_FUNCTION,
   OB_END,
 };
+
+struct FuncAttr {
+  // function variable's stack size
+  int stack_size;
+  // function only have defination.
+  bool is_defination;
+  // function is a static function
+  bool is_static;
+};
+
 class Object {
  public:
   // construct a Object object based on kind.
