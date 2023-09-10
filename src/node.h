@@ -66,6 +66,17 @@ enum NodeKind {
   ND_END,
 };
 
+// for rafactor
+class NodeObject {
+  NodeObject(NodeKind kind, TokenPtr tok) : kind(kind), name(tok) {}
+
+ private:
+  // Node kind
+  NodeKind kind = NodeKind::ND_END;
+  // Representative node, node name
+  TokenPtr name = nullptr;
+};
+
 class Node {
  public:
   Node(NodeKind kind, TokenPtr tok) : kind(kind), name(tok) {}
@@ -110,7 +121,8 @@ class Node {
   // create a combined arithmatic node, such as "+=", "-="...
   static NodePtr CreateCombinedNode(NodePtr binary, ObjectList& locals);
   // create a post inc and dec node.
-  static NodePtr CreateIncdecNode(TokenPtr node_name, NodePtr prefix, int addend, ObjectList& locals);
+  static NodePtr CreateIncdecNode(TokenPtr node_name, NodePtr prefix, int addend,
+                                  ObjectList& locals);
   // create a goto node.
   static NodePtr CreateGotoNode(TokenPtr label, String label_name, bool need_update = true);
   // create a goto label node.
@@ -123,6 +135,8 @@ class Node {
   static NodePtr CreateDefaultNode(TokenPtr node_name, NodePtr body);
   // update goto label
   static void UpdateGotoLabel();
+  // for eval a constant node tree
+  static int64_t Eval(NodePtr node);
 
  private:
   friend class CodeGenerator;

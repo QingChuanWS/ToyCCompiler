@@ -13,6 +13,7 @@
 #define PARSER_GRUAD
 
 #include <cstddef>
+#include <cstdint>
 
 #include "utils.h"
 
@@ -33,10 +34,9 @@ class ASTree {
   String cur_cnt = "";
 };
 
-// parsing token list and generate AST.
+/*  ---- parse OBJECT ---- */
 class Parser {
  public:
-  /*  ---- parse OBJECT ---- */
   // parsing token list and generate AST.
   static ASTree Run(TokenPtr tok);
   // create global variable list based on token list.
@@ -56,7 +56,7 @@ class Parser {
   static TypePtr UnionDecl(TokenPtr* rest, TokenPtr tok, ASTree& ast);
   // enum-specifier = ident ? "{" enum-list? "}"
   //                | ident ( "{" enum-list? "}" )?
-  // enum-list = ident ("=" num)? ("," ident ("=" num)? )*
+  // enum-list = ident ("=" const-expr)? ("," ident ("=" const-expr)? )*
   static TypePtr EnumDecl(TokenPtr* rest, TokenPtr tok, ASTree& ast);
   // typedef = declspec (ident (",")? ) + ";"
   static TypePtrVector TypedefDecl(TokenPtr* rest, TokenPtr tok, TypePtr basety, ASTree& ast);
@@ -64,7 +64,7 @@ class Parser {
   static TypePtr Declarator(TokenPtr* rest, TokenPtr tok, TypePtr ty, ASTree& ast);
   // type-suffix = "(" func-params | "[" num "]" | ɛ )
   static TypePtr TypeSuffix(TokenPtr* rest, TokenPtr tok, TypePtr ty, ASTree& ast);
-  // array-dimension = num ? "]" type-suffix
+  // array-dimension = const-expr ? "]" type-suffix
   static TypePtr ArrayDimention(TokenPtr* rest, TokenPtr tok, TypePtr ty, ASTree& ast);
   // func-param = param ("," param) *
   // param = declspec declarator
@@ -102,6 +102,8 @@ class Parser {
   // assign = conditional (assign-op assign)?
   // assign-op = "+=" | "-=" | "*=" | "/=" | "%=" | "&=" | "|=" | "^=" | "<<=" | ">>="
   static NodePtr Assign(TokenPtr* rest, TokenPtr tok, ASTree& ast);
+  // const_expr = eval(conditional)
+  static int64_t ConstExprEval(TokenPtr* rest, TokenPtr tok, ASTree& ast);
   // conditional = logor ("?" expr : conditional)?
   static NodePtr Conditional(TokenPtr* rest, TokenPtr tok, ASTree& ast);
   // logor = logadd ( "||" logadd)

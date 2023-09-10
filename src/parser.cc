@@ -346,14 +346,14 @@ TypePtr Parser::Declarator(TokenPtr* rest, TokenPtr tok, TypePtr ty, ASTree& ct)
   return ty;
 }
 
-// array-dimenstion = num? "]" type-suffix;
+// array-dimenstion = const-expr ? "]" type-suffix;
 TypePtr Parser::ArrayDimention(TokenPtr* rest, TokenPtr tok, TypePtr ty, ASTree& ct) {
   if (tok->Equal("]")) {
     ty = TypeSuffix(rest, Token::GetNext<1>(tok), ty, ct);
     return Type::CreateArrayType(ty, -1);
   }
-  int sz = tok->GetNumber();
-  tok = Token::GetNext<1>(tok)->SkipToken("]");
+  int sz = ConstExprEval(&tok, tok, ct);
+  tok = tok->SkipToken("]");
   ty = TypeSuffix(rest, tok, ty, ct);
   return Type::CreateArrayType(ty, sz);
 }
@@ -494,6 +494,9 @@ TypePtr Parser::UnionDecl(TokenPtr* rest, TokenPtr tok, ASTree& ct) {
   return StructOrUnionDecl(TY_UNION, rest, tok, ct);
 }
 
+// enum-specifier = ident ? "{" enum-list? "}"
+//                | ident ( "{" enum-list? "}" )?
+// enum-list = ident ("=" const-expr)? ("," ident ("=" const-expr)? )*
 TypePtr Parser::EnumDecl(TokenPtr* rest, TokenPtr tok, ASTree& ct) {
   TypePtr ty = Type::CreateEnumType();
 
@@ -526,8 +529,7 @@ TypePtr Parser::EnumDecl(TokenPtr* rest, TokenPtr tok, ASTree& ct) {
     const String& name = tok->GetIdent();
     tok = Token::GetNext<1>(tok);
     if (tok->Equal("=")) {
-      val = Token::GetNext<1>(tok)->GetNumber();
-      tok = Token::GetNext<2>(tok);
+      val = ConstExprEval(&tok, Token::GetNext<1>(tok), ct);
     }
 
     Scope::PushVarScope(name)->SetEnumList(val++, ty);
@@ -542,7 +544,7 @@ TypePtr Parser::EnumDecl(TokenPtr* rest, TokenPtr tok, ASTree& ct) {
 // stmt = "return" expr ";" |
 //        "if" "(" expr ")" stmt ("else" stmt)? |
 //        "switch" "(" expr ")" stmt
-//        "case" num ":" stmt
+//        "case" const-expr ":" stmt
 //        "default" ":" stmt
 //        "for" "(" expr-stmt expr? ";" expr? ")" stmt |
 //        "while" "(" expr ")" stmt |
@@ -600,8 +602,8 @@ NodePtr Parser::Stmt(TokenPtr* rest, TokenPtr tok, ASTree& ct) {
       tok->ErrorTok("stary case");
     }
     TokenPtr start = tok;
-    int64_t v = Token::GetNext<1>(tok)->GetNumber();
-    tok = Token::GetNext<2>(tok)->SkipToken(":");
+    int64_t v = ConstExprEval(&tok, Token::GetNext<1>(tok), ct);
+    tok = tok->SkipToken(":");
 
     NodePtr res = Node::CreateCaseNode(start, v, Stmt(rest, tok, ct));
     cur_swt->case_nodes.push_back(res);
@@ -774,6 +776,11 @@ NodePtr Parser::Assign(TokenPtr* rest, TokenPtr tok, ASTree& ct) {
 
   *rest = tok;
   return node;
+}
+
+int64_t Parser::ConstExprEval(TokenPtr* rest, TokenPtr tok, ASTree& ast) {
+  NodePtr node = Conditional(rest, tok, ast);
+  return Node::Eval(node);
 }
 
 NodePtr Parser::Conditional(TokenPtr* rest, TokenPtr tok, ASTree& ct) {

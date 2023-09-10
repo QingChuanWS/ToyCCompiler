@@ -13,6 +13,7 @@
 
 #include <cstdarg>
 #include <cstddef>
+#include <cstdint>
 #include <cstring>
 #include <memory>
 
@@ -195,8 +196,7 @@ NodePtr Node::CreateCombinedNode(NodePtr binary, ObjectList& locals) {
 
   TokenPtr root_name = binary->name;
   // generate fresh pointer variable.
-  ObjectPtr var =
-      Object::CreateLocalVar("", Type::CreatePointerType(binary->lhs->ty), locals);
+  ObjectPtr var = Object::CreateLocalVar("", Type::CreatePointerType(binary->lhs->ty), locals);
   // &A
   NodePtr lhs_addr = CreateUnaryNode(ND_ADDR, root_name, binary->lhs);
   // tmp = &A
@@ -287,4 +287,70 @@ NodePtr Node::CreateDefaultNode(TokenPtr node_name, NodePtr body) {
   res->label = CreateUniqueName();
   res->body = body;
   return res;
+}
+
+int64_t Node::Eval(NodePtr node) {
+  Type::TypeInfer(node);
+
+  switch (node->kind) {
+    case ND_ADD:
+      return Eval(node->lhs) + Eval(node->rhs);
+    case ND_SUB:
+      return Eval(node->lhs) - Eval(node->rhs);
+    case ND_MUL:
+      return Eval(node->lhs) * Eval(node->rhs);
+    case ND_DIV:
+      return Eval(node->lhs) / Eval(node->rhs);
+    case ND_NEG:
+      return -Eval(node->lhs);
+    case ND_MOD:
+      return Eval(node->lhs) % Eval(node->rhs);
+    case ND_BITAND:
+      return Eval(node->lhs) & Eval(node->rhs);
+    case ND_BITOR:
+      return Eval(node->lhs) | Eval(node->rhs);
+    case ND_BITXOR:
+      return Eval(node->lhs) ^ Eval(node->rhs);
+    case ND_SHL:
+      return Eval(node->lhs) << Eval(node->rhs);
+    case ND_SHR:
+      return Eval(node->lhs) >> Eval(node->rhs);
+    case ND_EQ:
+      return Eval(node->lhs) == Eval(node->rhs);
+    case ND_NE:
+      return Eval(node->lhs) != Eval(node->rhs);
+    case ND_LT:
+      return Eval(node->lhs) < Eval(node->rhs);
+    case ND_LE:
+      return Eval(node->lhs) <= Eval(node->rhs);
+    case ND_COND:
+      return Eval(node->cond) ? Eval(node->then) : Eval(node->els);
+    case ND_COMMON:
+      return Eval(node->rhs);
+    case ND_NOT:
+      return !Eval(node->lhs);
+    case ND_BITNOT:
+      return ~Eval(node->lhs);
+    case ND_LOGAND:
+      return Eval(node->lhs) && Eval(node->rhs);
+    case ND_LOGOR:
+      return Eval(node->lhs) || Eval(node->rhs);
+    case ND_CAST:
+      if (node->ty->IsInteger()) {
+        switch (node->ty->Size()) {
+          case 1:
+            return (uint8_t)Eval(node->lhs);
+          case 2:
+            return (uint16_t)Eval(node->lhs);
+          case 4:
+            return (uint64_t)Eval(node->lhs);
+        }
+      }
+      return Eval(node->lhs);
+    case ND_NUM:
+      return node->val;
+    default:
+      node->name->ErrorTok("not a complier-time contant");
+      return -1;
+  }
 }
