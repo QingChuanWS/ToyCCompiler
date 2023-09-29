@@ -34,4 +34,4 @@ check -o
 $build_path"/toyc" --help 2>&1 | grep -q toyc
 check --help
 
-echo OK
+echo PASS
