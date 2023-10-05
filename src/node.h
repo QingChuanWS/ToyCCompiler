@@ -14,6 +14,7 @@
 
 #include <cstddef>
 #include <cstdint>
+#include <iostream>
 #include <memory>
 #include <string>
 
@@ -66,17 +67,6 @@ enum NodeKind {
   ND_END,
 };
 
-// for rafactor
-class NodeObject {
-  NodeObject(NodeKind kind, TokenPtr tok) : kind(kind), name(tok) {}
-
- private:
-  // Node kind
-  NodeKind kind = NodeKind::ND_END;
-  // Representative node, node name
-  TokenPtr name = nullptr;
-};
-
 class Node {
  public:
   Node(NodeKind kind, TokenPtr tok) : kind(kind), name(tok) {}
@@ -86,13 +76,9 @@ class Node {
   inline bool IsArrayNode() const { return ty->Is<TY_ARRAY>(); }
   // error print
   void Error(const char* fmt, ...) const;
+  // for type down cast function.
+  bool define(NodeKind k) const { return kind == k ? true : false; }
 
-  // create const node with type == ty_long.
-  static NodePtr CreateLongConstNode(int64_t val, TokenPtr node_name);
-  // create const node.
-  static NodePtr CreateConstNode(int64_t val, TokenPtr node_name);
-  // create var node.
-  static NodePtr CreateVarNode(ObjectPtr var, TokenPtr node_name);
   // create identify node.
   static NodePtr CreateIdentNode(TokenPtr node_name);
   // create call node
@@ -138,17 +124,18 @@ class Node {
   // for eval a constant node tree
   static int64_t Eval(NodePtr node);
 
- private:
-  friend class CodeGenerator;
-  friend class Parser;
-  friend class Type;
-
+ protected:
   // Node kind
   NodeKind kind = NodeKind::ND_END;
   // Representative node, node name
   TokenPtr name = nullptr;
   // node type
   TypePtr ty = nullptr;
+
+ private:
+  friend class CodeGenerator;
+  friend class Parser;
+  friend class Type;
 
   // compound-stmt
   NodePtr next = nullptr;
@@ -187,11 +174,62 @@ class Node {
   String label = "";
   String unique_label = "";
 
-  //  ------  Var ------;
-  ObjectPtr var = nullptr;
-
-  //  ------  const ------;
+  // ----- const -----;
   int64_t val = 0;
 };
+
+template <typename ChildType>
+inline ChildType DownCast(const NodePtr node) {
+  if (node->define(ChildType::GetKind())) {
+    return *static_cast<ChildType*>(node.get());
+  } else {
+    std::cerr << "can't convert the Type in as() function!!!";
+    exit(1);
+  }
+}
+
+class NumberNode : public Node {
+ public:
+  NumberNode(int64_t val, TokenPtr node_name, TypePtr ty = ty_int)
+      : Node(NodeKind::ND_NUM, node_name) {
+    this->val = val;
+    this->ty = ty;
+  }
+  int64_t GetNumber() const { return val; }
+
+  // for type check;
+  static const NodeKind GetKind() { return NodeKind::ND_NUM; }
+
+ private:
+  int64_t val = 0;
+};
+
+class VariableNode : public Node {
+ public:
+  VariableNode(ObjectPtr var, TokenPtr node_name) : Node(NodeKind::ND_VAR, node_name) {
+    this->var = var;
+    this->ty = ty;
+  }
+  template <Objectkind kind>
+  bool Is() {
+    return var->Is<kind>();
+  }
+  int GetOffset() const { return var->offset; }
+  String GetVarName() const { return var->obj_name; }
+  TypePtr GetType() const { return var->GetType(); }
+
+  // for type check;
+  static const NodeKind GetKind() { return NodeKind::ND_VAR; }
+
+ private:
+  ObjectPtr var = nullptr;
+};
+
+// create const node with type == ty_long.
+NodePtr CreateLongConstNode(int64_t val, TokenPtr node_name);
+// create const node.
+NodePtr CreateConstNode(int64_t val, TokenPtr node_name);
+// create var node.
+NodePtr CreateVarNode(ObjectPtr var, TokenPtr node_name);
 
 #endif  // !NODE_GRUAD

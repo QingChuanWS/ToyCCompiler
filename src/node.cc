@@ -35,22 +35,16 @@ void Node::Error(const char* fmt, ...) const {
   name->ErrorTok(fmt, ap);
 }
 
-NodePtr Node::CreateConstNode(int64_t val, TokenPtr tok) {
-  auto node = std::make_shared<Node>(NodeKind::ND_NUM, tok);
-  node->val = val;
-  return node;
+NodePtr CreateConstNode(int64_t val, TokenPtr node_name) {
+  return std::make_shared<NumberNode>(val, node_name);
 }
 
-NodePtr Node::CreateLongConstNode(int64_t val, TokenPtr node_name) {
-  auto res = CreateConstNode(val, node_name);
-  res->ty = ty_long;
-  return res;
+NodePtr CreateLongConstNode(int64_t val, TokenPtr node_name) {
+  return std::make_shared<NumberNode>(val, node_name, ty_long);
 }
 
-NodePtr Node::CreateVarNode(ObjectPtr var, TokenPtr tok) {
-  auto node = std::make_shared<Node>(NodeKind::ND_VAR, tok);
-  node->var = var;
-  return node;
+NodePtr CreateVarNode(ObjectPtr var, TokenPtr tok) {
+  return std::make_shared<VariableNode>(var, tok);
 }
 
 NodePtr Node::CreateIdentNode(TokenPtr tok) {
@@ -348,7 +342,7 @@ int64_t Node::Eval(NodePtr node) {
       }
       return Eval(node->lhs);
     case ND_NUM:
-      return node->val;
+      return DownCast<NumberNode>(node).GetNumber();
     default:
       node->name->ErrorTok("not a complier-time contant");
       return -1;

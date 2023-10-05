@@ -61,6 +61,7 @@ class Object {
 
  private:
   friend class CodeGenerator;
+  friend class VariableNode;
   // label the object type
   Objectkind kind = Objectkind::OB_END;
   // for object list

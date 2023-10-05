@@ -223,7 +223,7 @@ void Type::TypeInfer(NodePtr node) {
       node->ty = node->lhs->ty;
       return;
     case ND_VAR:
-      node->ty = node->var->GetType();
+      node->ty = DownCast<VariableNode>(node).GetType();
       return;
     case ND_COND:
       if (node->then->ty->Is<TY_VOID>() || node->els->ty->Is<TY_VOID>()) {
