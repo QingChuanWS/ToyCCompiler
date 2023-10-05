@@ -14,5 +14,6 @@ make
 ## test
 
 ```bash
+cd build
 ctest --verbose
 ```
