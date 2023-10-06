@@ -49,13 +49,8 @@ memory_check() {
     mkdir -p "$output_dir"
   fi
 
-  # processed_files=0
-  # src_files_count=$(find "$source_dir" -name "*.c" | wc -l)
-
   for file in "$source_dir"/*.c; do
     if [ -f "$file" ]; then
-      # progress=$((++processed_files * 100 / src_files_count))
-      # echo -ne "[$progress%] $(basename "$file") Compile Memory Check \r"
 
       echo "$(basename "$file") Compile Memory Check"
 
@@ -67,6 +62,7 @@ memory_check() {
       if ! grep -q "ERROR SUMMARY: 0 errors" "$tmp_output_log"; then
         mv "$tmp_output_log" "$output_dir/$(basename "$file")_error.txt"
         echo "Error found in $file. Error log saved in $output_dir/$(basename "$file")_error.txt"
+        cat "$output_dir/$(basename "$file")_error.txt"
         exit 1
       fi
     fi
