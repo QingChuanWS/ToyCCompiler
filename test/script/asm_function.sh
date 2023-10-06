@@ -56,22 +56,25 @@ function_check() {
 
   for file in "$source_dir"/*.c; do
     if [ -f "$file" ]; then
-      echo "$(basename "$file") Compile Function Check..."
+      echo "$(basename "$file") compiler function check..."
 
-      tmp_output_log=$(mktemp)
       tmp_output_asm=$(mktemp)".s"
 
-      binery=${file%%.*}
-
       $compiler -o $tmp_output_asm $file
-      $CXX -o $binery $tmp_output_asm -xc $src_folder"/common"
-      echo $binery
-      $binery || exit 1
+      binary=$(basename "${file%%.*}")".s"
+      diff <(tail -n +2 "$src_folder"/asm/"$binary") <(tail -n +2 "$tmp_output_asm") > "log.log" 2>&1
+
+      if [ ! $? -eq 0 ]; then
+        echo "Output exist difference."
+        exit 1
+      fi
     fi
   done
   echo
 }
 
-preprocessing_c_files $src_folder $output_folder
+preprocessing_c_files $src_folder"/c" $output_folder
 function_check $output_folder $output_folder $compiler_path
-echo "All checks passed"
+if [ $? -eq 0 ]; then
+  echo "All checks passed"
+fi

@@ -67,13 +67,15 @@ memory_check() {
       if ! grep -q "ERROR SUMMARY: 0 errors" "$tmp_output_log"; then
         mv "$tmp_output_log" "$output_dir/$(basename "$file")_error.txt"
         echo "Error found in $file. Error log saved in $output_dir/$(basename "$file")_error.txt"
-        break
+        exit 1
       fi
     fi
   done
   echo
 }
 
-preprocessing_c_files $src_folder $output_folder
+preprocessing_c_files $src_folder"/c" $output_folder
 memory_check $output_folder $output_folder $compiler_path
-echo "All checks passed"
+if [ $? -eq 0 ]; then
+  echo "All checks passed"
+fi

@@ -34,7 +34,7 @@ set_tests_properties(
 
 add_test(
   NAME function_test
-  COMMAND ${BASH_EXECUTABLE} ${CMAKE_SOURCE_DIR}/test/script/function.sh
+  COMMAND ${BASH_EXECUTABLE} ${CMAKE_SOURCE_DIR}/test/script/asm_function.sh
           ${CMAKE_SOURCE_DIR}/test/src ${CMAKE_CURRENT_BINARY_DIR}/test_output ${CMAKE_C_COMPILER})
 set_tests_properties(function_test PROPERTIES FAIL_REGULAR_EXPRESSION
                                               "-:|Segmentation fault")
