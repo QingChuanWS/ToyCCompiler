@@ -36,13 +36,15 @@ static const char* argreg64[] = {"rdi", "rsi", "rdx", "rcx", "r8", "r9"};
 
 void CodeGenerator::GetVarAddr(NodePtr& node) {
   switch (node->kind) {
-    case ND_VAR:
-      if (node->var->Is<OB_LOCAL>()) {
-        ASM_GEN("  lea rax, [rbp - ", node->var->offset, "]");
+    case ND_VAR: {
+      auto var_node = DownCast<VariableNode>(node);
+      if (var_node.Is<OB_LOCAL>()) {
+        ASM_GEN("  lea rax, [rbp - ", var_node.GetOffset(), "]");
       } else {
-        ASM_GEN("  lea rax, [rip + ", node->var->obj_name, "]");
+        ASM_GEN("  lea rax, [rip + ", var_node.GetVarName(), "]");
       }
       return;
+    }
     case ND_DEREF:
       ExprGen(node->lhs);
       return;
@@ -332,7 +334,7 @@ void CodeGenerator::ExprGen(NodePtr& node) {
 
   switch (node->kind) {
     case ND_NUM:
-      ASM_GEN("  mov rax, ", node->val);
+      ASM_GEN("  mov rax, ", DownCast<NumberNode>(node).GetNumber());
       return;
     case ND_NEG:
       ExprGen(node->lhs);

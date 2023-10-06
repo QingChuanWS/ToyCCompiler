@@ -192,7 +192,7 @@ NodePtr Parser::Declaration(TokenPtr* rest, TokenPtr tok, TypePtr basety, ASTree
     if (!tok->Equal("=")) {
       continue;
     }
-    NodePtr lhs = Node::CreateVarNode(var, tok);
+    NodePtr lhs = CreateVarNode(var, tok);
     NodePtr rhs = Assign(&tok, Token::GetNext<1>(tok), ct);
     NodePtr assgin_node = Node::CreateBinaryNode(ND_ASSIGN, tok, lhs, rhs);
     cur = cur->next = Node::CreateUnaryNode(ND_EXPR_STMT, tok, assgin_node);
@@ -1002,13 +1002,13 @@ NodePtr Parser::Unary(TokenPtr* rest, TokenPtr tok, ASTree& ct) {
   // read ++i ==> i+1
   if (tok->Equal("++")) {
     NodePtr binary = Node::CreateAddNode(tok, Unary(rest, Token::GetNext<1>(tok), ct),
-                                         Node::CreateConstNode(1, tok));
+                                         CreateConstNode(1, tok));
     return Node::CreateCombinedNode(binary, ct.locals);
   }
   // read --i ==> i-1
   if (tok->Equal("--")) {
     NodePtr binary = Node::CreateSubNode(tok, Unary(rest, Token::GetNext<1>(tok), ct),
-                                         Node::CreateConstNode(1, tok));
+                                         CreateConstNode(1, tok));
     return Node::CreateCombinedNode(binary, ct.locals);
   }
   return Postfix(rest, tok, ct);
@@ -1085,13 +1085,13 @@ NodePtr Parser::Primary(TokenPtr* rest, TokenPtr tok, ASTree& ct) {
       Token::GetNext<2>(tok)->IsTypename()) {
     TypePtr ty = Typename(&tok, Token::GetNext<2>(tok), ct);
     *rest = tok->SkipToken(")");
-    return Node::CreateLongConstNode(ty->Size(), start);
+    return CreateLongConstNode(ty->Size(), start);
   }
 
   if (tok->Equal("sizeof")) {
     NodePtr node = Unary(rest, Token::GetNext<1>(tok), ct);
     Type::TypeInfer(node);
-    return Node::CreateConstNode(node->ty->size, tok);
+    return CreateConstNode(node->ty->size, tok);
   }
 
   if (tok->Is<TK_IDENT>()) {
@@ -1105,11 +1105,11 @@ NodePtr Parser::Primary(TokenPtr* rest, TokenPtr tok, ASTree& ct) {
   if (tok->Is<TK_STR>()) {
     ObjectPtr var = Object::CreateStringVar(String(tok->GetStringLiteral()), ct.globals);
     *rest = Token::GetNext<1>(tok);
-    return Node::CreateVarNode(var, tok);
+    return CreateVarNode(var, tok);
   }
 
   if (tok->Is<TK_NUM>()) {
-    NodePtr node = Node::CreateConstNode(tok->GetNumber(), tok);
+    NodePtr node = CreateConstNode(tok->GetNumber(), tok);
     *rest = Token::GetNext<1>(tok);
     return node;
   }

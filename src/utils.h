@@ -31,6 +31,8 @@ class VarScope;
 class Scope;
 class Member;
 struct VarAttr;
+class NumberNode;
+class VariableNode;
 
 using TokenPtr = std::shared_ptr<Token>;
 using TypePtr = std::shared_ptr<Type>;
