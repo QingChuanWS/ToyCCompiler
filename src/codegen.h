@@ -46,7 +46,7 @@ class CodeGenPrinter {
     }
     out = std::unique_ptr<std::ofstream>(new std::ofstream(output));
     if (!out->is_open()) {
-      Error("cannot open output file: %s.");
+      Error("cannot open output file: %s.", output.c_str());
     }
     *out << ".file 1 \"" << input << "\"\n";
   }

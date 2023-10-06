@@ -14,7 +14,7 @@ source "$(cd "$(dirname "$0")" && pwd)/preprocessing.sh"
 # Check if the number of arguments is correct
 if [ "$#" -ne 2 ]; then
   echo "Error: Two arguments are required"
-  echo "Usage: $0 <src_folder> <output_folder>"
+  echo "Usage: $0 <src_folder> <output_folder> <compiler"
   exit 1
 fi
 
@@ -49,13 +49,8 @@ memory_check() {
     mkdir -p "$output_dir"
   fi
 
-  # processed_files=0
-  # src_files_count=$(find "$source_dir" -name "*.c" | wc -l)
-
   for file in "$source_dir"/*.c; do
     if [ -f "$file" ]; then
-      # progress=$((++processed_files * 100 / src_files_count))
-      # echo -ne "[$progress%] $(basename "$file") Compile Memory Check \r"
 
       echo "$(basename "$file") Compile Memory Check"
 
@@ -67,13 +62,16 @@ memory_check() {
       if ! grep -q "ERROR SUMMARY: 0 errors" "$tmp_output_log"; then
         mv "$tmp_output_log" "$output_dir/$(basename "$file")_error.txt"
         echo "Error found in $file. Error log saved in $output_dir/$(basename "$file")_error.txt"
-        break
+        cat "$output_dir/$(basename "$file")_error.txt"
+        exit 1
       fi
     fi
   done
   echo
 }
 
-preprocessing_c_files $src_folder $output_folder
+preprocessing_c_files $src_folder"/c" $output_folder
 memory_check $output_folder $output_folder $compiler_path
-echo "All checks passed"
+if [ $? -eq 0 ]; then
+  echo "All checks passed"
+fi
