@@ -61,7 +61,7 @@ function_check() {
       tmp_output_asm=$(mktemp)".s"
 
       $compiler -o $tmp_output_asm $file
-      binary=$(basename "${file%%.*}")".s"
+      binary=$(basename "${file%%.*}")
       diff <(tail -n +2 "$src_folder"/asm/"$binary") <(tail -n +2 "$tmp_output_asm") > "log.log" 2>&1
 
       if [ ! $? -eq 0 ]; then
