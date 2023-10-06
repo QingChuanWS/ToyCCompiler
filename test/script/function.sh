@@ -64,7 +64,7 @@ function_check() {
       binery=${file%%.*}
 
       $compiler -o $tmp_output_asm $file
-      $CXX -o $binery $tmp_output_asm -xc $src_folder"/common"
+      $CXX -o $binery $tmp_output_asm -xc $src_folder"/c/common"
       echo $binery
       $binery || exit 1
     fi
