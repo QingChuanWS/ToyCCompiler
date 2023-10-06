@@ -64,15 +64,10 @@ function_check() {
       binery=${file%%.*}
 
       $compiler -o $tmp_output_asm $file
+      cat $tmp_output_asm
       $CXX -o $binery $tmp_output_asm -xc $src_folder"/common"
       echo $binery
-      $binery || exit 1 > $tmp_output_log 2>&1
-
-      if grep -q "Segmentation fault" "$tmp_output_log"; then
-        mv "$tmp_output_log" "$output_dir/$(basename "$file")_error.txt"
-        echo "Error found in $file. Error log saved in $output_dir/$(basename "$file")_error.txt"
-        break
-      fi
+      $binery || exit 1
     fi
   done
   echo
