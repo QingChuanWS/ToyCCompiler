@@ -14,7 +14,7 @@ source "$(cd "$(dirname "$0")" && pwd)/preprocessing.sh"
 # Check if the number of arguments is correct
 if [ "$#" -ne 2 ]; then
   echo "Error: Two arguments are required"
-  echo "Usage: $0 <src_folder> <output_folder>"
+  echo "Usage: $0 <src_folder> <output_folder> <compiler"
   exit 1
 fi
 

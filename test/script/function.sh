@@ -13,16 +13,16 @@
 source "$(cd "$(dirname "$0")" && pwd)/preprocessing.sh"
 
 # Check if the number of arguments is correct
-if [ "$#" -ne 2 ]; then
+if [ "$#" -ne 3 ]; then
   echo "Error: Two arguments are required"
-  echo "Usage: $0 <src_folder> <output_folder>"
+  echo "Usage: $0 <src_folder> <output_folder> <compiler>"
   exit 1
 fi
 
 src_folder="$1"
 output_folder="$2"
+CXX="$3"
 compiler_path="./toyc"
-CXX=/usr/bin/g++-10 
 
 # Check if src_folder exists
 if [ ! -d "$src_folder" ]; then
